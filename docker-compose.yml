@@ -1,0 +1,42 @@
+﻿services:
+  apigateway:
+    image: apigateway
+    build:
+      context: .
+      dockerfile: APIGateway/Dockerfile
+
+  userservice.application:
+    image: userservice.application
+    build:
+      context: .
+      dockerfile: UserService.Application/Dockerfile
+
+  userservice.api:
+    image: userservice.api
+    build:
+      context: .
+      dockerfile: UserService.Api/Dockerfile
+
+  paymentservice.api:
+    image: paymentservice.api
+    build:
+      context: .
+      dockerfile: PaymentService.Api/Dockerfile
+
+  contentservice.api:
+    image: contentservice.api
+    build:
+      context: .
+      dockerfile: ContentService.Api/Dockerfile
+
+  activityservice.api:
+    image: activityservice.api
+    build:
+      context: .
+      dockerfile: ActivityService.Api/Dockerfile
+
+  shopservice.api:
+    image: shopservice.api
+    build:
+      context: .
+      dockerfile: ShopService.Api/Dockerfile
