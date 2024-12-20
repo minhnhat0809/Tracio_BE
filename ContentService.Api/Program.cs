@@ -1,3 +1,6 @@
+using System.Reflection;
+using ContentService.Application.Mappings;
+using ContentService.Application.Queries.Handlers;
 using ContentService.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,6 +11,16 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
 
+// mediatR
+builder.Services.AddMediatR(config =>
+{
+    config.RegisterServicesFromAssembly(typeof(GetBlogsQueryHandler).Assembly);
+});
+
+//mapper
+builder.Services.AddAutoMapper(typeof(BlogProfile).Assembly);
+
+// repository
 builder.Services.AddInfrastructure(builder.Configuration);
 
 //cors

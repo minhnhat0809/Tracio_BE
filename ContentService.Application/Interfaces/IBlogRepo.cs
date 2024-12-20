@@ -1,6 +1,8 @@
-﻿namespace ContentService.Application.Interfaces;
+﻿using ContentService.Domain.Entities;
 
-public interface IBlogRepo
+namespace ContentService.Application.Interfaces;
+
+public interface IBlogRepo : IRepositoryBase<Blog>
 {
     
 }

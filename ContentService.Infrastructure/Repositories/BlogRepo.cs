@@ -1,8 +1,10 @@
 ﻿using ContentService.Application.Interfaces;
+using ContentService.Domain.Entities;
+using MongoDB.Driver;
 
 namespace ContentService.Infrastructure.Repositories;
 
-public class BlogRepo : IBlogRepo
+public class BlogRepo(IMongoDatabase database) : RepositoryBase<Blog>(database, "blogs"), IBlogRepo
 {
     
 }

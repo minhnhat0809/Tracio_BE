@@ -1,12 +1,13 @@
-﻿namespace ContentService.Infrastructure.UnitOfWork;
+﻿using MongoDB.Driver;
+
+namespace ContentService.Application.Interfaces;
 
 public interface IUnitOfWork : IDisposable
 {
-    Task<int> SaveChangesAsync();
-    
+    IMongoClient Client { get; }
+    IClientSessionHandle Session { get; }
+
     Task BeginTransactionAsync();
-    
     Task CommitTransactionAsync();
-    
     Task RollbackTransactionAsync();
 }

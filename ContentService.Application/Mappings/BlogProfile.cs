@@ -1,6 +1,8 @@
-﻿namespace ContentService.Application.Mappings;
+﻿using AutoMapper;
 
-public class BlogProfile
+namespace ContentService.Application.Mappings;
+
+public class BlogProfile : Profile
 {
     
 }
