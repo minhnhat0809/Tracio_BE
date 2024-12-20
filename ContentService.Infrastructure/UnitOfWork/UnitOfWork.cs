@@ -1,6 +1,4 @@
-﻿using ContentService.Infrastructure.Interfaces;
-
-namespace ContentService.Infrastructure;
+﻿namespace ContentService.Infrastructure.UnitOfWork;
 
 public class UnitOfWork : IUnitOfWork
 {

@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\ContentService.Domain\ContentService.Domain.csproj" />
+      <ProjectReference Include="..\ContentService.Application\ContentService.Application.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -15,6 +15,7 @@
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
+      <PackageReference Include="MongoDB.Driver" Version="3.1.0" />
       <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0-preview.2.efcore.9.0.0" />
     </ItemGroup>
 

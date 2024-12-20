@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\PaymentService.Infrastructure\PaymentService.Infrastructure.csproj" />
+      <ProjectReference Include="..\PaymentService.Domain\PaymentService.Domain.csproj" />
       <ProjectReference Include="..\Shared\Shared.csproj" />
     </ItemGroup>
 

@@ -1,4 +1,4 @@
-﻿namespace ContentService.Infrastructure.Interfaces;
+﻿namespace ContentService.Infrastructure.UnitOfWork;
 
 public interface IUnitOfWork : IDisposable
 {

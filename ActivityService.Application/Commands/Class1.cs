@@ -1,4 +1,4 @@
-﻿namespace ActivityService.Application.Interfaces;
+﻿namespace ActivityService.Application.Commands;
 
 public class Class1
 {

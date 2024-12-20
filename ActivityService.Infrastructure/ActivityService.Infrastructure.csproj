@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\ActivityService.Domain\ActivityService.Domain.csproj" />
+      <ProjectReference Include="..\ActivityService.Application\ActivityService.Application.csproj" />
     </ItemGroup>
 
     <ItemGroup>

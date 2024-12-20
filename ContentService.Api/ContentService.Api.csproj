@@ -10,6 +10,7 @@
     <ItemGroup>
         <PackageReference Include="MediatR" Version="12.4.1" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.10"/>
+        <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2"/>
     </ItemGroup>
 
@@ -21,6 +22,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\ContentService.Application\ContentService.Application.csproj" />
+      <ProjectReference Include="..\ContentService.Infrastructure\ContentService.Infrastructure.csproj" />
     </ItemGroup>
 
 </Project>
