@@ -12,9 +12,9 @@ namespace ContentService.Api.Controllers
         
         [HttpGet]
         public async Task<IActionResult> GetBlogs(
-            [FromQuery] int? userId,
+            [FromQuery] string? userId,
             [FromQuery] sbyte? status,
-            [FromQuery] string? sortField = "CreatedAt",
+            [FromQuery] string? sortBy = "CreatedAt",
             [FromQuery] bool ascending = true,
             [FromQuery] int pageSize = 5,
             [FromQuery] int pageNumber = 1)
@@ -23,7 +23,7 @@ namespace ContentService.Api.Controllers
                 {
                     UserId = userId,
                     Status = status,
-                    SortField = sortField,
+                    SortBy = sortBy,
                     Ascending = ascending,
                     PageSize = pageSize,
                     PageNumber = pageNumber

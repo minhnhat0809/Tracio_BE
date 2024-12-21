@@ -8,8 +8,9 @@ public interface IRepositoryBase<T> where T : class
     
     Task<List<T>> FindAsync(Expression<Func<T, bool>> filter);
     
-    Task<List<T>> FindAsyncWithPagingAndSorting(
+    Task<List<TResult>> FindAsyncWithPagingAndSorting<TResult>(
         Expression<Func<T, bool>> filter, 
+        Expression<Func<T, TResult>> selector,
         int pageIndex, 
         int pageSize,
         Expression<Func<T, object>>? sortBy = null,

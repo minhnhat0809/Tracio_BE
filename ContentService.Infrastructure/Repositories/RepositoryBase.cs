@@ -21,9 +21,10 @@ public class RepositoryBase<T>(IMongoDatabase database, string collectionName) :
         return await _collection.Find(filter).ToListAsync();
     }
 
-    public async Task<List<T>> FindAsyncWithPagingAndSorting(
-        Expression<Func<T, bool>> filter, 
-        int pageIndex, 
+    public async Task<List<TResult>> FindAsyncWithPagingAndSorting<TResult>(
+        Expression<Func<T, bool>> filter,
+        Expression<Func<T, TResult>> selector,
+        int pageIndex,
         int pageSize,
         Expression<Func<T, object>>? sortBy = null,
         bool ascending = true)
@@ -41,8 +42,11 @@ public class RepositoryBase<T>(IMongoDatabase database, string collectionName) :
 
         query = query.Skip(skip).Limit(pageSize);
 
-        return await query.ToListAsync();
+        var result = await query.Project(selector).ToListAsync();
+
+        return result;
     }
+
 
     public async Task InsertAsync(T entity)
     {
