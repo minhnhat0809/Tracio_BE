@@ -1,5 +1,5 @@
-﻿using ContentService.Application.DTOs;
-using MediatR;
+﻿using MediatR;
+using Shared.Dtos;
 
 namespace ContentService.Application.Queries;
 

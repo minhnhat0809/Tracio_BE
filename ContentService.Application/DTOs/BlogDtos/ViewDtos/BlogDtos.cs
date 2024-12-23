@@ -1,9 +1,8 @@
-﻿namespace ContentService.Application.DTOs.BlogDtos;
+﻿namespace ContentService.Application.DTOs.BlogDtos.ViewDtos;
 
-public class BlogViewDto
+public class BlogDtos
 {
     public string BlogId { get; set; } = null!;
-        
     public string UserId { get; set; } = null!;
 
     public string UserName { get; set; } = null!;

@@ -1,6 +1,8 @@
-﻿namespace ContentService.Application.Interfaces;
+﻿using ContentService.Domain.Entities;
 
-public interface IReactionRepo
+namespace ContentService.Application.Interfaces;
+
+public interface IReactionRepo : IRepositoryBase<Reaction>
 {
     
 }

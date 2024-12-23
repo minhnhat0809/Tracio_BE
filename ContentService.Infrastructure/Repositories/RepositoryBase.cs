@@ -8,17 +8,28 @@ namespace ContentService.Infrastructure.Repositories;
 public class RepositoryBase<T>(IMongoDatabase database, string collectionName) : IRepositoryBase<T>
     where T : class
 {
-    private readonly IMongoCollection<T> _collection = database.GetCollection<T>(collectionName);
+    protected readonly IMongoCollection<T> Collection = database.GetCollection<T>(collectionName);
 
-    public async Task<T?> GetByIdAsync(string id)
+    public async Task<TResult?> GetByIdAsync<TResult>(
+        Expression<Func<T, bool>> expression,
+        Expression<Func<T, TResult>> selector)
     {
-        var filter = Builders<T>.Filter.Eq("_id", ObjectId.Parse(id));
-        return await _collection.Find(filter).FirstOrDefaultAsync();
+        ArgumentNullException.ThrowIfNull(expression);
+        ArgumentNullException.ThrowIfNull(selector);
+
+        var result = await Collection
+            .Find(expression)
+            .Project(selector)
+            .FirstOrDefaultAsync();
+
+        return result;
     }
 
-    public async Task<List<T>> FindAsync(Expression<Func<T, bool>> filter)
+
+    public async Task<List<TResult>> FindAsync<TResult>(Expression<Func<T, bool>> filter,
+        Expression<Func<T, TResult>> selector)
     {
-        return await _collection.Find(filter).ToListAsync();
+        return await Collection.Find(filter).Project(selector).ToListAsync();
     }
 
     public async Task<List<TResult>> FindAsyncWithPagingAndSorting<TResult>(
@@ -31,7 +42,7 @@ public class RepositoryBase<T>(IMongoDatabase database, string collectionName) :
     {
         var skip = (pageIndex - 1) * pageSize;
 
-        var query = _collection.Find(filter);
+        var query = Collection.Find(filter);
 
         if (sortBy != null)
         {
@@ -50,18 +61,30 @@ public class RepositoryBase<T>(IMongoDatabase database, string collectionName) :
 
     public async Task InsertAsync(T entity)
     {
-        await _collection.InsertOneAsync(entity);
+        await Collection.InsertOneAsync(entity);
     }
 
     public async Task UpdateAsync(string id, T entity)
     {
         var filter = Builders<T>.Filter.Eq("_id", ObjectId.Parse(id));
-        await _collection.ReplaceOneAsync(filter, entity);
+        await Collection.ReplaceOneAsync(filter, entity);
     }
 
     public async Task DeleteAsync(string id)
     {
         var filter = Builders<T>.Filter.Eq("_id", ObjectId.Parse(id));
-        await _collection.DeleteOneAsync(filter);
+        await Collection.DeleteOneAsync(filter);
+    }
+
+    public async Task<bool> ExistsAsync(Expression<Func<T, bool>> filter)
+    {
+        return await Collection.Find(filter).AnyAsync();
+    }
+    
+    public async Task<long> CountAsync(Expression<Func<T, bool>> filter)
+    {
+        ArgumentNullException.ThrowIfNull(filter);
+
+        return await Collection.CountDocumentsAsync(filter);
     }
 }

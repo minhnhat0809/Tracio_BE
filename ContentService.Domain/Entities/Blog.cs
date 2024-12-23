@@ -34,4 +34,7 @@ public class Blog
 
     [BsonElement("comments_count")]
     public int CommentsCount { get; set; } = 0;
+    
+    [BsonElement("comments")]
+    public List<Comment> Comments { get; set; } = null!;
 }

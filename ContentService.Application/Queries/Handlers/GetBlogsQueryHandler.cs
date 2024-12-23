@@ -1,11 +1,11 @@
-﻿using System.Linq.Expressions;
-using ContentService.Application.DTOs;
-using ContentService.Application.DTOs.BlogDtos;
+﻿using ContentService.Application.DTOs.BlogDtos.ViewDtos;
 using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
 using LinqKit;
 using MediatR;
 using Microsoft.AspNetCore.Http;
+using Shared.Dtos;
+using Shared.Ultilities;
 
 namespace ContentService.Application.Queries.Handlers;
 
@@ -19,7 +19,7 @@ public class GetBlogsQueryHandler(IBlogRepo blogRepo) : IRequestHandler<GetBlogs
         {
             var basePredicate = PredicateBuilder.New<Blog>(true);
 
-            if (string.IsNullOrWhiteSpace(request.UserId))
+            if (!string.IsNullOrWhiteSpace(request.UserId))
             {
                 basePredicate = basePredicate.And(b => b.UserId.Equals(request.UserId));
             }
@@ -34,11 +34,24 @@ public class GetBlogsQueryHandler(IBlogRepo blogRepo) : IRequestHandler<GetBlogs
                 request.SortBy = "CreatedAt";
             }
             
-            var sortExpression = GetSortExpression(request.SortBy);
+            // count blogs
+            var total = await _blogRepo.CountAsync(basePredicate);
+            if (total == 0) return ResponseDto.GetSuccess(new
+            {
+                blogs = new List<BlogDtos>(),
+                total,
+                pageNumber = request.PageNumber,
+                pageSize = request.PageSize
+            } ,
+                "No blogs found");
+            
+            // build sort expression
+            var sortExpression = SortHelper.BuildSortExpression<Blog>(request.SortBy);
 
-            var blogDtos = await _blogRepo.FindAsyncWithPagingAndSorting(
+            // fetch blogs
+            var blogs = await _blogRepo.FindAsyncWithPagingAndSorting(
                 basePredicate,
-                b => new BlogViewDto()
+                b => new BlogDtos()
                 {
                     BlogId = b.BlogId,
                     UserId = b.UserId,
@@ -53,23 +66,18 @@ public class GetBlogsQueryHandler(IBlogRepo blogRepo) : IRequestHandler<GetBlogs
                 sortExpression, request.Ascending
             );
             
-            return new ResponseDto(blogDtos, "Blogs retrieved successfully.", true, StatusCodes.Status200OK);
+            return ResponseDto.GetSuccess(new
+                {
+                    blogs = new List<BlogDtos>(),
+                    total,
+                    pageNumber = request.PageNumber,
+                    pageSize = request.PageSize
+                },
+                "Blogs retrieved successfully!");
         }
         catch (Exception e)
         {
             return new ResponseDto(null, e.Message, false, StatusCodes.Status500InternalServerError);
         }
-    }
-    
-    private static Expression<Func<Blog, object>> GetSortExpression(string sortField)
-    {
-        return sortField.ToLower() switch
-        {
-            "CreatedAt" => b => b.CreatedAt,
-            "UpdatedAt" => b => b.UpdatedAt,
-            "LikesCount" => b => b.LikesCount,
-            "CommentsCount" => b => b.CommentsCount,
-            _ => throw new ArgumentException($"Invalid sort field: {sortField}")
-        };
     }
 }

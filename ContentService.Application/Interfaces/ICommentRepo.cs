@@ -1,6 +1,8 @@
-﻿namespace ContentService.Application.Interfaces;
+﻿using ContentService.Domain.Entities;
 
-public interface ICommentRepo
+namespace ContentService.Application.Interfaces;
+
+public interface ICommentRepo : IRepositoryBase<Comment>
 {
     
 }

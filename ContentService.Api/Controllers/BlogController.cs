@@ -32,5 +32,26 @@ namespace ContentService.Api.Controllers
                 var result = await _mediator.Send(query);
                 return StatusCode(result.StatusCode, result);
         }
+
+        [HttpGet("{blogId}/comments")]
+        public async Task<IActionResult> GetCommentsByBlogId(
+            [FromRoute] string blogId,
+            [FromQuery] int pageSize = 5,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] bool ascending = true
+            )
+        {
+            var query = new GetCommentsByBlogIdQuery
+            {
+                BlogId = blogId,
+                PageSize = pageSize,
+                PageNumber = pageNumber,
+                IsAscending = ascending
+            };
+            
+            var result = await _mediator.Send(query);
+            
+            return StatusCode(result.StatusCode, result);
+        }
     }
 }
