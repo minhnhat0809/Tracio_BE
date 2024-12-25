@@ -18,7 +18,7 @@ public class GetReactionsByBlogIdHandler(IReactionRepo reactionRepo, IBlogRepo b
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(request.BlogId)) return ResponseDto.BadRequest("Blog Id is required");
+            /*if (string.IsNullOrWhiteSpace(request.BlogId)) return ResponseDto.BadRequest("Blog Id is required");
             
             // check blog in db
             var isBlogExisted = await _blogRepo.ExistsAsync(b => b.BlogId.Equals(request.BlogId));
@@ -59,13 +59,13 @@ public class GetReactionsByBlogIdHandler(IReactionRepo reactionRepo, IBlogRepo b
                 });
 
             // sort by created at
-            reactionsDto = reactionsDto.OrderByDescending(c => c.CreatedAt).ToList();
+            reactionsDto = reactionsDto.OrderByDescending(c => c.CreatedAt).ToList();*/
 
             return ResponseDto.GetSuccess(
                 new
                 {
-                    reactions = reactionsDto,
-                    total
+                    reactions = new List<ResponseDto>(),
+                    total = 0
                 },
                 "Reactions retrieved successfully!");
         }

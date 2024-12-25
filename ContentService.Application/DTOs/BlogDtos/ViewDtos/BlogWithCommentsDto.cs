@@ -1,6 +1,4 @@
 ﻿using ContentService.Application.DTOs.CommentDtos.ViewDtos;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
 
 namespace ContentService.Application.DTOs.BlogDtos.ViewDtos;
 

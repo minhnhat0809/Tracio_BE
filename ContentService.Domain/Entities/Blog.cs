@@ -1,40 +1,23 @@
-﻿using ContentService.Domain.Enum;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
+﻿using System;
+using System.Collections.Generic;
 
 namespace ContentService.Domain.Entities;
 
-public class Blog
+public partial class Blog
 {
-    [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string BlogId { get; set; } = null!;
+    public int BlogId { get; set; }
 
-    [BsonRepresentation(BsonType.ObjectId)]
-    [BsonElement("user_id")]
-    public string UserId { get; set; } = null!;
+    public int UserId { get; set; }
 
-    [BsonElement("tittle")]
-    public string Tittle { get; set; } = null!;
+    public string Title { get; set; } = null!;
 
-    [BsonElement("content")]
     public string Content { get; set; } = null!;
-    
-    [BsonElement("created_at")]
-    public DateTime CreatedAt { get; set; }
-    
-    [BsonElement("updated_at")]
-    public DateTime UpdatedAt { get; set; }
-    
-    [BsonElement("status")]
-    public BlogStatus Status { get; set; }
 
-    [BsonElement("likes_count")]
-    public int LikesCount { get; set; } = 0;
+    public DateTime? CreatedAt { get; set; }
 
-    [BsonElement("comments_count")]
-    public int CommentsCount { get; set; } = 0;
-    
-    [BsonElement("comments")]
-    public List<Comment> Comments { get; set; } = null!;
+    public DateTime? UpdatedAt { get; set; }
+
+    public int? LikesCount { get; set; }
+
+    public int? CommentsCount { get; set; }
 }

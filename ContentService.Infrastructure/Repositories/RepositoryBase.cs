@@ -1,14 +1,14 @@
 ﻿using System.Linq.Expressions;
 using ContentService.Application.Interfaces;
-using MongoDB.Bson;
-using MongoDB.Driver;
+using ContentService.Infrastructure.Contexts;
+using Microsoft.EntityFrameworkCore;
 
 namespace ContentService.Infrastructure.Repositories;
 
-public class RepositoryBase<T>(IMongoDatabase database, string collectionName) : IRepositoryBase<T>
+public class RepositoryBase<T>(TracioContentDbContext context) : IRepositoryBase<T>
     where T : class
 {
-    protected readonly IMongoCollection<T> Collection = database.GetCollection<T>(collectionName);
+    private readonly TracioContentDbContext _context = context;
 
     public async Task<TResult?> GetByIdAsync<TResult>(
         Expression<Func<T, bool>> expression,
@@ -17,19 +17,23 @@ public class RepositoryBase<T>(IMongoDatabase database, string collectionName) :
         ArgumentNullException.ThrowIfNull(expression);
         ArgumentNullException.ThrowIfNull(selector);
 
-        var result = await Collection
-            .Find(expression)
-            .Project(selector)
+        return await _context.Set<T>()
+            .Where(expression)
+            .Select(selector)
             .FirstOrDefaultAsync();
-
-        return result;
     }
 
-
-    public async Task<List<TResult>> FindAsync<TResult>(Expression<Func<T, bool>> filter,
+    public async Task<List<TResult>> FindAsync<TResult>(
+        Expression<Func<T, bool>> filter,
         Expression<Func<T, TResult>> selector)
     {
-        return await Collection.Find(filter).Project(selector).ToListAsync();
+        ArgumentNullException.ThrowIfNull(filter);
+        ArgumentNullException.ThrowIfNull(selector);
+
+        return await _context.Set<T>()
+            .Where(filter)
+            .Select(selector)
+            .ToListAsync();
     }
 
     public async Task<List<TResult>> FindAsyncWithPagingAndSorting<TResult>(
@@ -40,51 +44,67 @@ public class RepositoryBase<T>(IMongoDatabase database, string collectionName) :
         Expression<Func<T, object>>? sortBy = null,
         bool ascending = true)
     {
-        var skip = (pageIndex - 1) * pageSize;
+        ArgumentNullException.ThrowIfNull(filter);
+        ArgumentNullException.ThrowIfNull(selector);
 
-        var query = Collection.Find(filter);
+        var query = _context.Set<T>().Where(filter);
 
         if (sortBy != null)
         {
             query = ascending
-                ? query.SortBy(sortBy)
-                : query.SortByDescending(sortBy);
+                ? query.OrderBy(sortBy)
+                : query.OrderByDescending(sortBy);
         }
 
-        query = query.Skip(skip).Limit(pageSize);
-
-        var result = await query.Project(selector).ToListAsync();
-
-        return result;
+        return await query
+            .Skip((pageIndex - 1) * pageSize)
+            .Take(pageSize)
+            .Select(selector)
+            .ToListAsync();
     }
 
-
-    public async Task InsertAsync(T entity)
+    public async Task CreateAsync(T entity)
     {
-        await Collection.InsertOneAsync(entity);
+        ArgumentNullException.ThrowIfNull(entity);
+
+        await _context.Set<T>().AddAsync(entity);
     }
 
-    public async Task UpdateAsync(string id, T entity)
+    public async Task UpdateAsync(int id, T entity)
     {
-        var filter = Builders<T>.Filter.Eq("_id", ObjectId.Parse(id));
-        await Collection.ReplaceOneAsync(filter, entity);
+        ArgumentNullException.ThrowIfNull(entity);
+
+        var dbEntity = await _context.Set<T>().FindAsync(id);
+        if (dbEntity == null)
+        {
+            throw new Exception($"Entity with ID {id} not found.");
+        }
+
+        _context.Entry(dbEntity).CurrentValues.SetValues(entity);
     }
 
-    public async Task DeleteAsync(string id)
+    public async Task DeleteAsync(int id)
     {
-        var filter = Builders<T>.Filter.Eq("_id", ObjectId.Parse(id));
-        await Collection.DeleteOneAsync(filter);
+        var dbEntity = await _context.Set<T>().FindAsync(id);
+        if (dbEntity == null)
+        {
+            throw new Exception($"Entity with ID {id} not found.");
+        }
+
+        _context.Set<T>().Remove(dbEntity);
     }
 
     public async Task<bool> ExistsAsync(Expression<Func<T, bool>> filter)
     {
-        return await Collection.Find(filter).AnyAsync();
+        ArgumentNullException.ThrowIfNull(filter);
+
+        return await _context.Set<T>().AnyAsync(filter);
     }
-    
+
     public async Task<long> CountAsync(Expression<Func<T, bool>> filter)
     {
         ArgumentNullException.ThrowIfNull(filter);
 
-        return await Collection.CountDocumentsAsync(filter);
+        return await _context.Set<T>().LongCountAsync(filter);
     }
 }

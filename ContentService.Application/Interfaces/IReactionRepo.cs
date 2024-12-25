@@ -2,7 +2,7 @@
 
 namespace ContentService.Application.Interfaces;
 
-public interface IReactionRepo : IRepositoryBase<Reaction>
+public interface IReactionRepo
 {
     
 }

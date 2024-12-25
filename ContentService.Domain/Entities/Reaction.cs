@@ -1,24 +1,19 @@
-﻿using ContentService.Domain.Enum;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
+﻿using System;
+using System.Collections.Generic;
 
 namespace ContentService.Domain.Entities;
 
-public class Reaction
+public partial class Reaction
 {
-    [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string ReactionId { get; set; } = null!;
+    public int ReactionId { get; set; }
 
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string UserId { get; set; } = null!;
+    public int UserId { get; set; }
 
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string EntityId { get; set; } = null!;
+    public int EntityId { get; set; }
 
-    public EntityType EntityType { get; set; }
-    
-    public ReactionType ReactionType { get; set; }
-    
-    public DateTime CreatedAt { get; set; }
+    public sbyte EntityType { get; set; }
+
+    public sbyte ReactionType { get; set; }
+
+    public DateTime? CreatedAt { get; set; }
 }

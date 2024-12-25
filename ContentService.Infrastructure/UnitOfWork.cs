@@ -1,48 +1,75 @@
 ﻿using ContentService.Application.Interfaces;
-using MongoDB.Driver;
+using ContentService.Infrastructure.Contexts;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace ContentService.Infrastructure;
 
-public class UnitOfWork(IMongoClient client, string databaseName) : IUnitOfWork
+public class UnitOfWork(TracioContentDbContext context) : IUnitOfWork
 {
-    private IClientSessionHandle? _session;
+    private readonly TracioContentDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
+    private IDbContextTransaction? _transaction;
 
-    public IMongoClient Client => client;
-
-    public IClientSessionHandle Session => _session ?? throw new InvalidOperationException("No active session. BeginTransactionAsync must be called first.");
+    public void Dispose()
+    {
+        _transaction?.Dispose();
+        _context.Dispose();
+    }
 
     public async Task BeginTransactionAsync()
     {
-        if (_session != null)
+        if (_transaction != null)
+        {
             throw new InvalidOperationException("A transaction is already in progress.");
+        }
 
-        _session = await client.StartSessionAsync();
-        _session.StartTransaction();
+        _transaction = await _context.Database.BeginTransactionAsync();
     }
 
     public async Task CommitTransactionAsync()
     {
-        if (_session == null)
-            throw new InvalidOperationException("No active session. BeginTransactionAsync must be called first.");
+        if (_transaction == null)
+        {
+            throw new InvalidOperationException("No transaction in progress to commit.");
+        }
 
-        await _session.CommitTransactionAsync();
-        _session.Dispose();
-        _session = null;
+        try
+        {
+            await _transaction.CommitAsync();
+        }
+        finally
+        {
+            await DisposeTransactionAsync();
+        }
     }
 
     public async Task RollbackTransactionAsync()
     {
-        if (_session == null)
-            throw new InvalidOperationException("No active session. BeginTransactionAsync must be called first.");
+        if (_transaction == null)
+        {
+            throw new InvalidOperationException("No transaction in progress to roll back.");
+        }
 
-        await _session.AbortTransactionAsync();
-        _session.Dispose();
-        _session = null;
+        try
+        {
+            await _transaction.RollbackAsync();
+        }
+        finally
+        {
+            await DisposeTransactionAsync();
+        }
     }
 
-    public void Dispose()
+    public async Task SaveChangeAsync()
     {
-        _session?.Dispose();
-        _session = null;
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task DisposeTransactionAsync()
+    {
+        if (_transaction != null)
+        {
+            await _transaction.DisposeAsync();
+            _transaction = null;
+        }
     }
 }

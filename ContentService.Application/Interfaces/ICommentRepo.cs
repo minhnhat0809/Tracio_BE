@@ -2,7 +2,7 @@
 
 namespace ContentService.Application.Interfaces;
 
-public interface ICommentRepo : IRepositoryBase<Comment>
+public interface ICommentRepo
 {
     
 }

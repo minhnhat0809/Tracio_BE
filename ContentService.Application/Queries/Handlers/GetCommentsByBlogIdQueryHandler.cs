@@ -19,7 +19,7 @@ public class GetCommentsByBlogIdQueryHandler(IBlogRepo blogRepo, ICommentRepo co
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(request.BlogId)) return ResponseDto.BadRequest("Blog Id is required");
+            /*if (string.IsNullOrWhiteSpace(request.BlogId)) return ResponseDto.BadRequest("Blog Id is required");
             
             // check blog in db
             var isBlogExisted = await _blogRepo.ExistsAsync(b => b.BlogId.Equals(request.BlogId));
@@ -61,12 +61,12 @@ public class GetCommentsByBlogIdQueryHandler(IBlogRepo blogRepo, ICommentRepo co
                 },
                 request.PageNumber, request.PageSize,
                 sortExpression, request.IsAscending
-                );
+                );*/
             
             return ResponseDto.GetSuccess(new
                 {
-                    comments = commentsDto, 
-                    total, 
+                    comments = new List<CommentDto>(), 
+                    total = 0, 
                     pageNumber = request.PageNumber, 
                     pageSize = request.PageSize
                 }, 

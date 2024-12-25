@@ -17,7 +17,7 @@ public class GetBlogsQueryHandler(IBlogRepo blogRepo) : IRequestHandler<GetBlogs
     {
         try
         {
-            var basePredicate = PredicateBuilder.New<Blog>(true);
+            /*var basePredicate = PredicateBuilder.New<Blog>(true);
 
             if (!string.IsNullOrWhiteSpace(request.UserId))
             {
@@ -64,12 +64,12 @@ public class GetBlogsQueryHandler(IBlogRepo blogRepo) : IRequestHandler<GetBlogs
                 },
                 request.PageNumber, request.PageSize,
                 sortExpression, request.Ascending
-            );
+            );*/
             
             return ResponseDto.GetSuccess(new
                 {
                     blogs = new List<BlogDtos>(),
-                    total,
+                    total = 0,
                     pageNumber = request.PageNumber,
                     pageSize = request.PageSize
                 },
