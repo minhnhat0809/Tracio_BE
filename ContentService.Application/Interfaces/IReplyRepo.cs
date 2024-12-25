@@ -1,6 +1,8 @@
-﻿namespace ContentService.Application.Interfaces;
+﻿using ContentService.Domain.Entities;
 
-public interface IReplyRepo
+namespace ContentService.Application.Interfaces;
+
+public interface IReplyRepo : IRepositoryBase<Reply>
 {
     
 }

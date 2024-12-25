@@ -2,7 +2,7 @@
 
 namespace ContentService.Application.Interfaces;
 
-public interface IBlogRepo
+public interface IBlogRepo : IRepositoryBase<Blog>
 {
     
 }

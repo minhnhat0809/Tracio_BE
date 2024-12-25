@@ -1,8 +1,10 @@
 ﻿using ContentService.Application.Interfaces;
+using ContentService.Domain.Entities;
+using ContentService.Infrastructure.Contexts;
 
 namespace ContentService.Infrastructure.Repositories;
 
-public class ReplyRepo : IReplyRepo
+public class ReplyRepo(TracioContentDbContext context) : RepositoryBase<Reply>(context),IReplyRepo
 {
     
 }

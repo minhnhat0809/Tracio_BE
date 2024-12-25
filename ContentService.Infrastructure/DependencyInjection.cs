@@ -15,7 +15,7 @@ public static class DependencyInjection
         services.AddDbContext<TracioContentDbContext>(options =>
             options.UseMySql(
                 configuration.GetConnectionString("tracio_content_db"),
-                new MySqlServerVersion(new Version(0, 1, 0)) 
+                new MySqlServerVersion(new Version(9, 1, 0)) 
             )
         );
 

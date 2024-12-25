@@ -1,8 +1,10 @@
 ﻿using ContentService.Application.Interfaces;
+using ContentService.Domain.Entities;
+using ContentService.Infrastructure.Contexts;
 
 namespace ContentService.Infrastructure.Repositories;
 
-public class BlogRepo :  IBlogRepo
+public class BlogRepo(TracioContentDbContext context) : RepositoryBase<Blog>(context), IBlogRepo
 {
 
 }
