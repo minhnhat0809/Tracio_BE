@@ -1,3 +1,4 @@
+using ContentService.Application.Commands;
 using ContentService.Application.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +13,7 @@ namespace ContentService.Api.Controllers
         
         [HttpGet]
         public async Task<IActionResult> GetBlogs(
-            [FromQuery] string? userId,
+            [FromQuery] int? userId,
             [FromQuery] sbyte? status,
             [FromQuery] string? sortBy = "CreatedAt",
             [FromQuery] bool ascending = true,
@@ -33,9 +34,9 @@ namespace ContentService.Api.Controllers
                 return StatusCode(result.StatusCode, result);
         }
 
-        [HttpGet("{blogId}/comments")]
+        [HttpGet("{blogId:int}/comments")]
         public async Task<IActionResult> GetCommentsByBlogId(
-            [FromRoute] string blogId,
+            [FromRoute] int blogId,
             [FromQuery] int pageSize = 5,
             [FromQuery] int pageNumber = 1,
             [FromQuery] bool ascending = true
@@ -51,6 +52,55 @@ namespace ContentService.Api.Controllers
             
             var result = await _mediator.Send(query);
             
+            return StatusCode(result.StatusCode, result);
+        }
+        
+        [HttpGet("{blogId:int}/reactions")]
+        public async Task<IActionResult> GetReactionsByBlogId(
+            [FromRoute] int blogId,
+            [FromQuery] sbyte reactionType
+        )
+        {
+            var query = new GetReactionsByBlogIdQuery()
+            {
+                BlogId = blogId,
+                ReactionType = reactionType
+            };
+            
+            var result = await _mediator.Send(query);
+            
+            return StatusCode(result.StatusCode, result);
+        }
+        
+        [HttpPost]
+        public async Task<IActionResult> CreateBlog(
+            [FromBody] CreateBlogCommand createCommand
+        )
+        {
+            var result = await _mediator.Send(createCommand);
+            
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpPut("{blogId:int}")]
+
+        public async Task<IActionResult> UpdateBlog(
+            [FromRoute] int blogId,
+            [FromBody] UpdateBlogCommand updateCommand
+        )
+        {
+            var result = await _mediator.Send(updateCommand);
+
+        return StatusCode(result.StatusCode, result);
+        }
+        
+        [HttpDelete("{blogId:int}")]
+        public async Task<IActionResult> DeleteBlog(
+            [FromRoute] int blogId
+        )
+        {
+            var result = await _mediator.Send(new DeleteBlogCommand(blogId));
+
             return StatusCode(result.StatusCode, result);
         }
     }

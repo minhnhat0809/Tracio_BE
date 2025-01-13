@@ -1,7 +1,10 @@
-﻿using ContentService.Domain.Entities;
+﻿using System;
+using System.Collections.Generic;
+using ContentService.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Pomelo.EntityFrameworkCore.MySql.Scaffolding.Internal;
 
-namespace ContentService.Infrastructure.Contexts;
+namespace ContentService.Domain;
 
 public partial class TracioContentDbContext : DbContext
 {
@@ -21,7 +24,6 @@ public partial class TracioContentDbContext : DbContext
     public virtual DbSet<Reaction> Reactions { get; set; }
 
     public virtual DbSet<Reply> Replies { get; set; }
-    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
@@ -48,6 +50,7 @@ public partial class TracioContentDbContext : DbContext
             entity.Property(e => e.LikesCount)
                 .HasDefaultValueSql("'0'")
                 .HasColumnName("likes_count");
+            entity.Property(e => e.Status).HasColumnName("status");
             entity.Property(e => e.Title)
                 .HasMaxLength(255)
                 .HasColumnName("title");
@@ -65,7 +68,10 @@ public partial class TracioContentDbContext : DbContext
 
             entity.ToTable("comment");
 
+            entity.HasIndex(e => e.BlogId, "idx_comment_blog");
+
             entity.Property(e => e.CommentId).HasColumnName("comment_id");
+            entity.Property(e => e.BlogId).HasColumnName("blog_id");
             entity.Property(e => e.Content)
                 .HasColumnType("text")
                 .HasColumnName("content");
@@ -73,20 +79,23 @@ public partial class TracioContentDbContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
-            entity.Property(e => e.EntityId).HasColumnName("entity_id");
-            entity.Property(e => e.EntityType).HasColumnName("entity_type");
             entity.Property(e => e.IsEdited)
                 .HasDefaultValueSql("'0'")
                 .HasColumnName("is_edited");
             entity.Property(e => e.LikesCount)
                 .HasDefaultValueSql("'0'")
                 .HasColumnName("likes_count");
+            entity.Property(e => e.Status).HasColumnName("status");
             entity.Property(e => e.UpdatedAt)
                 .ValueGeneratedOnAddOrUpdate()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("updated_at");
             entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.Blog).WithMany(p => p.Comments)
+                .HasForeignKey(d => d.BlogId)
+                .HasConstraintName("fk_comment_blog");
         });
 
         modelBuilder.Entity<Reaction>(entity =>
@@ -94,6 +103,10 @@ public partial class TracioContentDbContext : DbContext
             entity.HasKey(e => e.ReactionId).HasName("PRIMARY");
 
             entity.ToTable("reaction");
+
+            entity.HasIndex(e => e.EntityId, "idx_reaction_entity");
+
+            entity.HasIndex(e => e.UserId, "idx_reaction_user");
 
             entity.Property(e => e.ReactionId).HasColumnName("reaction_id");
             entity.Property(e => e.CreatedAt)
@@ -104,6 +117,18 @@ public partial class TracioContentDbContext : DbContext
             entity.Property(e => e.EntityType).HasColumnName("entity_type");
             entity.Property(e => e.ReactionType).HasColumnName("reaction_type");
             entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.Entity).WithMany(p => p.Reactions)
+                .HasForeignKey(d => d.EntityId)
+                .HasConstraintName("fk_reaction_blog");
+
+            entity.HasOne(d => d.EntityNavigation).WithMany(p => p.Reactions)
+                .HasForeignKey(d => d.EntityId)
+                .HasConstraintName("fk_reaction_comment");
+
+            entity.HasOne(d => d.Entity1).WithMany(p => p.Reactions)
+                .HasForeignKey(d => d.EntityId)
+                .HasConstraintName("fk_reaction_reply");
         });
 
         modelBuilder.Entity<Reply>(entity =>
@@ -112,7 +137,7 @@ public partial class TracioContentDbContext : DbContext
 
             entity.ToTable("reply");
 
-            entity.HasIndex(e => e.CommentId, "fk_reply_comment_id");
+            entity.HasIndex(e => e.CommentId, "idx_reply_comment");
 
             entity.Property(e => e.ReplyId).HasColumnName("reply_id");
             entity.Property(e => e.CommentId).HasColumnName("comment_id");
@@ -126,11 +151,12 @@ public partial class TracioContentDbContext : DbContext
             entity.Property(e => e.LikesCount)
                 .HasDefaultValueSql("'0'")
                 .HasColumnName("likes_count");
+            entity.Property(e => e.Status).HasColumnName("status");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
             entity.HasOne(d => d.Comment).WithMany(p => p.Replies)
                 .HasForeignKey(d => d.CommentId)
-                .HasConstraintName("fk_reply_comment_id");
+                .HasConstraintName("fk_reply_comment");
         });
 
         OnModelCreatingPartial(modelBuilder);

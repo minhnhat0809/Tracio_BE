@@ -5,7 +5,7 @@ namespace ContentService.Application.Queries;
 
 public class GetCommentsByBlogIdQuery : IRequest<ResponseDto>
 {
-    public required string BlogId { get; set; }
+    public int BlogId { get; set; }
     
     public int PageNumber { get; set; } = 1;
     

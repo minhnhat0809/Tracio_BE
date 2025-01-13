@@ -20,4 +20,10 @@ public partial class Blog
     public int? LikesCount { get; set; }
 
     public int? CommentsCount { get; set; }
+
+    public sbyte Status { get; set; }
+
+    public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
+
+    public virtual ICollection<Reaction> Reactions { get; set; } = new List<Reaction>();
 }

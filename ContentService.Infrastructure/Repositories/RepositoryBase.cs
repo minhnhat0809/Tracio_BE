@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 using ContentService.Application.Interfaces;
-using ContentService.Infrastructure.Contexts;
+using ContentService.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace ContentService.Infrastructure.Repositories;
@@ -63,14 +63,16 @@ public class RepositoryBase<T>(TracioContentDbContext context) : IRepositoryBase
             .ToListAsync();
     }
 
-    public async Task CreateAsync(T entity)
+    public async Task<bool> CreateAsync(T entity)
     {
         ArgumentNullException.ThrowIfNull(entity);
 
         await _context.Set<T>().AddAsync(entity);
+        
+        return await _context.SaveChangesAsync() > 0;
     }
 
-    public async Task UpdateAsync(int id, T entity)
+    public async Task<bool> UpdateAsync(int id, T entity)
     {
         ArgumentNullException.ThrowIfNull(entity);
 
@@ -81,9 +83,11 @@ public class RepositoryBase<T>(TracioContentDbContext context) : IRepositoryBase
         }
 
         _context.Entry(dbEntity).CurrentValues.SetValues(entity);
+        
+        return await _context.SaveChangesAsync() > 0;
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(int id)
     {
         var dbEntity = await _context.Set<T>().FindAsync(id);
         if (dbEntity == null)
@@ -92,6 +96,8 @@ public class RepositoryBase<T>(TracioContentDbContext context) : IRepositoryBase
         }
 
         _context.Set<T>().Remove(dbEntity);
+        
+        return await _context.SaveChangesAsync() > 0;
     }
 
     public async Task<bool> ExistsAsync(Expression<Func<T, bool>> filter)

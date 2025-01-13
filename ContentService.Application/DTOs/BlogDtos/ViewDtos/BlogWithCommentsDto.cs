@@ -4,11 +4,11 @@ namespace ContentService.Application.DTOs.BlogDtos.ViewDtos;
 
 public class BlogWithCommentsDto
 {
-    public string BlogId { get; set; } = null!;
+    public int BlogId { get; set; }
     
-    public string UserId { get; set; } = null!;
+    public int UserId { get; set; }
 
-    public string UserName { get; set; } = null!;
+    public int UserName { get; set; }
 
     public string Tittle { get; set; } = null!;
 

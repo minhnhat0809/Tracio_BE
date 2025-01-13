@@ -17,5 +17,9 @@ public partial class Reply
 
     public int? LikesCount { get; set; }
 
+    public sbyte Status { get; set; }
+
     public virtual Comment Comment { get; set; } = null!;
+
+    public virtual ICollection<Reaction> Reactions { get; set; } = new List<Reaction>();
 }

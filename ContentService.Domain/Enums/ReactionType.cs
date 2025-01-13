@@ -1,4 +1,4 @@
-﻿namespace ContentService.Domain.Enum;
+﻿namespace ContentService.Domain.Enums;
 
 public enum ReactionType : sbyte
 {

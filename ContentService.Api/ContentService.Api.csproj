@@ -25,4 +25,11 @@
       <ProjectReference Include="..\ContentService.Infrastructure\ContentService.Infrastructure.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Areas\ReactionController\Controllers\" />
+      <Folder Include="Areas\ReactionController\Data\" />
+      <Folder Include="Areas\ReactionController\Models\" />
+      <Folder Include="Areas\ReactionController\Views\" />
+    </ItemGroup>
+
 </Project>

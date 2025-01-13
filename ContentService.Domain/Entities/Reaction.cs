@@ -16,4 +16,10 @@ public partial class Reaction
     public sbyte ReactionType { get; set; }
 
     public DateTime? CreatedAt { get; set; }
+
+    public virtual Blog Entity { get; set; } = null!;
+
+    public virtual Reply Entity1 { get; set; } = null!;
+
+    public virtual Comment EntityNavigation { get; set; } = null!;
 }

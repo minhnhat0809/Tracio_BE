@@ -1,7 +1,8 @@
-﻿using ContentService.Application.DTOs.CommentDtos.ViewDtos;
+﻿using AutoMapper;
+using ContentService.Application.DTOs.BlogDtos.ViewDtos;
+using ContentService.Application.DTOs.CommentDtos.ViewDtos;
 using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
-using ContentService.Domain.Enum;
 using LinqKit;
 using MediatR;
 using Shared.Dtos;
@@ -9,8 +10,10 @@ using Shared.Ultilities;
 
 namespace ContentService.Application.Queries.Handlers;
 
-public class GetCommentsByBlogIdQueryHandler(IBlogRepo blogRepo, ICommentRepo commentRepo) : IRequestHandler<GetCommentsByBlogIdQuery, ResponseDto>
+public class GetCommentsByBlogIdQueryHandler(IBlogRepo blogRepo, ICommentRepo commentRepo, IMapper mapper) : IRequestHandler<GetCommentsByBlogIdQuery, ResponseDto>
 {
+    private readonly IMapper _mapper = mapper;
+    
     private readonly IBlogRepo _blogRepo = blogRepo;
     
     private readonly ICommentRepo _commentRepo = commentRepo;
@@ -19,18 +22,18 @@ public class GetCommentsByBlogIdQueryHandler(IBlogRepo blogRepo, ICommentRepo co
     {
         try
         {
-            /*if (string.IsNullOrWhiteSpace(request.BlogId)) return ResponseDto.BadRequest("Blog Id is required");
+            if (request.BlogId <= 0) return ResponseDto.BadRequest("Blog Id is required");
             
             // check blog in db
-            var isBlogExisted = await _blogRepo.ExistsAsync(b => b.BlogId.Equals(request.BlogId));
+            var blog = await _blogRepo.GetByIdAsync(b => b.BlogId.Equals(request.BlogId), b => b);
 
-            if (!isBlogExisted) return ResponseDto.NotFound($"Blog not found with this id : {request.BlogId}");
-
+            if (blog == null) return ResponseDto.NotFound($"Blog not found with this id : {request.BlogId}");
+            
             var basePredicate = PredicateBuilder.New<Comment>(true);
             
             // build filter expression
             basePredicate = basePredicate
-                .And(c => c.EntityType == EntityType.Blog && c.EntityId.Equals(request.BlogId));
+                .And(c => c.BlogId.Equals(request.BlogId));
             
             // build sort expression
             var sortExpression = SortHelper.BuildSortExpression<Comment>("CreatedAt");
@@ -45,6 +48,9 @@ public class GetCommentsByBlogIdQueryHandler(IBlogRepo blogRepo, ICommentRepo co
                     pageSize = request.PageSize
                 }, 
                 "Comments retrieved successfully!");
+            
+            // map blog
+            var blogDto = _mapper.Map<BlogWithCommentsDto>(blog);
             
             // fetch comments
             var commentsDto = await _commentRepo.FindAsyncWithPagingAndSorting(
@@ -61,11 +67,11 @@ public class GetCommentsByBlogIdQueryHandler(IBlogRepo blogRepo, ICommentRepo co
                 },
                 request.PageNumber, request.PageSize,
                 sortExpression, request.IsAscending
-                );*/
+                );
             
             return ResponseDto.GetSuccess(new
                 {
-                    comments = new List<CommentDto>(), 
+                    comments = commentsDto, 
                     total = 0, 
                     pageNumber = request.PageNumber, 
                     pageSize = request.PageSize

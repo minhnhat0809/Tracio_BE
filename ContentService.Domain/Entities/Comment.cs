@@ -9,9 +9,7 @@ public partial class Comment
 
     public int UserId { get; set; }
 
-    public int EntityId { get; set; }
-
-    public sbyte EntityType { get; set; }
+    public int BlogId { get; set; }
 
     public string Content { get; set; } = null!;
 
@@ -22,6 +20,12 @@ public partial class Comment
     public bool? IsEdited { get; set; }
 
     public int? LikesCount { get; set; }
+
+    public sbyte Status { get; set; }
+
+    public virtual Blog Blog { get; set; } = null!;
+
+    public virtual ICollection<Reaction> Reactions { get; set; } = new List<Reaction>();
 
     public virtual ICollection<Reply> Replies { get; set; } = new List<Reply>();
 }

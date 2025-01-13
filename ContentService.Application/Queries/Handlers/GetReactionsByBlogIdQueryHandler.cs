@@ -1,14 +1,14 @@
 ﻿using ContentService.Application.DTOs.ReactionDtos.ViewDtos;
 using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
-using ContentService.Domain.Enum;
+using ContentService.Domain.Enums;
 using LinqKit;
 using MediatR;
 using Shared.Dtos;
 
 namespace ContentService.Application.Queries.Handlers;
 
-public class GetReactionsByBlogIdHandler(IReactionRepo reactionRepo, IBlogRepo blogRepo) : IRequestHandler<GetReactionsByBlogIdQuery, ResponseDto>
+public class GetReactionsByBlogIdQueryHandler(IReactionRepo reactionRepo, IBlogRepo blogRepo) : IRequestHandler<GetReactionsByBlogIdQuery, ResponseDto>
 {
     private readonly IReactionRepo _reactionRepo = reactionRepo;
     
@@ -18,7 +18,7 @@ public class GetReactionsByBlogIdHandler(IReactionRepo reactionRepo, IBlogRepo b
     {
         try
         {
-            /*if (string.IsNullOrWhiteSpace(request.BlogId)) return ResponseDto.BadRequest("Blog Id is required");
+            if (request.BlogId <= 0) return ResponseDto.BadRequest("Blog Id is required");
             
             // check blog in db
             var isBlogExisted = await _blogRepo.ExistsAsync(b => b.BlogId.Equals(request.BlogId));
@@ -35,9 +35,9 @@ public class GetReactionsByBlogIdHandler(IReactionRepo reactionRepo, IBlogRepo b
             
             // build filter expression
             basePredicate = basePredicate
-                .And(c => c.EntityType == EntityType.Blog &&
+                .And(c => c.EntityType == (sbyte) EntityType.Blog &&
                           c.EntityId.Equals(request.BlogId) &&
-                          c.EntityType == (EntityType)request.ReactionType);
+                          c.EntityType == request.ReactionType);
             
             // count reactions
             var total = await _reactionRepo.CountAsync(basePredicate);
@@ -59,13 +59,13 @@ public class GetReactionsByBlogIdHandler(IReactionRepo reactionRepo, IBlogRepo b
                 });
 
             // sort by created at
-            reactionsDto = reactionsDto.OrderByDescending(c => c.CreatedAt).ToList();*/
+            reactionsDto = reactionsDto.OrderByDescending(c => c.CreatedAt).ToList();
 
             return ResponseDto.GetSuccess(
                 new
                 {
-                    reactions = new List<ResponseDto>(),
-                    total = 0
+                    reactions = reactionsDto,
+                    total
                 },
                 "Reactions retrieved successfully!");
         }

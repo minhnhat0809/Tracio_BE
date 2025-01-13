@@ -18,11 +18,11 @@ public interface IRepositoryBase<T> where T : class
         Expression<Func<T, object>>? sortBy = null,
         bool ascending = true);
     
-    Task CreateAsync(T entity);
+    Task<bool> CreateAsync(T entity);
     
-    Task UpdateAsync(int id, T entity);
+    Task<bool> UpdateAsync(int id, T entity);
     
-    Task DeleteAsync(int id);
+    Task<bool> DeleteAsync(int id);
     
     Task<bool> ExistsAsync(Expression<Func<T, bool>> filter);
     

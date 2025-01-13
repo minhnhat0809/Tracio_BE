@@ -1,5 +1,5 @@
 ﻿using ContentService.Application.Interfaces;
-using ContentService.Infrastructure.Contexts;
+using ContentService.Domain;
 using ContentService.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;

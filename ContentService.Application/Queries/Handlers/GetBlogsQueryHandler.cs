@@ -17,9 +17,9 @@ public class GetBlogsQueryHandler(IBlogRepo blogRepo) : IRequestHandler<GetBlogs
     {
         try
         {
-            /*var basePredicate = PredicateBuilder.New<Blog>(true);
+            var basePredicate = PredicateBuilder.New<Blog>(true);
 
-            if (!string.IsNullOrWhiteSpace(request.UserId))
+            if (request.UserId.HasValue)
             {
                 basePredicate = basePredicate.And(b => b.UserId.Equals(request.UserId));
             }
@@ -55,7 +55,7 @@ public class GetBlogsQueryHandler(IBlogRepo blogRepo) : IRequestHandler<GetBlogs
                 {
                     BlogId = b.BlogId,
                     UserId = b.UserId,
-                    Tittle = b.Tittle,
+                    Tittle = b.Title,
                     Content = b.Content,
                     CreatedAt = b.CreatedAt,
                     UpdatedAt = b.UpdatedAt,
@@ -64,12 +64,12 @@ public class GetBlogsQueryHandler(IBlogRepo blogRepo) : IRequestHandler<GetBlogs
                 },
                 request.PageNumber, request.PageSize,
                 sortExpression, request.Ascending
-            );*/
+            );
             
             return ResponseDto.GetSuccess(new
                 {
-                    blogs = new List<BlogDtos>(),
-                    total = 0,
+                    blogs,
+                    total,
                     pageNumber = request.PageNumber,
                     pageSize = request.PageSize
                 },
