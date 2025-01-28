@@ -40,3 +40,9 @@
     build:
       context: .
       dockerfile: ShopService.Api/Dockerfile
+
+  routeservice.api:
+    image: routeservice.api
+    build:
+      context: .
+      dockerfile: RouteService.Api/Dockerfile
