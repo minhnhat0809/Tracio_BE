@@ -3,7 +3,6 @@ using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
 using LinqKit;
 using MediatR;
-using Microsoft.AspNetCore.Http;
 using Shared.Dtos;
 using Shared.Ultilities;
 
@@ -77,7 +76,7 @@ public class GetBlogsQueryHandler(IBlogRepo blogRepo) : IRequestHandler<GetBlogs
         }
         catch (Exception e)
         {
-            return new ResponseDto(null, e.Message, false, StatusCodes.Status500InternalServerError);
+            return ResponseDto.InternalError(e.Message);
         }
     }
 }
