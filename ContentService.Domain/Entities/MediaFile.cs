@@ -3,13 +3,9 @@ using System.Collections.Generic;
 
 namespace ContentService.Domain.Entities;
 
-public partial class Reaction
+public partial class MediaFile
 {
-    public int ReactionId { get; set; }
-
-    public int CyclistId { get; set; }
-
-    public string CyclistName { get; set; } = null!;
+    public int MediaId { get; set; }
 
     public int? BlogId { get; set; }
 
@@ -17,9 +13,11 @@ public partial class Reaction
 
     public int? ReplyId { get; set; }
 
-    public string ReactionType { get; set; } = null!;
+    public string MediaUrl { get; set; } = null!;
 
-    public DateTime CreatedAt { get; set; }
+    public string MediaType { get; set; } = null!;
+
+    public DateTime UploadedAt { get; set; }
 
     public virtual Blog? Blog { get; set; }
 

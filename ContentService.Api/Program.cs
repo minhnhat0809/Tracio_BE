@@ -49,4 +49,4 @@ app.UseCors("CORSPolicy");
 app.MapControllers();
 app.Run();
 
-//dotnet ef dbcontext scaffold "server=localhost;database=tracio_content;user=root;password=Nhat2003." "Pomelo.EntityFrameworkCore.MySql" --output-dir ../ContentService.Domain/Entities --context-dir ../ContentService.Infrastructure/Contexts --context TracioContentDbContext --force
+//dotnet ef dbcontext scaffold "server=localhost;database=tracio_content;user=root;password=N@hat892003." "Pomelo.EntityFrameworkCore.MySql" --output-dir ../ContentService.Domain/Entities --context-dir ../ContentService.Infrastructure/Contexts --context TracioContentDbContext --force

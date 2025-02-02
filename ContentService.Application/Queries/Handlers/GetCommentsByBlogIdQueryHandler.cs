@@ -58,7 +58,7 @@ public class GetCommentsByBlogIdQueryHandler(IBlogRepo blogRepo, ICommentRepo co
                 c => new CommentDto()
                 {
                     CommentId = c.CommentId,
-                    UserId = c.UserId,
+                    UserId = c.CyclistId,
                     Content = c.Content,
                     CreatedAt = c.CreatedAt,
                     UpdatedAt = c.UpdatedAt,

@@ -35,9 +35,7 @@ public class GetReactionsByBlogIdQueryHandler(IReactionRepo reactionRepo, IBlogR
             
             // build filter expression
             basePredicate = basePredicate
-                .And(c => c.EntityType == (sbyte) EntityType.Blog &&
-                          c.EntityId.Equals(request.BlogId) &&
-                          c.EntityType == request.ReactionType);
+                .And(c => c.BlogId.Equals(request.BlogId));
             
             // count reactions
             var total = await _reactionRepo.CountAsync(basePredicate);
@@ -54,7 +52,7 @@ public class GetReactionsByBlogIdQueryHandler(IReactionRepo reactionRepo, IBlogR
             var reactionsDto = await _reactionRepo.FindAsync(basePredicate,
                 c => new ReactionDto
                 {
-                    UserId = c.UserId,
+                    UserId = c.CyclistId,
                     CreatedAt = c.CreatedAt
                 });
 

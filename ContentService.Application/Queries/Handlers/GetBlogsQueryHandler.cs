@@ -20,7 +20,7 @@ public class GetBlogsQueryHandler(IBlogRepo blogRepo) : IRequestHandler<GetBlogs
 
             if (request.UserId.HasValue)
             {
-                basePredicate = basePredicate.And(b => b.UserId.Equals(request.UserId));
+                basePredicate = basePredicate.And(b => b.CreatorId.Equals(request.UserId));
             }
 
             if (request.Status.HasValue)
@@ -53,12 +53,11 @@ public class GetBlogsQueryHandler(IBlogRepo blogRepo) : IRequestHandler<GetBlogs
                 b => new BlogDtos()
                 {
                     BlogId = b.BlogId,
-                    UserId = b.UserId,
-                    Tittle = b.Title,
+                    UserId = b.CreatorId,
                     Content = b.Content,
                     CreatedAt = b.CreatedAt,
                     UpdatedAt = b.UpdatedAt,
-                    LikesCount = b.LikesCount,
+                    LikesCount = b.ReactionsCount,
                     CommentsCount = b.CommentsCount
                 },
                 request.PageNumber, request.PageSize,

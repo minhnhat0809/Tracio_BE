@@ -1,5 +1,6 @@
 ﻿using ContentService.Application.Interfaces;
 using ContentService.Domain;
+using ContentService.Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace ContentService.Infrastructure;
