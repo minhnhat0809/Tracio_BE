@@ -58,7 +58,7 @@ namespace ContentService.Api.Controllers
         [HttpGet("{blogId:int}/reactions")]
         public async Task<IActionResult> GetReactionsByBlogId(
             [FromRoute] int blogId,
-            [FromQuery] sbyte reactionType
+            [FromQuery] string reactionType
         )
         {
             var query = new GetReactionsByBlogIdQuery()

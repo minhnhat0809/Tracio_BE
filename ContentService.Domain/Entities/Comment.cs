@@ -9,6 +9,8 @@ public partial class Comment
 
     public int CyclistId { get; set; }
 
+    public string CyclistName { get; set; } = null!;
+
     public int BlogId { get; set; }
 
     public string Content { get; set; } = null!;

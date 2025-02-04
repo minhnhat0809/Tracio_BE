@@ -59,6 +59,7 @@ public class GetCommentsByBlogIdQueryHandler(IBlogRepo blogRepo, ICommentRepo co
                 {
                     CommentId = c.CommentId,
                     UserId = c.CyclistId,
+                    UserName = c.CyclistName,
                     Content = c.Content,
                     CreatedAt = c.CreatedAt,
                     UpdatedAt = c.UpdatedAt,
@@ -68,15 +69,18 @@ public class GetCommentsByBlogIdQueryHandler(IBlogRepo blogRepo, ICommentRepo co
                 request.PageNumber, request.PageSize,
                 sortExpression, request.IsAscending
                 );
+
+            // map comments to blogDto
+            blogDto.Comments = commentsDto;
             
             return ResponseDto.GetSuccess(new
                 {
-                    comments = commentsDto, 
+                    blog = blogDto, 
                     total = 0, 
                     pageNumber = request.PageNumber, 
                     pageSize = request.PageSize
                 }, 
-                "Comments retrieved successfully!");
+                "Comments of the blog retrieved successfully!");
         }
         catch (Exception e)
         {

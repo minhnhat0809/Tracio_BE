@@ -168,6 +168,10 @@ public partial class TracioContentDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
             entity.Property(e => e.CyclistId).HasColumnName("cyclist_id");
+            entity.Property(e => e.CyclistName)
+                .HasMaxLength(255)
+                .HasColumnName("cyclist_name")
+                .UseCollation("utf8mb4_unicode_ci");
             entity.Property(e => e.DeletedAt)
                 .ValueGeneratedOnAddOrUpdate()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")

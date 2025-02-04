@@ -10,7 +10,15 @@ namespace ContentService.Api.Controllers
     {
         private readonly IMediator _mediator = mediator;
 
-        [HttpPost("{commentId:int}")]
+        [HttpPost]
+        public async Task<IActionResult> CreateComment([FromBody] CreateCommentCommand command)
+        {
+            var result = await _mediator.Send(command);
+            
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpPut("{commentId:int}")]
         public async Task<IActionResult> UpdateComment([FromRoute] int commentId, [FromBody] UpdateCommentCommand? command)
         {
             if (command == null) return BadRequest("Request body is empty");

@@ -1,6 +1,13 @@
-﻿namespace ContentService.Application.Mappings;
+﻿using AutoMapper;
+using ContentService.Application.DTOs.ReactionDtos.ViewDtos;
+using ContentService.Domain.Entities;
 
-public class ReactionProfile
+namespace ContentService.Application.Mappings;
+
+public class ReactionProfile : Profile
 {
-    
+    public ReactionProfile()
+    {
+        CreateMap<Reaction, ReactionDto>();
+    }
 }

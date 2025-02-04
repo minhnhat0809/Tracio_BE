@@ -17,7 +17,7 @@ public class DeleteBlogCommandHandler(IBlogRepo blogRepo) : IRequestHandler<Dele
             if (!blogIsExisted) return ResponseDto.NotFound("Blog not found");
             
             //delete blog
-            var isSucceed = await _blogRepo.DeleteAsync(request.BlogId);
+            var isSucceed = await _blogRepo.DeleteBlog(request.BlogId);
             
             return !isSucceed ? ResponseDto.InternalError("Failed to delete blog") : 
                 ResponseDto.DeleteSuccess(null, "Blog deleted successfully!");
