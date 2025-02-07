@@ -1,4 +1,5 @@
 using ContentService.Application.Commands;
+using ContentService.Application.DTOs.BlogDtos;
 using ContentService.Application.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -58,7 +59,7 @@ namespace ContentService.Api.Controllers
         [HttpGet("{blogId:int}/reactions")]
         public async Task<IActionResult> GetReactionsByBlogId(
             [FromRoute] int blogId,
-            [FromQuery] string reactionType
+            [FromQuery] sbyte reactionType
         )
         {
             var query = new GetReactionsByBlogIdQuery()
@@ -73,17 +74,14 @@ namespace ContentService.Api.Controllers
         }
         
         [HttpPost]
-        public async Task<IActionResult> CreateBlog(
-            [FromBody] CreateBlogCommand createCommand
-        )
+        public async Task<IActionResult> CreateBlog([FromForm] BlogCreateDto blogCreateDto)
         {
-            var result = await _mediator.Send(createCommand);
+            var result = await _mediator.Send(new CreateBlogCommand(blogCreateDto));
             
             return StatusCode(result.StatusCode, result);
         }
 
         [HttpPut("{blogId:int}")]
-
         public async Task<IActionResult> UpdateBlog(
             [FromRoute] int blogId,
             [FromBody] UpdateBlogCommand updateCommand

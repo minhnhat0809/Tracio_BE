@@ -1,4 +1,6 @@
-﻿namespace ContentService.Application.DTOs.ReactionDtos.ViewDtos;
+﻿using ContentService.Domain.Enums;
+
+namespace ContentService.Application.DTOs.ReactionDtos.ViewDtos;
 
 public class ReactionDto
 {

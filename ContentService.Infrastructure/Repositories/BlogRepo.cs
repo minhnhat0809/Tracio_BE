@@ -1,6 +1,7 @@
 ﻿using ContentService.Application.Interfaces;
 using ContentService.Domain;
 using ContentService.Domain.Entities;
+using ContentService.Domain.Enums;
 using ContentService.Infrastructure.Contexts;
 
 namespace ContentService.Infrastructure.Repositories;
@@ -14,7 +15,7 @@ public class BlogRepo(TracioContentDbContext context) : RepositoryBase<Blog>(con
         try
         {
             var blog = await GetByIdAsync(b => b.BlogId == blogId, b => b);
-            blog!.Status = "Deleted";
+            blog!.Status = (sbyte) BlogStatus.Deleted;
             
             return await _context.SaveChangesAsync() > 0;
         }

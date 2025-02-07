@@ -29,7 +29,11 @@ public partial class TracioContentDbContext : DbContext
     public virtual DbSet<Reaction> Reactions { get; set; }
 
     public virtual DbSet<Reply> Replies { get; set; }
-    
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseMySql("server=localhost;database=tracio_content;user=root;password=N@hat892003.", Microsoft.EntityFrameworkCore.ServerVersion.Parse("9.2.0-mysql"));
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
@@ -58,15 +62,11 @@ public partial class TracioContentDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
             entity.Property(e => e.CreatorId).HasColumnName("creator_id");
-            entity.Property(e => e.PrivacySetting)
-                .HasColumnType("enum('Public','Private','Friends')")
-                .HasColumnName("privacy_setting");
+            entity.Property(e => e.PrivacySetting).HasColumnName("privacy_setting");
             entity.Property(e => e.ReactionsCount)
                 .HasDefaultValueSql("'0'")
                 .HasColumnName("reactions_count");
-            entity.Property(e => e.Status)
-                .HasColumnType("enum('Draft','Published','Archived','Deleted')")
-                .HasColumnName("status");
+            entity.Property(e => e.Status).HasColumnName("status");
             entity.Property(e => e.UpdatedAt)
                 .ValueGeneratedOnAddOrUpdate()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
@@ -216,9 +216,7 @@ public partial class TracioContentDbContext : DbContext
             entity.Property(e => e.MediaId).HasColumnName("media_id");
             entity.Property(e => e.BlogId).HasColumnName("blog_id");
             entity.Property(e => e.CommentId).HasColumnName("comment_id");
-            entity.Property(e => e.MediaType)
-                .HasColumnType("enum('Image','Video')")
-                .HasColumnName("media_type");
+            entity.Property(e => e.MediaType).HasColumnName("media_type");
             entity.Property(e => e.MediaUrl)
                 .HasMaxLength(2083)
                 .HasColumnName("media_url");
@@ -268,9 +266,7 @@ public partial class TracioContentDbContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("cyclist_name")
                 .UseCollation("utf8mb4_unicode_ci");
-            entity.Property(e => e.ReactionType)
-                .HasColumnType("enum('Like','Dislike','Love','Angry','Wow')")
-                .HasColumnName("reaction_type");
+            entity.Property(e => e.ReactionType).HasColumnName("reaction_type");
             entity.Property(e => e.ReplyId).HasColumnName("reply_id");
 
             entity.HasOne(d => d.Blog).WithMany(p => p.Reactions)

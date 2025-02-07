@@ -36,7 +36,7 @@ public class GetReactionsByBlogIdQueryHandler(IReactionRepo reactionRepo, IBlogR
             // build filter expression
             basePredicate = basePredicate
                 .And(c => c.BlogId.Equals(request.BlogId) &&
-                          c.ReactionType.ToLower().Equals(request.ReactionType.ToLower()));
+                          c.ReactionType == request.ReactionType);
             
             // count reactions
             var total = await _reactionRepo.CountAsync(basePredicate);
@@ -55,7 +55,7 @@ public class GetReactionsByBlogIdQueryHandler(IReactionRepo reactionRepo, IBlogR
                 {
                     UserId = c.CyclistId,
                     UserName = c.CyclistName,
-                    ReactionType = c.ReactionType,
+                    ReactionType = ((ReactionType) c.ReactionType).ToString(),
                     CreatedAt = c.CreatedAt
                 });
 

@@ -13,6 +13,6 @@ public class CreateReactionCommand : IRequest<ResponseDto>
     
     public string EntityType { get; set; } = null!;
     
-    public string ReactionType { get; set; } = null!;
+    public sbyte ReactionType { get; set; }
     
 }

@@ -20,11 +20,6 @@ public class CreateReactionCommandHandler(
     {
         try
         {
-            // Validate reaction type using an enum
-            if (!Enum.TryParse(typeof(ReactionType), request.ReactionType, out var _))
-            {
-                return ResponseDto.BadRequest("Invalid reaction type. Allowed values: Like, Dislike, Love, Angry, Wow.");
-            }
 
             return request.EntityType.ToLower() switch
             {

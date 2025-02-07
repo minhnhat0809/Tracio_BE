@@ -7,5 +7,5 @@ public class GetReactionsByBlogIdQuery : IRequest<ResponseDto>
 {
     public int BlogId { get; set; }
 
-    public string ReactionType { get; set; } = "All";
+    public sbyte ReactionType { get; set; }
 }

@@ -15,7 +15,7 @@ public partial class MediaFile
 
     public string MediaUrl { get; set; } = null!;
 
-    public string MediaType { get; set; } = null!;
+    public sbyte MediaType { get; set; }
 
     public DateTime UploadedAt { get; set; }
 

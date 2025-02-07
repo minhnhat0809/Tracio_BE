@@ -21,9 +21,9 @@ public partial class Blog
 
     public int? CommentsCount { get; set; }
 
-    public string PrivacySetting { get; set; } = null!;
+    public sbyte PrivacySetting { get; set; }
 
-    public string Status { get; set; } = null!;
+    public sbyte Status { get; set; }
 
     public virtual ICollection<BlogBookmark> BlogBookmarks { get; set; } = new List<BlogBookmark>();
 

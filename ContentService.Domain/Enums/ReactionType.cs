@@ -3,8 +3,8 @@
 public enum ReactionType : sbyte
 {
     Like = 0,
-    Love = 1,
-    Haha = 2,
-    Sad = 3,
-    Angry = 4
+    Dislike = 1,
+    Love = 2,
+    Angry = 3,
+    Wow = 4
 }

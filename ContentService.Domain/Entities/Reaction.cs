@@ -17,7 +17,7 @@ public partial class Reaction
 
     public int? ReplyId { get; set; }
 
-    public string ReactionType { get; set; } = null!;
+    public sbyte ReactionType { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
