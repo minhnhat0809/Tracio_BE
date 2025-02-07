@@ -15,15 +15,15 @@ public partial class Challenge
 
     public string? Description { get; set; }
 
-    public string ChallengeType { get; set; } = null!;
+    public sbyte ChallengeType { get; set; }
 
     public float GoalValue { get; set; }
 
-    public string? Unit { get; set; }
+    public sbyte? Unit { get; set; }
 
     public float? Mission { get; set; }
 
-    public string? MissionType { get; set; }
+    public sbyte? MissionType { get; set; }
 
     public bool? IsSystem { get; set; }
 

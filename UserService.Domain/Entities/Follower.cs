@@ -9,7 +9,7 @@ public partial class Follower
 
     public int FollowedId { get; set; }
 
-    public string Status { get; set; } = null!;
+    public sbyte Status { get; set; }
 
     public virtual User Followed { get; set; } = null!;
 
