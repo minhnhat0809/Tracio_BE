@@ -1,6 +1,6 @@
 ﻿namespace UserService.Application.Interfaces;
 
-public interface IUnitOfWork : IDisposable
+public interface IUnitOfWork
 {
     // repository
     // user
@@ -9,12 +9,4 @@ public interface IUnitOfWork : IDisposable
     
     IFirebaseStorageRepository FirebaseStorageRepository { get; }
     
-    //
-    Task<int> SaveChangesAsync();
-    
-    Task BeginTransactionAsync();
-    
-    Task CommitTransactionAsync();
-    
-    Task RollbackTransactionAsync();
 }

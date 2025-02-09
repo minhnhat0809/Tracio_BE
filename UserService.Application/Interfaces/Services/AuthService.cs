@@ -16,7 +16,8 @@ public interface IAuthService
 {
     Task<ResponseModel> ResetPassword(string email);
     Task<ResponseModel> Login( LoginRequestModel loginModel);
-    Task<ResponseModel> Register(UserRegisterModel registerModel);
+    Task<ResponseModel> UserRegister(UserRegisterModel registerModel);
+    Task<ResponseModel> ShopRegister(ShopOwnerRegisterModel registerModel);
     Task<ResponseModel> GetUrlAvatar(IFormFile file);
 }
 public class AuthService : IAuthService
@@ -96,7 +97,7 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task<ResponseModel> Register(UserRegisterModel registerModel)
+    public async Task<ResponseModel> UserRegister(UserRegisterModel registerModel)
     {
         try
         {
@@ -123,24 +124,39 @@ public class AuthService : IAuthService
                 return new ResponseModel("error", 404, "A user with this Firebase UID was not found.", null);
             }
 
-            var photo = string.Empty;
+            // Add avatar
+            string uploadedUrl = "";
+            if (registerModel.AvatarFile != null)
+            {
+                var fileName = $"avatars/{Guid.NewGuid()}"; // Store avatar in 'avatars' folder with a unique name
+
+                uploadedUrl = await _firebaseStorageRepository.UploadImageAsync(fileName, registerModel.AvatarFile, "avatars");
+
+                if (string.IsNullOrEmpty(uploadedUrl))
+                {
+                    return new ResponseModel("error", 500, "Failed to upload image.", null);
+                }
+            }
+
+            // Define Cyclist Role as Binary (100000000 = 256 in decimal)
+            int cyclistRole = 256;
+            byte[] roleBytes = BitConverter.GetBytes(cyclistRole); // Convert int to byte array (Little Endian)
+
             // Map registration model to User entity
             var newUser = new User
             {
-                FirebaseId= registerModel.FirebaseUid, // Firebase UID as User ID
+                FirebaseId = registerModel.FirebaseUid, // Firebase UID as User ID
                 Email = registerModel.Email,
                 UserName = registerModel.DisplayName,
-                ProfilePicture = photo,
+                ProfilePicture = uploadedUrl,
                 PhoneNumber = registerModel.PhoneNumber,
-                //ProviderId = registerModel.ProviderId,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
-                //Roles = new List<Role> { assignedRole } // Assign a valid role
+                Role = roleBytes // Assign Cyclist role as byte array
             };
 
             // Create User in Database
             await _repository.UserRepository.CreateAsync(newUser);
-    
 
             return new ResponseModel("success", 201, "User created successfully.", _mapper.Map<UserViewModel>(newUser));
         }
@@ -150,6 +166,78 @@ public class AuthService : IAuthService
         }
     }
 
+
+    public async Task<ResponseModel> ShopRegister(ShopOwnerRegisterModel registerModel)
+    {
+        try
+        {
+            // Validate required fields
+            if (string.IsNullOrEmpty(registerModel.FirebaseUid) || string.IsNullOrEmpty(registerModel.Email))
+            {
+                return new ResponseModel("error", 400, "Firebase UID and Email are required.", null);
+            }
+
+            // Check if user already exists
+            var existingUser = await _repository.UserRepository.GetUserByMultiplePropertiesAsync(
+                registerModel.Email, registerModel.FirebaseUid, registerModel.PhoneNumber
+            );
+
+            if (existingUser != null)
+            {
+                return new ResponseModel("error", 409, "A user with this email, phone, or Firebase ID already exists.", null);
+            }
+
+            // Get Firebase User
+            var firebaseUser = await FirebaseAuth.DefaultInstance.GetUserAsync(registerModel.FirebaseUid);
+            if (firebaseUser == null)
+            {
+                return new ResponseModel("error", 404, "A user with this Firebase UID was not found.", null);
+            }
+            
+            // Add avatar
+            var uploadedUrl= string.Empty;
+            if (registerModel.AvatarFile != null)
+            {
+                var fileName = $"avatars/{Guid.NewGuid()}"; // Store avatar in 'avatars' folder with a unique name
+
+                uploadedUrl = await _firebaseStorageRepository.UploadImageAsync(fileName, registerModel.AvatarFile, "avatars");
+
+                if (string.IsNullOrEmpty(uploadedUrl))
+                {
+                    return new ResponseModel("error", 500, "Failed to upload image.", null);
+                }
+            }
+
+            // Define ShopOwner Role as Binary ( 128 in decimal)
+            int shopOwnerRole = 128;
+            byte[] roleBytes = BitConverter.GetBytes(shopOwnerRole); // Convert int to byte array (Little Endian)
+            
+            // Map registration model to User entity
+            var newShopOwner = new User
+            {
+                FirebaseId= registerModel.FirebaseUid, // Firebase UID as User ID
+                Email = registerModel.Email,
+                UserName = registerModel.DisplayName,
+                ProfilePicture = uploadedUrl,
+                PhoneNumber = registerModel.PhoneNumber,
+                //ProviderId = registerModel.ProviderId,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                Role = roleBytes // Assign a valid role
+            };
+
+            // Create User in Database
+            await _repository.UserRepository.CreateAsync(newShopOwner);
+    
+
+            return new ResponseModel("success", 201, "User created successfully.", _mapper.Map<UserViewModel>(newShopOwner));
+        }
+        catch (Exception ex)
+        {
+            return new ResponseModel("error", 500, $"Internal server error: {ex.Message}", ex.StackTrace);
+        }
+    }
+    
     public async Task<ResponseModel> ResetPassword(string email)
     {
         try
@@ -197,6 +285,7 @@ public class AuthService : IAuthService
         }
     }
 
+    
     public async Task<ResponseModel> GetUrlAvatar(IFormFile file)
     {
         try
@@ -221,4 +310,5 @@ public class AuthService : IAuthService
             return new ResponseModel("error", 500, $"Internal server error: {ex.Message}", null);
         }
     }
+    
 }

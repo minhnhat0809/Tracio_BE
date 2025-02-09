@@ -16,10 +16,26 @@ public class UserRepository(TracioUserDbContext context) : RepositoryBase<User>(
             .FirstOrDefaultAsync();
     }
     // Find a user by multiple specific property(email, phone, firebaseId)
-    public async Task<User?> GetUserByMultiplePropertiesAsync(string email, string uId, string phoneNumber)
+    public async Task<User?> GetUserByMultiplePropertiesAsync(string? email, string? uId, string? phoneNumber)
     {
-        return await _context.Users
-            .Where(u => u.Email == email || u.FirebaseId == uId || u.PhoneNumber  == phoneNumber  )
-            .FirstOrDefaultAsync();
+        var query = _context.Users.AsQueryable();
+
+        if (!string.IsNullOrEmpty(email))
+        {
+            query = query.Where(u => u.Email == email);
+        }
+    
+        if (!string.IsNullOrEmpty(uId))
+        {
+            query = query.Where(u => u.FirebaseId == uId);
+        }
+    
+        if (!string.IsNullOrEmpty(phoneNumber))
+        {
+            query = query.Where(u => u.PhoneNumber == phoneNumber);
+        }
+
+        return await query.FirstOrDefaultAsync();
     }
+
 }

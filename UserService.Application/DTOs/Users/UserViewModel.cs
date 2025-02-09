@@ -2,24 +2,22 @@
 
 public class UserViewModel
 {
-    public string UserId { get; set; } = null!;
+    public int UserId { get; set; }
+
+    public string? UserName { get; set; } = null!;
 
     public string Email { get; set; } = null!;
 
-    public string? DisplayName { get; set; }
-
-    public string? PhotoUrl { get; set; }
+    public string FirebaseId { get; set; } = null!;
 
     public string? PhoneNumber { get; set; }
 
-    public string? ProviderId { get; set; }
+    public string? ProfilePicture { get; set; }
 
-    public DateTime? CreatedAt { get; set; }
-
-    public DateTime? UpdatedAt { get; set; }
-    
     public string? Bio { get; set; }
-    
+
+    public byte[] Role { get; set; } = null!;
+
     public float? Weight { get; set; }
 
     public float? Height { get; set; }
@@ -29,4 +27,5 @@ public class UserViewModel
     public string? City { get; set; }
 
     public string? District { get; set; }
+    
 }

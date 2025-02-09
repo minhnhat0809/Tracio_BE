@@ -36,19 +36,19 @@ namespace UserService.Api.Controllers
             if (request == null)
                 return BadRequest(new ResponseModel("error", 400, "Invalid request data.", null));
 
-            var response = await _authService.Register(request);
+            var response = await _authService.UserRegister(request);
 
             return Ok(response);
         }
         
         // POST: api/auth/register-shop (Register a new user)
         [HttpPost("register-shop")]
-        public async Task<ActionResult> RegisterShop([FromForm] UserRegisterModel request)
+        public async Task<ActionResult> RegisterShop([FromForm] ShopOwnerRegisterModel request)
         {
             if (request == null)
                 return BadRequest(new ResponseModel("error", 400, "Invalid request data.", null));
 
-            var response = await _authService.Register(request);
+            var response = await _authService.ShopRegister(request);
 
             return Ok(response);
         }
@@ -65,17 +65,8 @@ namespace UserService.Api.Controllers
             var response = await _authService.ResetPassword(model.Email);
             return StatusCode(response.StatusCode, response);
         }
-
-        // POST: api/auth/verify-code (for phone)
-        [HttpPost("verify-code")]
-        public IActionResult VerifyCode([FromQuery] long userId, [FromQuery] string code)
-        {
-            // Validate the provided verification code
-            // Mark the account as verified if the code is correct
-            return Ok(new { Message = "Code verified successfully." });
-        }
-
-        // POST: api/auth/url-avatar (test)
+        
+        // POST: api/Authentication/url-avatar 
         [HttpPost("url-avatar")]
         [Consumes("multipart/form-data")] // Tell Swagger this is a file upload endpoint
         public async Task<ActionResult> UploadAvatar( IFormFile file)
@@ -88,5 +79,7 @@ namespace UserService.Api.Controllers
             var response = await _authService.GetUrlAvatar(file);
             return Ok(response);
         }
+
+        
     }
 }
