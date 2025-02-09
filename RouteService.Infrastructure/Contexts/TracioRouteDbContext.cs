@@ -34,9 +34,7 @@ public partial class TracioRouteDbContext : DbContext
         {
             entity.HasKey(e => e.RouteId).HasName("PRIMARY");
 
-            entity
-                .ToTable("route")
-                .UseCollation("utf8mb4_unicode_ci");
+            entity.ToTable("route");
 
             entity.Property(e => e.RouteId).HasColumnName("route_id");
             entity.Property(e => e.CreatedAt)
@@ -44,9 +42,7 @@ public partial class TracioRouteDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
             entity.Property(e => e.CyclistId).HasColumnName("cyclist_id");
-            entity.Property(e => e.Difficulty)
-                .HasColumnType("enum('Easy','Moderate','Hard')")
-                .HasColumnName("difficulty");
+            entity.Property(e => e.Difficulty).HasColumnName("difficulty");
             entity.Property(e => e.IsDeleted)
                 .HasDefaultValueSql("'0'")
                 .HasColumnName("is_deleted");
@@ -56,15 +52,19 @@ public partial class TracioRouteDbContext : DbContext
             entity.Property(e => e.IsPublic)
                 .HasDefaultValueSql("'1'")
                 .HasColumnName("is_public");
+            entity.Property(e => e.Mood).HasColumnName("mood");
+            entity.Property(e => e.Pace).HasColumnName("pace");
             entity.Property(e => e.ReactionCounts)
                 .HasDefaultValueSql("'0'")
                 .HasColumnName("reaction_counts");
             entity.Property(e => e.RouteName)
                 .HasMaxLength(255)
-                .HasColumnName("route_name");
+                .HasColumnName("route_name")
+                .UseCollation("utf8mb4_unicode_ci");
             entity.Property(e => e.RoutePath).HasColumnName("route_path");
             entity.Property(e => e.StartLocation).HasColumnName("start_location");
             entity.Property(e => e.TotalDistance).HasColumnName("total_distance");
+            entity.Property(e => e.TotalTime).HasColumnName("total_time");
         });
 
         modelBuilder.Entity<RouteBookmark>(entity =>
@@ -98,9 +98,7 @@ public partial class TracioRouteDbContext : DbContext
         {
             entity.HasKey(e => e.MediaId).HasName("PRIMARY");
 
-            entity
-                .ToTable("route_media_file")
-                .UseCollation("utf8mb4_unicode_ci");
+            entity.ToTable("route_media_file");
 
             entity.HasIndex(e => e.RouteId, "fk_media_route");
 
@@ -137,9 +135,10 @@ public partial class TracioRouteDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
             entity.Property(e => e.CyclistId).HasColumnName("cyclist_id");
-            entity.Property(e => e.ReactionType)
-                .HasColumnType("enum('Like','Dislike','Love','Wow')")
-                .HasColumnName("reaction_type");
+            entity.Property(e => e.CyclistName)
+                .HasMaxLength(255)
+                .HasColumnName("cyclist_name");
+            entity.Property(e => e.ReactionType).HasColumnName("reaction_type");
             entity.Property(e => e.RouteId).HasColumnName("route_id");
 
             entity.HasOne(d => d.Route).WithMany(p => p.RouteReactions)

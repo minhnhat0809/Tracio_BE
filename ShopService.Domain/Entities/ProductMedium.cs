@@ -11,8 +11,6 @@ public partial class ProductMedium
 
     public string MediaUrl { get; set; } = null!;
 
-    public string MediaType { get; set; } = null!;
-
     public DateTime UploadedAt { get; set; }
 
     public virtual Product Product { get; set; } = null!;

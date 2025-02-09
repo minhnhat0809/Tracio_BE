@@ -13,7 +13,7 @@ public partial class GroupInvitation
 
     public int InviteeId { get; set; }
 
-    public string Status { get; set; } = null!;
+    public sbyte Status { get; set; }
 
     public DateTime InvitedAt { get; set; }
 

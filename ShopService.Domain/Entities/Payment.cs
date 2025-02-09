@@ -13,7 +13,7 @@ public partial class Payment
 
     public string PaymentMethod { get; set; } = null!;
 
-    public string Status { get; set; } = null!;
+    public sbyte Status { get; set; }
 
     public DateTime CreatedAt { get; set; }
 

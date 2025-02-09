@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
-using Pomelo.EntityFrameworkCore.MySql.Scaffolding.Internal;
+﻿using Microsoft.EntityFrameworkCore;
 using UserService.Domain.Entities;
 
-namespace UserService.Domain;
+namespace UserService.Infrastructure.Contexts;
 
 public partial class TracioUserDbContext : DbContext
 {
@@ -32,6 +29,8 @@ public partial class TracioUserDbContext : DbContext
     public virtual DbSet<GroupParticipant> GroupParticipants { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
+
+    public virtual DbSet<UserSession> UserSessions { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -50,9 +49,7 @@ public partial class TracioUserDbContext : DbContext
             entity.HasIndex(e => e.RewardId, "fk_challenge_reward");
 
             entity.Property(e => e.ChallengeId).HasColumnName("challenge_id");
-            entity.Property(e => e.ChallengeType)
-                .HasColumnType("enum('Distance','Pace','Time')")
-                .HasColumnName("challenge_type");
+            entity.Property(e => e.ChallengeType).HasColumnName("challenge_type");
             entity.Property(e => e.CreatorId).HasColumnName("creator_id");
             entity.Property(e => e.Description)
                 .HasMaxLength(1000)
@@ -75,9 +72,7 @@ public partial class TracioUserDbContext : DbContext
                 .HasDefaultValueSql("'0'")
                 .HasColumnName("is_system");
             entity.Property(e => e.Mission).HasColumnName("mission");
-            entity.Property(e => e.MissionType)
-                .HasColumnType("enum('Group','Individual')")
-                .HasColumnName("mission_type");
+            entity.Property(e => e.MissionType).HasColumnName("mission_type");
             entity.Property(e => e.RewardId).HasColumnName("reward_id");
             entity.Property(e => e.StartDate)
                 .HasColumnType("datetime")
@@ -86,9 +81,7 @@ public partial class TracioUserDbContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("title")
                 .UseCollation("utf8mb4_unicode_ci");
-            entity.Property(e => e.Unit)
-                .HasColumnType("enum('km','m','hours','minutes')")
-                .HasColumnName("unit");
+            entity.Property(e => e.Unit).HasColumnName("unit");
 
             entity.HasOne(d => d.Creator).WithMany(p => p.Challenges)
                 .HasForeignKey(d => d.CreatorId)
@@ -170,9 +163,7 @@ public partial class TracioUserDbContext : DbContext
 
             entity.Property(e => e.FollowerId).HasColumnName("follower_id");
             entity.Property(e => e.FollowedId).HasColumnName("followed_id");
-            entity.Property(e => e.Status)
-                .HasColumnType("enum('Active','Blocked','Pending')")
-                .HasColumnName("status");
+            entity.Property(e => e.Status).HasColumnName("status");
 
             entity.HasOne(d => d.Followed).WithMany(p => p.FollowerFolloweds)
                 .HasForeignKey(d => d.FollowedId)
@@ -254,9 +245,7 @@ public partial class TracioUserDbContext : DbContext
             entity.Property(e => e.RespondedAt)
                 .HasColumnType("datetime")
                 .HasColumnName("responded_at");
-            entity.Property(e => e.Status)
-                .HasColumnType("enum('Pending','Accepted','Rejected')")
-                .HasColumnName("status");
+            entity.Property(e => e.Status).HasColumnName("status");
 
             entity.HasOne(d => d.Group).WithMany(p => p.GroupInvitations)
                 .HasForeignKey(d => d.GroupId)
@@ -312,6 +301,8 @@ public partial class TracioUserDbContext : DbContext
 
             entity.HasIndex(e => e.Email, "email").IsUnique();
 
+            entity.HasIndex(e => e.FirebaseId, "firebase_id").IsUnique();
+
             entity.Property(e => e.UserId).HasColumnName("user_id");
             entity.Property(e => e.Bio)
                 .HasMaxLength(1000)
@@ -327,15 +318,14 @@ public partial class TracioUserDbContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("district");
             entity.Property(e => e.Email).HasColumnName("email");
+            entity.Property(e => e.FirebaseId).HasColumnName("firebase_id");
             entity.Property(e => e.Followers)
                 .HasDefaultValueSql("'0'")
                 .HasColumnName("followers");
             entity.Property(e => e.Followings)
                 .HasDefaultValueSql("'0'")
                 .HasColumnName("followings");
-            entity.Property(e => e.Gender)
-                .HasColumnType("enum('Male','Female','Other')")
-                .HasColumnName("gender");
+            entity.Property(e => e.Gender).HasColumnName("gender");
             entity.Property(e => e.Height)
                 .HasDefaultValueSql("'0'")
                 .HasColumnName("height");
@@ -345,10 +335,9 @@ public partial class TracioUserDbContext : DbContext
             entity.Property(e => e.Level)
                 .HasDefaultValueSql("'0'")
                 .HasColumnName("level");
-            entity.Property(e => e.Password)
-                .HasMaxLength(1)
-                .IsFixedLength()
-                .HasColumnName("password");
+            entity.Property(e => e.PhoneNumber)
+                .HasMaxLength(15)
+                .HasColumnName("phone_number");
             entity.Property(e => e.ProfilePicture)
                 .HasMaxLength(2083)
                 .HasColumnName("profile_picture");
@@ -393,6 +382,41 @@ public partial class TracioUserDbContext : DbContext
                         j.IndexerProperty<int>("CyclistId").HasColumnName("cyclist_id");
                         j.IndexerProperty<int>("RewardId").HasColumnName("reward_id");
                     });
+        });
+
+        modelBuilder.Entity<UserSession>(entity =>
+        {
+            entity.HasKey(e => e.SessionId).HasName("PRIMARY");
+
+            entity.ToTable("user_sessions");
+
+            entity.HasIndex(e => e.UserId, "user_id");
+
+            entity.Property(e => e.SessionId).HasColumnName("session_id");
+            entity.Property(e => e.AccessToken)
+                .HasColumnType("text")
+                .HasColumnName("access_token");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.ExpiresAt)
+                .HasColumnType("datetime")
+                .HasColumnName("expires_at");
+            entity.Property(e => e.IpAddress)
+                .HasMaxLength(50)
+                .HasColumnName("ip_address");
+            entity.Property(e => e.RefreshToken)
+                .HasColumnType("text")
+                .HasColumnName("refresh_token");
+            entity.Property(e => e.UserAgent)
+                .HasColumnType("text")
+                .HasColumnName("user_agent");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.User).WithMany(p => p.UserSessions)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("user_sessions_ibfk_1");
         });
 
         OnModelCreatingPartial(modelBuilder);

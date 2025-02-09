@@ -9,5 +9,7 @@ public partial class BlogPrivacy
 
     public int CyclistId { get; set; }
 
+    public string CyclistName { get; set; } = null!;
+
     public virtual Blog Blog { get; set; } = null!;
 }

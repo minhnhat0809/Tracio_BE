@@ -11,7 +11,9 @@ public partial class RouteReaction
 
     public int CyclistId { get; set; }
 
-    public string ReactionType { get; set; } = null!;
+    public string CyclistName { get; set; } = null!;
+
+    public sbyte ReactionType { get; set; }
 
     public DateTime CreatedAt { get; set; }
 

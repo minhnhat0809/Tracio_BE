@@ -18,9 +18,15 @@ public partial class Route
 
     public float TotalDistance { get; set; }
 
+    public float? Pace { get; set; }
+
+    public float? TotalTime { get; set; }
+
+    public sbyte? Mood { get; set; }
+
     public int? ReactionCounts { get; set; }
 
-    public string Difficulty { get; set; } = null!;
+    public sbyte Difficulty { get; set; }
 
     public bool? IsPublic { get; set; }
 

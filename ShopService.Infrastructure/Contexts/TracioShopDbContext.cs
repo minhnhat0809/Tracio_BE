@@ -26,7 +26,13 @@ public partial class TracioShopDbContext : DbContext
 
     public virtual DbSet<ProductCategory> ProductCategories { get; set; }
 
+    public virtual DbSet<ProductDiscount> ProductDiscounts { get; set; }
+
     public virtual DbSet<ProductMedium> ProductMedia { get; set; }
+
+    public virtual DbSet<ProductReview> ProductReviews { get; set; }
+
+    public virtual DbSet<ReviewMediaFile> ReviewMediaFiles { get; set; }
 
     public virtual DbSet<Shop> Shops { get; set; }
     
@@ -57,10 +63,13 @@ public partial class TracioShopDbContext : DbContext
             entity.Property(e => e.DiscountCondition).HasColumnName("discount_condition");
             entity.Property(e => e.Percentage).HasColumnName("percentage");
             entity.Property(e => e.ShopId).HasColumnName("shop_id");
-            entity.Property(e => e.Status)
-                .HasColumnType("enum('Active','Expired')")
-                .HasColumnName("status")
-                .UseCollation("utf8mb4_unicode_ci");
+            entity.Property(e => e.Status).HasColumnName("status");
+            entity.Property(e => e.TimeEnd)
+                .HasColumnType("datetime")
+                .HasColumnName("time_end");
+            entity.Property(e => e.TimeStart)
+                .HasColumnType("datetime")
+                .HasColumnName("time_start");
             entity.Property(e => e.UpdatedAt)
                 .ValueGeneratedOnAddOrUpdate()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
@@ -87,10 +96,7 @@ public partial class TracioShopDbContext : DbContext
                 .HasColumnName("created_at");
             entity.Property(e => e.CyclistId).HasColumnName("cyclist_id");
             entity.Property(e => e.DiscountId).HasColumnName("discount_id");
-            entity.Property(e => e.Status)
-                .HasColumnType("enum('Pending','Completed','Cancelled')")
-                .HasColumnName("status")
-                .UseCollation("utf8mb4_unicode_ci");
+            entity.Property(e => e.Status).HasColumnName("status");
             entity.Property(e => e.TotalPrice)
                 .HasPrecision(10, 2)
                 .HasColumnName("total_price");
@@ -111,6 +117,8 @@ public partial class TracioShopDbContext : DbContext
 
             entity.HasIndex(e => e.ProductId, "fk_order_detail_product");
 
+            entity.HasIndex(e => e.ShopId, "fk_order_detail_shop");
+
             entity.Property(e => e.OrderDetailId).HasColumnName("order_detail_id");
             entity.Property(e => e.OrderId).HasColumnName("order_id");
             entity.Property(e => e.Price)
@@ -118,6 +126,7 @@ public partial class TracioShopDbContext : DbContext
                 .HasColumnName("price");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.Quantity).HasColumnName("quantity");
+            entity.Property(e => e.ShopId).HasColumnName("shop_id");
 
             entity.HasOne(d => d.Order).WithMany(p => p.OrderDetails)
                 .HasForeignKey(d => d.OrderId)
@@ -126,6 +135,10 @@ public partial class TracioShopDbContext : DbContext
             entity.HasOne(d => d.Product).WithMany(p => p.OrderDetails)
                 .HasForeignKey(d => d.ProductId)
                 .HasConstraintName("fk_order_detail_product");
+
+            entity.HasOne(d => d.Shop).WithMany(p => p.OrderDetails)
+                .HasForeignKey(d => d.ShopId)
+                .HasConstraintName("fk_order_detail_shop");
         });
 
         modelBuilder.Entity<Payment>(entity =>
@@ -148,9 +161,7 @@ public partial class TracioShopDbContext : DbContext
             entity.Property(e => e.PaymentMethod)
                 .HasColumnType("enum('Cash','Online')")
                 .HasColumnName("payment_method");
-            entity.Property(e => e.Status)
-                .HasColumnType("enum('Pending','Completed','Failed')")
-                .HasColumnName("status");
+            entity.Property(e => e.Status).HasColumnName("status");
 
             entity.HasOne(d => d.Order).WithMany(p => p.Payments)
                 .HasForeignKey(d => d.OrderId)
@@ -185,10 +196,7 @@ public partial class TracioShopDbContext : DbContext
                 .HasPrecision(10, 2)
                 .HasColumnName("price");
             entity.Property(e => e.ShopId).HasColumnName("shop_id");
-            entity.Property(e => e.Status)
-                .HasColumnType("enum('Active','Inactive')")
-                .HasColumnName("status")
-                .UseCollation("utf8mb4_unicode_ci");
+            entity.Property(e => e.Status).HasColumnName("status");
             entity.Property(e => e.StockQuantity).HasColumnName("stock_quantity");
             entity.Property(e => e.UpdatedAt)
                 .ValueGeneratedOnAddOrUpdate()
@@ -228,6 +236,34 @@ public partial class TracioShopDbContext : DbContext
                 .HasColumnName("updated_at");
         });
 
+        modelBuilder.Entity<ProductDiscount>(entity =>
+        {
+            entity.HasKey(e => new { e.ProductId, e.DiscountId })
+                .HasName("PRIMARY")
+                .HasAnnotation("MySql:IndexPrefixLength", new[] { 0, 0 });
+
+            entity.ToTable("product_discount");
+
+            entity.HasIndex(e => e.DiscountId, "fk_product_discount_discount");
+
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.DiscountId).HasColumnName("discount_id");
+            entity.Property(e => e.Date)
+                .HasColumnType("datetime")
+                .HasColumnName("date");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValueSql("'1'")
+                .HasColumnName("is_active");
+
+            entity.HasOne(d => d.Discount).WithMany(p => p.ProductDiscounts)
+                .HasForeignKey(d => d.DiscountId)
+                .HasConstraintName("fk_product_discount_discount");
+
+            entity.HasOne(d => d.Product).WithMany(p => p.ProductDiscounts)
+                .HasForeignKey(d => d.ProductId)
+                .HasConstraintName("fk_product_discount_product");
+        });
+
         modelBuilder.Entity<ProductMedium>(entity =>
         {
             entity.HasKey(e => e.MediaId).HasName("PRIMARY");
@@ -237,14 +273,9 @@ public partial class TracioShopDbContext : DbContext
             entity.HasIndex(e => e.ProductId, "fk_media_product");
 
             entity.Property(e => e.MediaId).HasColumnName("media_id");
-            entity.Property(e => e.MediaType)
-                .HasColumnType("enum('Image','Video')")
-                .HasColumnName("media_type")
-                .UseCollation("utf8mb4_unicode_ci");
             entity.Property(e => e.MediaUrl)
                 .HasMaxLength(2083)
-                .HasColumnName("media_url")
-                .UseCollation("utf8mb4_unicode_ci");
+                .HasColumnName("media_url");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.UploadedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
@@ -256,6 +287,61 @@ public partial class TracioShopDbContext : DbContext
                 .HasConstraintName("fk_media_product");
         });
 
+        modelBuilder.Entity<ProductReview>(entity =>
+        {
+            entity.HasKey(e => e.ReviewId).HasName("PRIMARY");
+
+            entity
+                .ToTable("product_review")
+                .UseCollation("utf8mb4_unicode_ci");
+
+            entity.HasIndex(e => e.ProductId, "fk_product_review_product");
+
+            entity.Property(e => e.ReviewId).HasColumnName("review_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.CyclistId).HasColumnName("cyclist_id");
+            entity.Property(e => e.CyclistName)
+                .HasMaxLength(255)
+                .HasColumnName("cyclist_name");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.Rating).HasColumnName("rating");
+            entity.Property(e => e.ReviewContent)
+                .HasMaxLength(1000)
+                .HasColumnName("review_content");
+
+            entity.HasOne(d => d.Product).WithMany(p => p.ProductReviews)
+                .HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_product_review_product");
+        });
+
+        modelBuilder.Entity<ReviewMediaFile>(entity =>
+        {
+            entity.HasKey(e => e.ReviewMediaId).HasName("PRIMARY");
+
+            entity.ToTable("review_media_file");
+
+            entity.HasIndex(e => e.ReviewId, "fk_review_media_review");
+
+            entity.Property(e => e.ReviewMediaId).HasColumnName("review_media_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.MediaUrl)
+                .HasMaxLength(1000)
+                .HasColumnName("media_url");
+            entity.Property(e => e.ReviewId).HasColumnName("review_id");
+
+            entity.HasOne(d => d.Review).WithMany(p => p.ReviewMediaFiles)
+                .HasForeignKey(d => d.ReviewId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_review_media_review");
+        });
+
         modelBuilder.Entity<Shop>(entity =>
         {
             entity.HasKey(e => e.ShopId).HasName("PRIMARY");
@@ -264,11 +350,11 @@ public partial class TracioShopDbContext : DbContext
 
             entity.Property(e => e.ShopId).HasColumnName("shop_id");
             entity.Property(e => e.Address)
-                .HasMaxLength(255)
+                .HasMaxLength(350)
                 .HasColumnName("address")
                 .UseCollation("utf8mb4_unicode_ci");
             entity.Property(e => e.ContactNumber)
-                .HasMaxLength(20)
+                .HasMaxLength(10)
                 .HasColumnName("contact_number");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")

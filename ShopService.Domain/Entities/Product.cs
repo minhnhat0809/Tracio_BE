@@ -19,7 +19,7 @@ public partial class Product
 
     public int StockQuantity { get; set; }
 
-    public string Status { get; set; } = null!;
+    public sbyte Status { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
@@ -29,7 +29,11 @@ public partial class Product
 
     public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
 
+    public virtual ICollection<ProductDiscount> ProductDiscounts { get; set; } = new List<ProductDiscount>();
+
     public virtual ICollection<ProductMedium> ProductMedia { get; set; } = new List<ProductMedium>();
+
+    public virtual ICollection<ProductReview> ProductReviews { get; set; } = new List<ProductReview>();
 
     public virtual Shop Shop { get; set; } = null!;
 }

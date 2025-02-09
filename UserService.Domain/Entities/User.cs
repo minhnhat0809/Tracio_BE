@@ -1,4 +1,6 @@
-﻿
+﻿using System;
+using System.Collections.Generic;
+
 namespace UserService.Domain.Entities;
 
 public partial class User
@@ -9,7 +11,9 @@ public partial class User
 
     public string Email { get; set; } = null!;
 
-    public byte[] Password { get; set; } = null!;
+    public string FirebaseId { get; set; } = null!;
+
+    public string? PhoneNumber { get; set; }
 
     public string? ProfilePicture { get; set; }
 
@@ -37,7 +41,7 @@ public partial class User
 
     public float? Height { get; set; }
 
-    public string Gender { get; set; } = null!;
+    public sbyte Gender { get; set; }
 
     public string? City { get; set; }
 
@@ -58,6 +62,8 @@ public partial class User
     public virtual ICollection<GroupParticipant> GroupParticipants { get; set; } = new List<GroupParticipant>();
 
     public virtual ICollection<Group> Groups { get; set; } = new List<Group>();
+
+    public virtual ICollection<UserSession> UserSessions { get; set; } = new List<UserSession>();
 
     public virtual ICollection<ChallengeReward> Rewards { get; set; } = new List<ChallengeReward>();
 }
