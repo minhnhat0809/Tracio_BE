@@ -10,7 +10,7 @@ using Shared.Ultilities;
 
 namespace ContentService.Application.Queries.Handlers;
 
-public class GetCommentsByBlogIdQueryHandler(IBlogRepo blogRepo, ICommentRepo commentRepo, IMapper mapper) : IRequestHandler<GetCommentsByBlogIdQuery, ResponseDto>
+public class GetCommentsByBlogQueryHandler(IBlogRepo blogRepo, ICommentRepo commentRepo, IMapper mapper) : IRequestHandler<GetCommentsByBlogQuery, ResponseDto>
 {
     private readonly IMapper _mapper = mapper;
     
@@ -18,7 +18,7 @@ public class GetCommentsByBlogIdQueryHandler(IBlogRepo blogRepo, ICommentRepo co
     
     private readonly ICommentRepo _commentRepo = commentRepo;
     
-    public async Task<ResponseDto> Handle(GetCommentsByBlogIdQuery request, CancellationToken cancellationToken)
+    public async Task<ResponseDto> Handle(GetCommentsByBlogQuery request, CancellationToken cancellationToken)
     {
         try
         {

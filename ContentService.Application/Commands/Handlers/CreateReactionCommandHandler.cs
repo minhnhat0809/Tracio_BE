@@ -4,7 +4,6 @@ using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
 using MediatR;
 using Shared.Dtos;
-using ContentService.Domain.Enums;
 
 namespace ContentService.Application.Commands.Handlers;
 
@@ -45,7 +44,6 @@ public class CreateReactionCommandHandler(
             CyclistId = request.CyclistId,
             CyclistName = request.CyclistName,
             ReplyId = request.EntityId,
-            ReactionType = request.ReactionType,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -70,7 +68,6 @@ public class CreateReactionCommandHandler(
             CyclistId = request.CyclistId,
             CyclistName = request.CyclistName,
             BlogId = request.EntityId,
-            ReactionType = request.ReactionType,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -95,7 +92,6 @@ public class CreateReactionCommandHandler(
             CyclistId = request.CyclistId,
             CyclistName = request.CyclistName,
             ReplyId = request.EntityId,
-            ReactionType = request.ReactionType,
             CreatedAt = DateTime.UtcNow
         };
 

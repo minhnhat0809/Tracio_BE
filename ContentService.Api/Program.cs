@@ -2,6 +2,7 @@ using System.Reflection;
 using ContentService.Application.Mappings;
 using ContentService.Application.Queries.Handlers;
 using ContentService.Infrastructure;
+using Microsoft.AspNetCore.Http.Features;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,13 +18,13 @@ builder.Services.AddMediatR(config =>
     config.RegisterServicesFromAssembly(typeof(GetBlogsQueryHandler).Assembly);
 });
 
-//mapper
+// mapper
 builder.Services.AddAutoMapper(typeof(BlogProfile).Assembly);
 
 // repository
 builder.Services.AddInfrastructure(builder.Configuration);
 
-//cors
+// cors
 builder.Services.AddCors(opts =>
 {
     opts.AddPolicy("CORSPolicy", corsPolicyBuilder => corsPolicyBuilder
@@ -32,6 +33,9 @@ builder.Services.AddCors(opts =>
         .AllowCredentials()
         .SetIsOriginAllowed((_) => true));
 });
+
+// set volume limit
+builder.Services.Configure<FormOptions>(builder.Configuration.GetSection("FormOptions"));
 
 
 var app = builder.Build();

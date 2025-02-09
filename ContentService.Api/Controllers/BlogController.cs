@@ -43,7 +43,7 @@ namespace ContentService.Api.Controllers
             [FromQuery] bool ascending = true
             )
         {
-            var query = new GetCommentsByBlogIdQuery
+            var query = new GetCommentsByBlogQuery
             {
                 BlogId = blogId,
                 PageSize = pageSize,
@@ -62,7 +62,7 @@ namespace ContentService.Api.Controllers
             [FromQuery] sbyte reactionType
         )
         {
-            var query = new GetReactionsByBlogIdQuery()
+            var query = new GetReactionsByBlogQuery()
             {
                 BlogId = blogId,
                 ReactionType = reactionType
@@ -74,9 +74,9 @@ namespace ContentService.Api.Controllers
         }
         
         [HttpPost]
-        public async Task<IActionResult> CreateBlog([FromForm] BlogCreateDto blogCreateDto)
+        public async Task<IActionResult> CreateBlog([FromForm] BlogCreateDto blogCreateDto, [FromForm] List<IFormFile> mediaFiles)
         {
-            var result = await _mediator.Send(new CreateBlogCommand(blogCreateDto));
+            var result = await _mediator.Send(new CreateBlogCommand(blogCreateDto, mediaFiles));
             
             return StatusCode(result.StatusCode, result);
         }

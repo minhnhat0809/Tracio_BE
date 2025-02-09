@@ -1,20 +1,19 @@
 ﻿using ContentService.Application.DTOs.ReactionDtos.ViewDtos;
 using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
-using ContentService.Domain.Enums;
 using LinqKit;
 using MediatR;
 using Shared.Dtos;
 
 namespace ContentService.Application.Queries.Handlers;
 
-public class GetReactionsByBlogIdQueryHandler(IReactionRepo reactionRepo, IBlogRepo blogRepo) : IRequestHandler<GetReactionsByBlogIdQuery, ResponseDto>
+public class GetReactionsByBlogQueryHandler(IReactionRepo reactionRepo, IBlogRepo blogRepo) : IRequestHandler<GetReactionsByBlogQuery, ResponseDto>
 {
     private readonly IReactionRepo _reactionRepo = reactionRepo;
     
     private readonly IBlogRepo _blogRepo = blogRepo;
     
-    public async Task<ResponseDto> Handle(GetReactionsByBlogIdQuery request, CancellationToken cancellationToken)
+    public async Task<ResponseDto> Handle(GetReactionsByBlogQuery request, CancellationToken cancellationToken)
     {
         try
         {
@@ -24,19 +23,8 @@ public class GetReactionsByBlogIdQueryHandler(IReactionRepo reactionRepo, IBlogR
             var isBlogExisted = await _blogRepo.ExistsAsync(b => b.BlogId.Equals(request.BlogId));
 
             if (!isBlogExisted) return ResponseDto.NotFound($"Blog not found with this id : {request.BlogId}");
-
-            // check if reaction type is valid
-            if (!Enum.IsDefined(typeof(ReactionType), request.ReactionType))
-            {
-                return ResponseDto.BadRequest($"Invalid reaction type : {request.ReactionType}");
-            }
             
             var basePredicate = PredicateBuilder.New<Reaction>(true);
-            
-            // build filter expression
-            basePredicate = basePredicate
-                .And(c => c.BlogId.Equals(request.BlogId) &&
-                          c.ReactionType == request.ReactionType);
             
             // count reactions
             var total = await _reactionRepo.CountAsync(basePredicate);
@@ -55,7 +43,6 @@ public class GetReactionsByBlogIdQueryHandler(IReactionRepo reactionRepo, IBlogR
                 {
                     UserId = c.CyclistId,
                     UserName = c.CyclistName,
-                    ReactionType = ((ReactionType) c.ReactionType).ToString(),
                     CreatedAt = c.CreatedAt
                 });
 

@@ -3,7 +3,7 @@ using Shared.Dtos;
 
 namespace ContentService.Application.Queries;
 
-public class GetCommentsByBlogIdQuery : IRequest<ResponseDto>
+public class GetCommentsByBlogQuery : IRequest<ResponseDto>
 {
     public int BlogId { get; set; }
     

@@ -17,8 +17,6 @@ public partial class Reaction
 
     public int? ReplyId { get; set; }
 
-    public sbyte ReactionType { get; set; }
-
     public DateTime CreatedAt { get; set; }
 
     public virtual Blog? Blog { get; set; }
