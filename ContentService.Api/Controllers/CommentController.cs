@@ -1,4 +1,5 @@
 using ContentService.Application.Commands;
+using ContentService.Application.DTOs.CommentDtos;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,9 +12,9 @@ namespace ContentService.Api.Controllers
         private readonly IMediator _mediator = mediator;
 
         [HttpPost]
-        public async Task<IActionResult> CreateComment([FromBody] CreateCommentCommand command)
+        public async Task<IActionResult> CreateComment([FromForm] CommentCreateDto commentCreateDto, [FromForm] List<IFormFile> files)
         {
-            var result = await _mediator.Send(command);
+            var result = await _mediator.Send(new CreateCommentCommand(commentCreateDto, files));
             
             return StatusCode(result.StatusCode, result);
         }

@@ -8,6 +8,8 @@ namespace ContentService.Application.Commands;
 public class CreateBlogCommand(BlogCreateDto blogCreateDto, List<IFormFile> mediaFiles) : IRequest<ResponseDto>
 {
     public int CreatorId { get; set; } = blogCreateDto.CreatorId;
+    
+    public string CreatorName { get; set; } = blogCreateDto.CreatorName;
 
     public int CategoryId { get; set; } = blogCreateDto.CategoryId;
 

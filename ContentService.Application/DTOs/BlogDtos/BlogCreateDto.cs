@@ -6,6 +6,8 @@ namespace ContentService.Application.DTOs.BlogDtos;
 public class BlogCreateDto
 {
     public int CreatorId { get; set; }
+
+    public string CreatorName { get; set; } = null!;
     
     public int CategoryId { get; set; }
     

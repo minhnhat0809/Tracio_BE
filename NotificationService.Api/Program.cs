@@ -1,4 +1,4 @@
-//using UserService.Api.Services;
+using NotificationService.Application.Queries;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,7 +8,13 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
-//app.MapGrpcService<UserServiceImpl>();
+
+// mediatR
+builder.Services.AddMediatR(config =>
+{
+    config.RegisterServicesFromAssembly(typeof(GetNotificationByUserQuery).Assembly);
+});
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -19,4 +25,3 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.Run();
 
-// dotnet ef dbcontext scaffold "server=localhost;database=tracio_activity;user=root;password=N@hat892003." "Pomelo.EntityFrameworkCore.MySql" --output-dir ../UserService.Domain/Entities --context-dir ../UserService.Infrastructure/Contexts --context TracioUserDbContext --force

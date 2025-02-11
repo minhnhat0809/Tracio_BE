@@ -17,7 +17,7 @@ public class CreateBlogCommandHandler(IMapper mapper, IBlogRepo blogRepo, ICateg
     
     private readonly IImageService _imageService = imageService;
     
-    private const string BucketName = "Blog";
+    private const string BucketName = "blogtracio";
     
     public async Task<ResponseDto> Handle(CreateBlogCommand request, CancellationToken cancellationToken)
     {
@@ -26,7 +26,7 @@ public class CreateBlogCommandHandler(IMapper mapper, IBlogRepo blogRepo, ICateg
             var mediaFileUrl = new List<string>();
 
             // check category is existed
-            var isCategoryExisted = await _categoryRepo.ExistsAsync(c => c.CategoryId == request.CategoryId);
+            var isCategoryExisted = await _categoryRepo.ExistsAsync(c => c.CategoryId == request.CategoryId && c.IsDeleted != true);
             if (!isCategoryExisted) return ResponseDto.NotFound("Category not found!");
             
             // check privacy setting in enum
