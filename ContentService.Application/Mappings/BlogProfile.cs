@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using ContentService.Application.Commands;
 using ContentService.Application.DTOs.BlogDtos;
 using ContentService.Application.DTOs.BlogDtos.ViewDtos;
 using ContentService.Domain.Entities;
@@ -10,5 +11,8 @@ public class BlogProfile : Profile
     public BlogProfile()
     {
         CreateMap<Blog, BlogWithCommentsDto>();
+
+        CreateMap<CreateBlogCommand, Blog>()
+            .ForMember(dest => dest.MediaFiles, opt => opt.Ignore());
     }
 }

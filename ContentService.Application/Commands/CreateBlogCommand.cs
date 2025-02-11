@@ -5,17 +5,19 @@ using Shared.Dtos;
 
 namespace ContentService.Application.Commands;
 
-public class CreateBlogCommand(BlogCreateDto blogCreateDto) : IRequest<ResponseDto>
+public class CreateBlogCommand(BlogCreateDto blogCreateDto, List<IFormFile> mediaFiles) : IRequest<ResponseDto>
 {
     public int CreatorId { get; set; } = blogCreateDto.CreatorId;
+    
+    public string CreatorName { get; set; } = blogCreateDto.CreatorName;
 
     public int CategoryId { get; set; } = blogCreateDto.CategoryId;
 
-    public IFormFileCollection? MediaFiles { get; set; } = blogCreateDto.MediaFiles;
+    public List<IFormFile>? MediaFiles { get; set; } = mediaFiles;
 
     public string Content { get; set; } = blogCreateDto.Content;
 
-    public string PrivacySetting { get; set; } = blogCreateDto.PrivacySetting;
+    public sbyte PrivacySetting { get; set; } = blogCreateDto.PrivacySetting;
 
     public sbyte Status { get; set; } = blogCreateDto.Status;
 }

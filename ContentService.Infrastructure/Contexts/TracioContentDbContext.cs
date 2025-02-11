@@ -220,7 +220,6 @@ public partial class TracioContentDbContext : DbContext
             entity.Property(e => e.MediaId).HasColumnName("media_id");
             entity.Property(e => e.BlogId).HasColumnName("blog_id");
             entity.Property(e => e.CommentId).HasColumnName("comment_id");
-            entity.Property(e => e.MediaType).HasColumnName("media_type");
             entity.Property(e => e.MediaUrl)
                 .HasMaxLength(2083)
                 .HasColumnName("media_url");
@@ -270,7 +269,6 @@ public partial class TracioContentDbContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("cyclist_name")
                 .UseCollation("utf8mb4_unicode_ci");
-            entity.Property(e => e.ReactionType).HasColumnName("reaction_type");
             entity.Property(e => e.ReplyId).HasColumnName("reply_id");
 
             entity.HasOne(d => d.Blog).WithMany(p => p.Reactions)

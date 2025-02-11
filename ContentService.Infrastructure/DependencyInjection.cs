@@ -18,13 +18,13 @@ public static class DependencyInjection
                 new MySqlServerVersion(new Version(9, 1, 0)) 
             )
         );
-
         
         // repositories
         services.AddScoped<IBlogRepo, BlogRepo>();
         services.AddScoped<ICommentRepo, CommentRepo>();
         services.AddScoped<IReplyRepo, ReplyRepo>();
         services.AddScoped<IReactionRepo, ReactionRepo>();
+        services.AddScoped<ICategoryRepo, CategoryRepo>();
 
         return services;
     }

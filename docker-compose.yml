@@ -46,3 +46,9 @@
     build:
       context: .
       dockerfile: RouteService.Api/Dockerfile
+
+  notificationservice.api:
+    image: notificationservice.api
+    build:
+      context: .
+      dockerfile: NotificationService.Api/Dockerfile

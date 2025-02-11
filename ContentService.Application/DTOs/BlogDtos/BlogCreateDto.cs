@@ -6,14 +6,14 @@ namespace ContentService.Application.DTOs.BlogDtos;
 public class BlogCreateDto
 {
     public int CreatorId { get; set; }
+
+    public string CreatorName { get; set; } = null!;
     
     public int CategoryId { get; set; }
     
-    public IFormFileCollection? MediaFiles { get; set; }
-    
     public string Content { get; set; } = null!;
     
-    public string PrivacySetting { get; set; } = null!;
+    public sbyte PrivacySetting { get; set; }
     
     public sbyte Status { get; set; }
 }

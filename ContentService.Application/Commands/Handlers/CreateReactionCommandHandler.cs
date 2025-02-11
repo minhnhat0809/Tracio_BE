@@ -2,9 +2,9 @@
 using ContentService.Application.DTOs.ReactionDtos.ViewDtos;
 using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
+using ContentService.Domain.Events;
 using MediatR;
 using Shared.Dtos;
-using ContentService.Domain.Enums;
 
 namespace ContentService.Application.Commands.Handlers;
 
@@ -13,6 +13,7 @@ public class CreateReactionCommandHandler(
     IBlogRepo blogRepo,
     ICommentRepo commentRepo, 
     IReplyRepo replyRepo,
+    IRabbitMqProducer rabbitMqProducer,
     IMapper mapper) 
     : IRequestHandler<CreateReactionCommand, ResponseDto>
 {
@@ -20,7 +21,6 @@ public class CreateReactionCommandHandler(
     {
         try
         {
-
             return request.EntityType.ToLower() switch
             {
                 "reply" => await HandleReplyReaction(request),
@@ -45,7 +45,6 @@ public class CreateReactionCommandHandler(
             CyclistId = request.CyclistId,
             CyclistName = request.CyclistName,
             ReplyId = request.EntityId,
-            ReactionType = request.ReactionType,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -56,6 +55,9 @@ public class CreateReactionCommandHandler(
         await replyRepo.UpdateAsync(reply.ReplyId, reply);
         
         var reactionDto = mapper.Map<ReactionDto>(reaction);
+
+        // publish for notification
+        await rabbitMqProducer.PublishAsync(new ReactionToReplyEvent(request.EntityId), "notification_queue");
 
         return ResponseDto.CreateSuccess(reactionDto, "Reaction created successfully!");
     }
@@ -70,7 +72,6 @@ public class CreateReactionCommandHandler(
             CyclistId = request.CyclistId,
             CyclistName = request.CyclistName,
             BlogId = request.EntityId,
-            ReactionType = request.ReactionType,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -81,6 +82,9 @@ public class CreateReactionCommandHandler(
         await blogRepo.UpdateAsync(blog.BlogId, blog);
         
         var reactionDto = mapper.Map<ReactionDto>(reaction);
+        
+        // publish for notification
+        await rabbitMqProducer.PublishAsync(new ReactionToBlogEvent(request.EntityId), "notification_queue");
 
         return ResponseDto.CreateSuccess(reactionDto, "Reaction created successfully!");
     }
@@ -95,7 +99,6 @@ public class CreateReactionCommandHandler(
             CyclistId = request.CyclistId,
             CyclistName = request.CyclistName,
             ReplyId = request.EntityId,
-            ReactionType = request.ReactionType,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -106,6 +109,9 @@ public class CreateReactionCommandHandler(
         await commentRepo .UpdateAsync(comment.CommentId, comment);
         
         var reactionDto = mapper.Map<ReactionDto>(reaction);
+        
+        // publish for notification
+        await rabbitMqProducer.PublishAsync(new ReactionToCommentEvent(request.EntityId), "notification_queue");
 
         return ResponseDto.CreateSuccess(reactionDto, "Reaction created successfully!");
     }
