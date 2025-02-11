@@ -22,6 +22,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Protobuf Include="Protos/user.proto" GrpcServices="Client" />
+    </ItemGroup>
+
+    <ItemGroup>
       <Content Include="..\.dockerignore">
         <Link>.dockerignore</Link>
       </Content>

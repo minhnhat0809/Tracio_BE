@@ -7,6 +7,7 @@ using ContentService.Infrastructure;
 using ContentService.Infrastructure.MessageBroker;
 using Microsoft.AspNetCore.Http.Features;
 using RabbitMQ.Client;
+using Userservice;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +25,7 @@ builder.Services.AddMediatR(config =>
 
 //service
 builder.Services.AddScoped<IImageService, ImageService>();
+builder.Services.AddScoped<IUserService, ContentService.Api.Services.UserService>();
 
 // unit of work
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -61,10 +63,17 @@ builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());
 builder.Services.AddAWSService<IAmazonS3>();
 
 // grpc
-/*builder.Services.AddGrpcClient<UserService.UserServiceClient>(o =>
+builder.Services.AddGrpcClient<UserService.UserServiceClient>(o =>
 {
-    o.Address = new Uri("https://localhost:5001");  // Replace with UserService URL
-});*/
+    o.Address = new Uri("http://localhost:5001");  // Replace with UserService URL
+}).ConfigurePrimaryHttpMessageHandler(() =>
+{
+    var handler = new HttpClientHandler();
+    handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator; 
+    handler.SslProtocols = System.Security.Authentication.SslProtocols.Tls12; 
+    return handler;
+});
+
 
 var app = builder.Build();
 

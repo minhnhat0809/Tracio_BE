@@ -7,7 +7,13 @@ using Shared.Dtos;
 
 namespace ContentService.Application.Commands.Handlers;
 
-public class CreateBlogCommandHandler(IMapper mapper, IBlogRepo blogRepo, ICategoryRepo categoryRepo, IImageService imageService) : IRequestHandler<CreateBlogCommand, ResponseDto>
+public class CreateBlogCommandHandler(
+    IMapper mapper, 
+    IBlogRepo blogRepo, 
+    ICategoryRepo categoryRepo, 
+    IImageService imageService,
+    IUserService userService
+     ) : IRequestHandler<CreateBlogCommand, ResponseDto>
 {
     private readonly IBlogRepo _blogRepo = blogRepo;
     
@@ -17,6 +23,8 @@ public class CreateBlogCommandHandler(IMapper mapper, IBlogRepo blogRepo, ICateg
     
     private readonly IImageService _imageService = imageService;
     
+    private readonly IUserService _userService = userService;
+    
     private const string BucketName = "blogtracio";
     
     public async Task<ResponseDto> Handle(CreateBlogCommand request, CancellationToken cancellationToken)
@@ -24,6 +32,10 @@ public class CreateBlogCommandHandler(IMapper mapper, IBlogRepo blogRepo, ICateg
         try
         {
             var mediaFileUrl = new List<string>();
+            
+            // check userId and get user's name
+            var userDto = await _userService.ValidateUser(request.CreatorId);
+            if (!userDto.IsUserValid) return ResponseDto.NotFound("User does not exist");
 
             // check category is existed
             var isCategoryExisted = await _categoryRepo.ExistsAsync(c => c.CategoryId == request.CategoryId && c.IsDeleted != true);
@@ -46,6 +58,7 @@ public class CreateBlogCommandHandler(IMapper mapper, IBlogRepo blogRepo, ICateg
             var mediaFiles = mediaFileUrl.Select(file => new MediaFile { MediaUrl = file, UploadedAt = DateTime.Now }).ToList();
             
             blog.MediaFiles = mediaFiles;
+            blog.CreatorName = userDto.Username;
             
             // insert to db
             var blogCreateResult = await _blogRepo.CreateAsync(blog);

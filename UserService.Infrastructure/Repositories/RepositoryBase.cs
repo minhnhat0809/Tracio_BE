@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore;
 using UserService.Application.Interfaces;
 using UserService.Domain;
 
@@ -79,6 +80,18 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : class
         return await query.FirstOrDefaultAsync(e => EF.Property<object>(e, primaryKeyName).Equals(id));
     }
 
+    public async Task<TResult?> GetById<TResult>(
+        Expression<Func<T, bool>> expression,
+        Expression<Func<T, TResult>> selector)
+    {
+        ArgumentNullException.ThrowIfNull(expression);
+        ArgumentNullException.ThrowIfNull(selector);
+
+        return await _context.Set<T>()
+            .Where(expression)
+            .Select(selector)
+            .FirstOrDefaultAsync();
+    }
 
 
     // Create
