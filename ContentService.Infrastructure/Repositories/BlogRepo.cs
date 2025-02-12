@@ -3,6 +3,7 @@ using ContentService.Domain;
 using ContentService.Domain.Entities;
 using ContentService.Domain.Enums;
 using ContentService.Infrastructure.Contexts;
+using Microsoft.EntityFrameworkCore;
 
 namespace ContentService.Infrastructure.Repositories;
 
@@ -18,6 +19,20 @@ public class BlogRepo(TracioContentDbContext context) : RepositoryBase<Blog>(con
             blog!.Status = (sbyte) BlogStatus.Deleted;
             
             return await _context.SaveChangesAsync() > 0;
+        }
+        catch (Exception e)
+        {
+            throw new Exception(e.Message);
+        }
+    }
+
+    public async Task IncrementCommentCount(int blogId)
+    {
+        try
+        {
+            await _context.Blogs
+                .Where(b => b.BlogId == blogId)
+                .ExecuteUpdateAsync(b => b.SetProperty(p => p.CommentsCount, p => p.CommentsCount + 1));
         }
         catch (Exception e)
         {

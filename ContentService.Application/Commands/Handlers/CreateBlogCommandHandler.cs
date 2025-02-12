@@ -31,8 +31,6 @@ public class CreateBlogCommandHandler(
     {
         try
         {
-            var mediaFileUrl = new List<string>();
-            
             // check userId and get user's name
             var userDto = await _userService.ValidateUser(request.CreatorId);
             if (!userDto.IsUserValid) return ResponseDto.NotFound("User does not exist");
@@ -48,6 +46,7 @@ public class CreateBlogCommandHandler(
             if(!IsValidBlogStatus(request.Status)) return ResponseDto.BadRequest("Status is invalid!");
 
             // upload file to aws s3 and get url
+            var mediaFileUrl = new List<string>();
             if (request.MediaFiles != null)
             {
                 mediaFileUrl = await _imageService.UploadFiles(request.MediaFiles, BucketName, null);
@@ -60,7 +59,7 @@ public class CreateBlogCommandHandler(
             blog.MediaFiles = mediaFiles;
             blog.CreatorName = userDto.Username;
             
-            // insert to db
+            // insert into db
             var blogCreateResult = await _blogRepo.CreateAsync(blog);
             
             return !blogCreateResult ? ResponseDto.InternalError("Failed to create blog!") : 
