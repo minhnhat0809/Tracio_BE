@@ -11,7 +11,8 @@ public class CreateCommentCommandHandler(
     IBlogRepo blogRepo, 
     ICommentRepo commentRepo, 
     IImageService imageService,
-    IUserService userService) 
+    IUserService userService,
+    IModerationService moderationService) 
     : IRequestHandler<CreateCommentCommand, ResponseDto>
 {
     private readonly ICommentRepo _commentRepo = commentRepo;
@@ -23,6 +24,8 @@ public class CreateCommentCommandHandler(
     private readonly IImageService _imageService = imageService;
     
     private readonly IUserService _userService = userService;
+    
+    private readonly IModerationService _moderationService = moderationService;
     
     private const string BucketName = "blogtracio";
     
@@ -37,6 +40,10 @@ public class CreateCommentCommandHandler(
             // check userId and get user's name
             var userDto = await _userService.ValidateUser(request.CreatorId);
             if (!userDto.IsUserValid) return ResponseDto.NotFound("User does not exist");
+            
+            // moderate content
+            var moderationResult = await _moderationService.ProcessModerationResult(request.Content);
+            if(!moderationResult.IsSafe) return ResponseDto.BadRequest("Content contains harmful or offensive language.");
             
             // upload file to aws s3 and get url
             var mediaFileUrl = new List<string>();
@@ -53,7 +60,7 @@ public class CreateCommentCommandHandler(
             comment.CyclistName = userDto.Username;
             
             // insert comment into db
-            var commentCreateResult = await commentRepo.CreateAsync(comment);
+            var commentCreateResult = await _commentRepo.CreateAsync(comment);
             
             // update the comment count in blog
             await _blogRepo.IncrementCommentCount(request.BlogId);
