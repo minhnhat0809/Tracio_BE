@@ -2,6 +2,7 @@
 
 using Microsoft.EntityFrameworkCore;
 using UserService.Api.Exceptions;
+using UserService.Api.Helper;
 using UserService.Api.Services;
 using UserService.Application.Interfaces.Services;
 using UserService.Application.Mappings;
@@ -9,6 +10,8 @@ using UserService.Domain;
 using UserService.Infrastructure.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
+FirebaseConfig.InitializeFirebase();
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
