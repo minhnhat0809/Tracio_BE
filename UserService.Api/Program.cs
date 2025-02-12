@@ -3,26 +3,18 @@
 using Microsoft.EntityFrameworkCore;
 using UserService.Api.Exceptions;
 using UserService.Api.Services;
-using UserService.Application.Interfaces;
 using UserService.Application.Interfaces.Services;
 using UserService.Application.Mappings;
 using UserService.Domain;
-using UserService.Infrastructure.Repositories;
+using UserService.Infrastructure.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // repo
-// repository
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IUserSessionRepository, UserSessionRepository>();
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-builder.Services.AddScoped<IAuthRepository, AuthRepository>();
-builder.Services.AddScoped<IFirebaseStorageRepository, FirebaseStorageRepository>();
+builder.Services.AddServices();
 // service
 builder.Services.AddScoped<IAuthService, AuthService>();
         
@@ -55,6 +47,16 @@ builder.Services.AddDbContext<TracioUserDbContext>(options =>
     options.UseMySql(builder.Configuration.GetConnectionString("tracio_activity_db"),
         new MySqlServerVersion(new Version(8, 0, 32))));
 
+// cors
+builder.Services.AddCors(opts =>
+{
+    opts.AddPolicy("CORSPolicy", corsPolicyBuilder => corsPolicyBuilder
+        .AllowAnyHeader().WithOrigins()
+        .AllowAnyMethod()
+        .AllowCredentials()
+        .SetIsOriginAllowed((_) => true));
+});
+
 var app = builder.Build();
 app.MapGrpcService<UserServiceImpl>();
 // Configure the HTTP request pipeline.
@@ -65,6 +67,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseRouting();
+app.UseCors("CORSPolicy");
+app.MapControllers();
 app.Run();
 
 // dotnet ef dbcontext scaffold "server=localhost;database=tracio_activity;user=root;password=N@hat892003." "Pomelo.EntityFrameworkCore.MySql" --output-dir ../UserService.Domain/Entities --context-dir ../UserService.Infrastructure/Contexts --context TracioUserDbContext --force
