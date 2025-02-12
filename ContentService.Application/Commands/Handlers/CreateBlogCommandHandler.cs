@@ -12,7 +12,8 @@ public class CreateBlogCommandHandler(
     IBlogRepo blogRepo, 
     ICategoryRepo categoryRepo, 
     IImageService imageService,
-    IUserService userService
+    IUserService userService,
+    IModerationService moderationService
      ) : IRequestHandler<CreateBlogCommand, ResponseDto>
 {
     private readonly IBlogRepo _blogRepo = blogRepo;
@@ -24,6 +25,8 @@ public class CreateBlogCommandHandler(
     private readonly IImageService _imageService = imageService;
     
     private readonly IUserService _userService = userService;
+    
+    private readonly IModerationService _moderationService = moderationService;
     
     private const string BucketName = "blogtracio";
     
@@ -44,6 +47,10 @@ public class CreateBlogCommandHandler(
             
             // check blog status in enum
             if(!IsValidBlogStatus(request.Status)) return ResponseDto.BadRequest("Status is invalid!");
+            
+            // moderate content
+            var moderationResult = await _moderationService.ProcessModerationResult(request.Content);
+            if(!moderationResult.IsSafe) return ResponseDto.BadRequest("Content contains harmful or offensive language.");
 
             // upload file to aws s3 and get url
             var mediaFileUrl = new List<string>();
