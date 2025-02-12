@@ -2,6 +2,7 @@
 using ContentService.Domain;
 using ContentService.Domain.Entities;
 using ContentService.Infrastructure.Contexts;
+using Microsoft.EntityFrameworkCore;
 
 namespace ContentService.Infrastructure.Repositories;
 
@@ -17,6 +18,20 @@ public class CommentRepo(TracioContentDbContext context) : RepositoryBase<Commen
             comment!.IsDeleted = true;
             
             return await _context.SaveChangesAsync() > 0;
+        }
+        catch (Exception e)
+        {
+            throw new Exception(e.Message);
+        }
+    }
+
+    public async Task IncrementReplyCount(int commentId)
+    {
+        try
+        {
+            await _context.Comments
+                .Where(c => c.CommentId == commentId)
+                .ExecuteUpdateAsync(b => b.SetProperty(p => p.RepliesCount, p => p.RepliesCount + 1));
         }
         catch (Exception e)
         {
