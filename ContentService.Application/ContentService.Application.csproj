@@ -14,6 +14,7 @@
     <ItemGroup>
       <PackageReference Include="AutoMapper" Version="13.0.1" />
       <PackageReference Include="AWSSDK.S3" Version="3.7.414.1" />
+      <PackageReference Include="Azure.AI.ContentSafety" Version="1.0.0" />
       <PackageReference Include="Google.Protobuf" Version="3.29.3" />
       <PackageReference Include="Grpc.Net.Client" Version="2.67.0" />
       <PackageReference Include="Grpc.Tools" Version="2.69.0">

@@ -1,4 +1,5 @@
 using Amazon.S3;
+using ContentService.Application.DTOs;
 using ContentService.Application.Interfaces;
 using ContentService.Application.Mappings;
 using ContentService.Application.Queries.Handlers;
@@ -17,6 +18,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
 
+// azure ai content safety
+builder.Services.Configure<ContentSafetySettings>(builder.Configuration.GetSection("AzureContentSafety"));
+
 // mediatR
 builder.Services.AddMediatR(config =>
 {
@@ -26,6 +30,7 @@ builder.Services.AddMediatR(config =>
 //service
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<IUserService, ContentService.Api.Services.UserService>();
+builder.Services.AddScoped<IModerationService, ModerationService>();
 
 // unit of work
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -73,6 +78,8 @@ builder.Services.AddGrpcClient<UserService.UserServiceClient>(o =>
     handler.SslProtocols = System.Security.Authentication.SslProtocols.Tls12; 
     return handler;
 });
+
+
 
 
 var app = builder.Build();

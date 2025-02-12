@@ -12,7 +12,8 @@ public class CreateBlogCommandHandler(
     IBlogRepo blogRepo, 
     ICategoryRepo categoryRepo, 
     IImageService imageService,
-    IUserService userService
+    IUserService userService,
+    IModerationService moderationService
      ) : IRequestHandler<CreateBlogCommand, ResponseDto>
 {
     private readonly IBlogRepo _blogRepo = blogRepo;
@@ -25,14 +26,14 @@ public class CreateBlogCommandHandler(
     
     private readonly IUserService _userService = userService;
     
+    private readonly IModerationService _moderationService = moderationService;
+    
     private const string BucketName = "blogtracio";
     
     public async Task<ResponseDto> Handle(CreateBlogCommand request, CancellationToken cancellationToken)
     {
         try
         {
-            var mediaFileUrl = new List<string>();
-            
             // check userId and get user's name
             var userDto = await _userService.ValidateUser(request.CreatorId);
             if (!userDto.IsUserValid) return ResponseDto.NotFound("User does not exist");
@@ -46,8 +47,13 @@ public class CreateBlogCommandHandler(
             
             // check blog status in enum
             if(!IsValidBlogStatus(request.Status)) return ResponseDto.BadRequest("Status is invalid!");
+            
+            // moderate content
+            var moderationResult = await _moderationService.ProcessModerationResult(request.Content);
+            if(!moderationResult.IsSafe) return ResponseDto.BadRequest("Content contains harmful or offensive language.");
 
             // upload file to aws s3 and get url
+            var mediaFileUrl = new List<string>();
             if (request.MediaFiles != null)
             {
                 mediaFileUrl = await _imageService.UploadFiles(request.MediaFiles, BucketName, null);
