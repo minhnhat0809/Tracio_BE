@@ -65,6 +65,7 @@ public class CreateBlogCommandHandler(
             
             blog.MediaFiles = mediaFiles;
             blog.CreatorName = userDto.Username;
+            blog.CreatorAvatar = userDto.Avatar;
             
             // insert into db
             var blogCreateResult = await _blogRepo.CreateAsync(blog);

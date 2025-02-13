@@ -14,6 +14,7 @@ namespace ContentService.Api.Controllers
         
         [HttpGet]
         public async Task<IActionResult> GetBlogs(
+            [FromQuery] int userRequestId,
             [FromQuery] int? userId,
             [FromQuery] sbyte? status,
             [FromQuery] string? sortBy = "CreatedAt",
@@ -23,6 +24,7 @@ namespace ContentService.Api.Controllers
         {
                 var query = new GetBlogsQuery
                 {
+                    UserRequestId = userRequestId,
                     UserId = userId,
                     Status = status,
                     SortBy = sortBy,

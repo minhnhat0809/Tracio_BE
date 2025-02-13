@@ -22,7 +22,7 @@ public class CreateBookmarkCommandHandler(IBlogRepo blogRepo, IBookmarkRepo book
         try
         {
             // check blog in db
-            var isBlogExisted = await _blogRepo.ExistsAsync(b => b.BlogId == request.BlogId && b.Status != (sbyte) BlogStatus.Deleted);
+            var isBlogExisted = await _blogRepo.ExistsAsync(b => b.BlogId == request.BlogId && b.Status != (sbyte) BlogStatus.Archived);
             if (!isBlogExisted) return ResponseDto.NotFound("Blog not found");
             
             // check userId and get user's name

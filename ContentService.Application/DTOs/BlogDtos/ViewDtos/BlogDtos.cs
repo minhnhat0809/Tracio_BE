@@ -6,6 +6,10 @@ public class BlogDtos
     public int UserId { get; set; }
 
     public string UserName { get; set; } = null!;
+    
+    public string Avatar { get; set; } = null!;
+    
+    public sbyte PrivacySetting { get; set; }
 
     public string Tittle { get; set; } = null!;
 
