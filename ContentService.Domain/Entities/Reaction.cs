@@ -11,6 +11,8 @@ public partial class Reaction
 
     public string CyclistName { get; set; } = null!;
 
+    public string CyclistAvatar { get; set; } = null!;
+
     public int? BlogId { get; set; }
 
     public int? CommentId { get; set; }

@@ -57,6 +57,9 @@ public partial class TracioContentDbContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.CreatorAvatar)
+                .HasMaxLength(2083)
+                .HasColumnName("creator_avatar");
             entity.Property(e => e.CreatorId).HasColumnName("creator_id");
             entity.Property(e => e.CreatorName)
                 .HasMaxLength(255)
@@ -171,6 +174,9 @@ public partial class TracioContentDbContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.CyclistAvatar)
+                .HasMaxLength(2083)
+                .HasColumnName("cyclist_avatar");
             entity.Property(e => e.CyclistId).HasColumnName("cyclist_id");
             entity.Property(e => e.CyclistName)
                 .HasMaxLength(255)
@@ -264,6 +270,9 @@ public partial class TracioContentDbContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.CyclistAvatar)
+                .HasMaxLength(2083)
+                .HasColumnName("cyclist_avatar");
             entity.Property(e => e.CyclistId).HasColumnName("cyclist_id");
             entity.Property(e => e.CyclistName)
                 .HasMaxLength(255)
@@ -305,6 +314,9 @@ public partial class TracioContentDbContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.CyclistAvatar)
+                .HasMaxLength(2083)
+                .HasColumnName("cyclist_avatar");
             entity.Property(e => e.CyclistId).HasColumnName("cyclist_id");
             entity.Property(e => e.CyclistName)
                 .HasMaxLength(255)

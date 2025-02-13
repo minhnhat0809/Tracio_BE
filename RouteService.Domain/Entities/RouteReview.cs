@@ -11,6 +11,10 @@ public partial class RouteReview
 
     public int CyclistId { get; set; }
 
+    public string CyclistName { get; set; } = null!;
+
+    public string CyclistAvatar { get; set; } = null!;
+
     public sbyte? Rating { get; set; }
 
     public string? ReviewContent { get; set; }
