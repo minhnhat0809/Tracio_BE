@@ -14,10 +14,11 @@ public class CommentRepo(TracioContentDbContext context) : RepositoryBase<Commen
     {
         try
         {
-            var comment = await GetByIdAsync(c => c.CommentId == commentId, c => c);
-            comment!.IsDeleted = true;
-            
-            return await _context.SaveChangesAsync() > 0;
+            var updatedRows = await _context.Comments
+                .Where(c => c.CommentId == commentId)
+                .ExecuteUpdateAsync(b => b.SetProperty(x => x.IsDeleted, true));
+
+            return updatedRows > 0;
         }
         catch (Exception e)
         {
