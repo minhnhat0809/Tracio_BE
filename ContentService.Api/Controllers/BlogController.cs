@@ -2,6 +2,7 @@ using ContentService.Application.Commands;
 using ContentService.Application.DTOs.BlogDtos;
 using ContentService.Application.Queries;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ContentService.Api.Controllers
@@ -13,10 +14,10 @@ namespace ContentService.Api.Controllers
         private readonly IMediator _mediator = mediator;
         
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> GetBlogs(
             [FromQuery] int userRequestId,
             [FromQuery] int? userId,
-            [FromQuery] sbyte? status,
             [FromQuery] string? sortBy = "CreatedAt",
             [FromQuery] bool ascending = true,
             [FromQuery] int pageSize = 5,
@@ -26,7 +27,6 @@ namespace ContentService.Api.Controllers
                 {
                     UserRequestId = userRequestId,
                     UserId = userId,
-                    Status = status,
                     SortBy = sortBy,
                     Ascending = ascending,
                     PageSize = pageSize,

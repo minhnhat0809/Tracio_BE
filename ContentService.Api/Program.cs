@@ -79,9 +79,6 @@ builder.Services.AddGrpcClient<UserService.UserServiceClient>(o =>
     return handler;
 });
 
-
-
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

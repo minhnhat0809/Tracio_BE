@@ -40,4 +40,6 @@ public partial class Blog
     public virtual ICollection<MediaFile> MediaFiles { get; set; } = new List<MediaFile>();
 
     public virtual ICollection<Reaction> Reactions { get; set; } = new List<Reaction>();
+
+    public virtual ICollection<UserBlogFollowerOnly> UserBlogFollowerOnlies { get; set; } = new List<UserBlogFollowerOnly>();
 }

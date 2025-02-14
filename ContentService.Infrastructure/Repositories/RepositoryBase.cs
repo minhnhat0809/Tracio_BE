@@ -43,13 +43,18 @@ public class RepositoryBase<T>(TracioContentDbContext context) : IRepositoryBase
         int pageIndex,
         int pageSize,
         Expression<Func<T, object>>? sortBy = null,
-        bool ascending = true)
+        bool ascending = true,
+        params Expression<Func<T, object>>[] includes)
     {
         ArgumentNullException.ThrowIfNull(filter);
         ArgumentNullException.ThrowIfNull(selector);
 
         var query = _context.Set<T>().Where(filter);
 
+        // Apply Includes
+        query = includes.Aggregate(query, (current, include) => current.Include(include));
+
+        // Apply Sorting
         if (sortBy != null)
         {
             query = ascending
@@ -63,6 +68,7 @@ public class RepositoryBase<T>(TracioContentDbContext context) : IRepositoryBase
             .Select(selector)
             .ToListAsync();
     }
+
 
     public async Task<bool> CreateAsync(T entity)
     {
