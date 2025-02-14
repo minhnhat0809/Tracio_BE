@@ -9,7 +9,7 @@ public interface IRepositoryBase<T> where T : class
 
     Task<TResult?> GetById<TResult>( Expression<Func<T, bool>> expression,
         Expression<Func<T, TResult>> selector);
-    Task CreateAsync(T entity);
+    Task<T?> CreateAsync(T entity);
     Task UpdateAsync(T entity);
     Task DeleteAsync(object id);
     Task SoftDeleteAsync(object id);
