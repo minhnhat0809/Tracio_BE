@@ -18,8 +18,10 @@ public static class AddInfrastructure
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IAuthRepository, AuthRepository>();
         services.AddScoped<IFirebaseStorageRepository, FirebaseStorageRepository>();
+        
         // service
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IUserService, Application.Interfaces.Services.UserService>();
         
         // mapper
         services.AddAutoMapper(typeof(MapperConfig).Assembly);

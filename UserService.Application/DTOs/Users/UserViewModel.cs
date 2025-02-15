@@ -16,7 +16,7 @@ public class UserViewModel
 
     public string? Bio { get; set; }
 
-    public byte[] Role { get; set; } = null!;
+    public string RoleName { get; set; } = null!;
 
     public float? Weight { get; set; }
 
