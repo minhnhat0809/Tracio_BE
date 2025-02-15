@@ -5,9 +5,9 @@ namespace ContentService.Application.Queries;
 
 public class GetBlogsQuery : IRequest<ResponseDto>
 {
-    public int? UserId { get; set; }
+    public int UserRequestId { get; set; }
     
-    public sbyte? Status { get; set; }
+    public int? UserId { get; set; }
     
     public string? SortBy { get; set; }
 

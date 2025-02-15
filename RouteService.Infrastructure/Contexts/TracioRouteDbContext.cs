@@ -41,7 +41,14 @@ public partial class TracioRouteDbContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.CyclistAvatar)
+                .HasMaxLength(2083)
+                .HasColumnName("cyclist_avatar");
             entity.Property(e => e.CyclistId).HasColumnName("cyclist_id");
+            entity.Property(e => e.CyclistName)
+                .HasMaxLength(255)
+                .HasColumnName("cyclist_name")
+                .UseCollation("utf8mb4_unicode_ci");
             entity.Property(e => e.Difficulty).HasColumnName("difficulty");
             entity.Property(e => e.IsDeleted)
                 .HasDefaultValueSql("'0'")
@@ -134,11 +141,13 @@ public partial class TracioRouteDbContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.CyclistAvatar)
+                .HasMaxLength(2083)
+                .HasColumnName("cyclist_avatar");
             entity.Property(e => e.CyclistId).HasColumnName("cyclist_id");
             entity.Property(e => e.CyclistName)
                 .HasMaxLength(255)
                 .HasColumnName("cyclist_name");
-            entity.Property(e => e.ReactionType).HasColumnName("reaction_type");
             entity.Property(e => e.RouteId).HasColumnName("route_id");
 
             entity.HasOne(d => d.Route).WithMany(p => p.RouteReactions)
@@ -162,7 +171,13 @@ public partial class TracioRouteDbContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.CyclistAvatar)
+                .HasMaxLength(2083)
+                .HasColumnName("cyclist_avatar");
             entity.Property(e => e.CyclistId).HasColumnName("cyclist_id");
+            entity.Property(e => e.CyclistName)
+                .HasMaxLength(255)
+                .HasColumnName("cyclist_name");
             entity.Property(e => e.Rating).HasColumnName("rating");
             entity.Property(e => e.ReviewContent)
                 .HasMaxLength(1000)

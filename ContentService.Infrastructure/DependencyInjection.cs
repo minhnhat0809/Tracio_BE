@@ -25,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<IReplyRepo, ReplyRepo>();
         services.AddScoped<IReactionRepo, ReactionRepo>();
         services.AddScoped<ICategoryRepo, CategoryRepo>();
+        services.AddScoped<IBookmarkRepo, BookmarkRepo>();
 
         return services;
     }

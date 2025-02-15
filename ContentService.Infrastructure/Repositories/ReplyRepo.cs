@@ -2,6 +2,7 @@
 using ContentService.Domain;
 using ContentService.Domain.Entities;
 using ContentService.Infrastructure.Contexts;
+using Microsoft.EntityFrameworkCore;
 
 namespace ContentService.Infrastructure.Repositories;
 
@@ -13,10 +14,11 @@ public class ReplyRepo(TracioContentDbContext context) : RepositoryBase<Reply>(c
     {
         try
         {
-            var reply = await GetByIdAsync(r => r.ReplyId == replyId, r => r);
-            reply!.IsDeleted = true;
-            
-            return await _context.SaveChangesAsync() > 0;
+            var updatedRows = await _context.Replies
+                .Where(r => r.ReplyId == replyId)
+                .ExecuteUpdateAsync(b => b.SetProperty(x => x.IsDeleted, true));
+
+            return updatedRows > 0;
         }
         catch (Exception e)
         {

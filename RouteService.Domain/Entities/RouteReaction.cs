@@ -13,7 +13,7 @@ public partial class RouteReaction
 
     public string CyclistName { get; set; } = null!;
 
-    public sbyte ReactionType { get; set; }
+    public string CyclistAvatar { get; set; } = null!;
 
     public DateTime CreatedAt { get; set; }
 

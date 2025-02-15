@@ -10,6 +10,10 @@ public partial class Route
 
     public int CyclistId { get; set; }
 
+    public string CyclistName { get; set; } = null!;
+
+    public string CyclistAvatar { get; set; } = null!;
+
     public string RouteName { get; set; } = null!;
 
     public LineString RoutePath { get; set; } = null!;

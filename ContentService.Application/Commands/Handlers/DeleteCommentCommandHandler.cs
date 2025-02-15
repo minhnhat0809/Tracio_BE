@@ -17,7 +17,7 @@ public class DeleteCommentCommandHandler(ICommentRepo commentRepo) :  IRequestHa
             if (!commentIsExisted) return ResponseDto.NotFound("Comment not found");
 
             // delete comment
-            var isSucceed = await _commentRepo.DeleteAsync(request.CommentId);
+            var isSucceed = await _commentRepo.DeleteComment(request.CommentId);
             
             return !isSucceed ? ResponseDto.InternalError("Failed to delete comment") :
                     ResponseDto.DeleteSuccess(null, "Comment deleted successfully!");

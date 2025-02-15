@@ -31,7 +31,7 @@ public class ModerationService : IModerationService
         // Iterate through each category and check risk score
         foreach (var category in result.Value.CategoriesAnalysis)
         {
-            if (category.Severity >= 0.7) // Set threshold for harmful content
+            if (category.Severity >= 1.5) // Set threshold for harmful content
             {
                 response.FlaggedCategories.Add(category.Category.ToString());
             }
