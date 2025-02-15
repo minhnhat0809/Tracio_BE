@@ -29,6 +29,8 @@ public partial class TracioContentDbContext : DbContext
     public virtual DbSet<Reaction> Reactions { get; set; }
 
     public virtual DbSet<Reply> Replies { get; set; }
+
+    public virtual DbSet<UserBlogFollowerOnly> UserBlogFollowerOnlies { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -57,6 +59,9 @@ public partial class TracioContentDbContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.CreatorAvatar)
+                .HasMaxLength(2083)
+                .HasColumnName("creator_avatar");
             entity.Property(e => e.CreatorId).HasColumnName("creator_id");
             entity.Property(e => e.CreatorName)
                 .HasMaxLength(255)
@@ -171,6 +176,9 @@ public partial class TracioContentDbContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.CyclistAvatar)
+                .HasMaxLength(2083)
+                .HasColumnName("cyclist_avatar");
             entity.Property(e => e.CyclistId).HasColumnName("cyclist_id");
             entity.Property(e => e.CyclistName)
                 .HasMaxLength(255)
@@ -264,6 +272,9 @@ public partial class TracioContentDbContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.CyclistAvatar)
+                .HasMaxLength(2083)
+                .HasColumnName("cyclist_avatar");
             entity.Property(e => e.CyclistId).HasColumnName("cyclist_id");
             entity.Property(e => e.CyclistName)
                 .HasMaxLength(255)
@@ -305,6 +316,9 @@ public partial class TracioContentDbContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.CyclistAvatar)
+                .HasMaxLength(2083)
+                .HasColumnName("cyclist_avatar");
             entity.Property(e => e.CyclistId).HasColumnName("cyclist_id");
             entity.Property(e => e.CyclistName)
                 .HasMaxLength(255)
@@ -334,6 +348,26 @@ public partial class TracioContentDbContext : DbContext
                 .HasForeignKey(d => d.CommentId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_reply_comment");
+        });
+
+        modelBuilder.Entity<UserBlogFollowerOnly>(entity =>
+        {
+            entity.HasKey(e => new { e.BlogId, e.UserId })
+                .HasName("PRIMARY")
+                .HasAnnotation("MySql:IndexPrefixLength", new[] { 0, 0 });
+
+            entity.ToTable("user_blog_follower_only");
+
+            entity.Property(e => e.BlogId).HasColumnName("blog_id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+
+            entity.HasOne(d => d.Blog).WithMany(p => p.UserBlogFollowerOnlies)
+                .HasForeignKey(d => d.BlogId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_user_blog_follower_only_blog");
         });
 
         OnModelCreatingPartial(modelBuilder);

@@ -11,6 +11,8 @@ public partial class Comment
 
     public string CyclistName { get; set; } = null!;
 
+    public string CyclistAvatar { get; set; } = null!;
+
     public int BlogId { get; set; }
 
     public string Content { get; set; } = null!;

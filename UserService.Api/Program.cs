@@ -7,6 +7,7 @@ using UserService.Api.Services;
 using UserService.Application.Interfaces.Services;
 using UserService.Application.Mappings;
 using UserService.Domain;
+using UserService.Infrastructure.Contexts;
 using UserService.Infrastructure.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);

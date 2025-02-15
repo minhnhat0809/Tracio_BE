@@ -6,9 +6,13 @@ public class BlogWithCommentsDto
 {
     public int BlogId { get; set; }
     
-    public int UserId { get; set; }
+    public int CreatorId { get; set; }
+    
+    public int CreatorName { get; set; }
 
-    public int UserName { get; set; }
+    public string CreatorAvatar { get; set; } = null!;
+    
+    public string CategoryName { get; set; } = null!;
 
     public string Tittle { get; set; } = null!;
 

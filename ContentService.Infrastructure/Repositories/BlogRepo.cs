@@ -11,14 +11,15 @@ public class BlogRepo(TracioContentDbContext context) : RepositoryBase<Blog>(con
 {
     private readonly TracioContentDbContext _context = context;
 
-    public async Task<bool> DeleteBlog(int blogId)
+    public async Task<bool> ArchiveBlog(int blogId)
     {
         try
         {
-            var blog = await GetByIdAsync(b => b.BlogId == blogId, b => b);
-            blog!.Status = (sbyte) BlogStatus.Deleted;
-            
-            return await _context.SaveChangesAsync() > 0;
+            var updatedRows = await _context.Blogs
+                .Where(b => b.BlogId == blogId) // Ensure it is not already deleted
+                .ExecuteUpdateAsync(b => b.SetProperty(x => x.Status == (sbyte) BlogStatus.Archived, true));
+
+            return updatedRows > 0;
         }
         catch (Exception e)
         {

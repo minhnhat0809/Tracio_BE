@@ -17,7 +17,7 @@ public class DeleteReplyCommandHandler(IReplyRepo replyRepo) : IRequestHandler<D
             if (!replyIsExisted) return ResponseDto.NotFound("Reply not found");
 
             // delete comment
-            var isSucceed = await _replyRepo.DeleteAsync(request.ReplyId);
+            var isSucceed = await _replyRepo.DeleteReply(request.ReplyId);
             
             return !isSucceed ? ResponseDto.InternalError("Failed to delete reply") :
                 ResponseDto.DeleteSuccess(null, "Reply deleted successfully!");

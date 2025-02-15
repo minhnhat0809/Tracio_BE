@@ -16,7 +16,8 @@ public interface IRepositoryBase<T> where T : class
         int pageIndex, 
         int pageSize,
         Expression<Func<T, object>>? sortBy = null,
-        bool ascending = true);
+        bool ascending = true,
+        params Expression<Func<T, object>>[] includes);
     
     Task<bool> CreateAsync(T entity);
     
