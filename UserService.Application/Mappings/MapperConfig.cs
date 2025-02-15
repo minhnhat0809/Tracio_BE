@@ -19,7 +19,25 @@ public class MapperConfig : Profile
         CreateMap<UserSession, SessionViewModel>();
 
         // Map User
-        CreateMap<User, UserViewModel>(); 
+        CreateMap<User, UserViewModel>()
+            .ForMember(dest => dest.RoleName, opt => opt.MapFrom(src => 
+                src.Role.Length >= 4 
+                    ? ConvertRoleToName(src.Role) 
+                    : "Unknown"
+            ));
+        CreateMap<UpdateUserProfileModel, User>()
+            .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
+
     }
-    
+    private static string ConvertRoleToName(byte[] role)
+    {
+        int roleInt = BitConverter.ToInt32(role, 0); // Convert byte[] to int
+
+        return roleInt switch
+        {
+            256 => "cyclist",
+            512 => "shop_owner",
+            _ => "Unknown Role"
+        };
+    }
 }

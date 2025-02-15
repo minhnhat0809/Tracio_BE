@@ -59,6 +59,9 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : class
 
     public async Task<T?> GetByIdAsync(object id, string includeProperties = "")
     {
+        if (id == null)
+            throw new ArgumentNullException(nameof(id));
+
         IQueryable<T> query = _dbSet;
 
         // Include navigation properties
@@ -67,18 +70,26 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : class
             query = query.Include(includeProperty);
         }
 
-        // Resolve primary key property name
-        var primaryKeyName = _context.Model
-            .FindEntityType(typeof(T))
-            ?.FindPrimaryKey()
-            ?.Properties
-            .FirstOrDefault()
-            ?.Name;
+        // Try to use FindAsync if possible (Primary Key Lookup)
+        var entity = await _dbSet.FindAsync(id);
+    
+        // If FindAsync doesn't work, fall back to query filtering
+        if (entity == null)
+        {
+            var primaryKeyName = _context.Model
+                .FindEntityType(typeof(T))
+                ?.FindPrimaryKey()
+                ?.Properties
+                .FirstOrDefault()
+                ?.Name;
 
-        if (string.IsNullOrEmpty(primaryKeyName))
-            throw new InvalidOperationException($"No primary key defined for {typeof(T).Name}");
+            if (string.IsNullOrEmpty(primaryKeyName))
+                throw new InvalidOperationException($"No primary key defined for {typeof(T).Name}");
 
-        return await query.FirstOrDefaultAsync(e => EF.Property<object>(e, primaryKeyName).Equals(id));
+            entity = await query.FirstOrDefaultAsync(e => EF.Property<object>(e, primaryKeyName).Equals(id));
+        }
+
+        return entity;
     }
 
     public async Task<TResult?> GetById<TResult>(
@@ -96,10 +107,11 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : class
 
 
     // Create
-    public async Task CreateAsync(T entity)
+    public async Task<T?> CreateAsync(T entity)
     {
         await _dbSet.AddAsync(entity);
         await _context.SaveChangesAsync();
+        return entity;
     }
 
     // Update

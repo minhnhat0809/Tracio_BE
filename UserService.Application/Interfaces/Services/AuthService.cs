@@ -55,6 +55,7 @@ public class AuthService : IAuthService
                 var googleSignInResult = await _authRepository.HandleGoogleSignInWithTokensAsync(login.IdToken);
                 user = googleSignInResult.User;
                 firebaseIdToken = googleSignInResult.IdToken;
+                
                 firebaseRefreshToken = "LoginWithGoogleNotIncludingRefreshToken";
             }
             else if (!string.IsNullOrEmpty(login.Email) && !string.IsNullOrEmpty(login.Password))
@@ -156,8 +157,23 @@ public class AuthService : IAuthService
             };
 
             // Create User in Database
-            await _repository.UserRepository.CreateAsync(newUser);
+            var user = await _repository.UserRepository.CreateAsync(newUser);
+            // If success start to claim role and uid
+            if (user != null)
+            {
+                // Chuyển đổi role từ byte[] sang string
+                int roleInt = BitConverter.ToInt32(user.Role, 0);
+                string roleName = (roleInt == 256) ? "cyclist" : "shop_owner";
 
+                // Gán custom claims
+                var claims = new Dictionary<string, object>
+                {
+                    { "role", roleName },
+                    { "custom_id", user.UserId }
+                };
+                await FirebaseAuth.DefaultInstance.SetCustomUserClaimsAsync(user.FirebaseId, claims);
+                
+            }
             return new ResponseModel("success", 201, "User created successfully.", _mapper.Map<UserViewModel>(newUser));
         }
         catch (Exception ex)
@@ -227,8 +243,22 @@ public class AuthService : IAuthService
             };
 
             // Create User in Database
-            await _repository.UserRepository.CreateAsync(newShopOwner);
-    
+            var shop = await _repository.UserRepository.CreateAsync(newShopOwner);
+            if (shop != null)
+            {
+                // Chuyển đổi role từ byte[] sang string
+                int roleInt = BitConverter.ToInt32(shop.Role, 0);
+                string roleName = (roleInt == 256) ? "cyclist" : "shop_owner";
+
+                // Gán custom claims
+                var claims = new Dictionary<string, object>
+                {
+                    { "role", roleName },
+                    { "custom_id", shop.UserId }
+                };
+                await FirebaseAuth.DefaultInstance.SetCustomUserClaimsAsync(shop.FirebaseId, claims);
+                
+            }
 
             return new ResponseModel("success", 201, "User created successfully.", _mapper.Map<UserViewModel>(newShopOwner));
         }

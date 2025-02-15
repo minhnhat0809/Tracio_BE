@@ -39,6 +39,9 @@ builder.WebHost.ConfigureKestrel(options =>
     });
 });
 
+// background service
+builder.Services.AddHostedService<UserBackgroundService>();
+
 // grpc
 builder.Services.AddGrpc(options =>
 {
@@ -49,7 +52,9 @@ builder.Services.AddGrpc(options =>
 // db
 builder.Services.AddDbContext<TracioUserDbContext>(options =>
     options.UseMySql(builder.Configuration.GetConnectionString("tracio_activity_db"),
-        new MySqlServerVersion(new Version(8, 0, 32))));
+        new MySqlServerVersion(new Version(8, 0, 32)))
+        .EnableSensitiveDataLogging()  // ✅ Logs detailed SQL queries
+        .LogTo(Console.WriteLine, LogLevel.Information));
 
 // cors
 builder.Services.AddCors(opts =>
