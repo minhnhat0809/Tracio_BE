@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Linq.Expressions;
+using System.Reflection;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -37,7 +38,7 @@ public class UserService : IUserService
         _mapper = mapper;
         _firebaseStorageRepository = firebaseStorageRepository;
     }
-
+    
     /// <summary>
     /// Get all users with pagination, sorting, and filtering
     /// </summary>
@@ -49,44 +50,45 @@ public class UserService : IUserService
         string? sortField = null, 
         bool sortDesc = false)
     {
-        // Validate filter field
+        // ✅ Validate Filter Field
         if (!string.IsNullOrEmpty(filterField) && !AllowedFilterFields.Contains(filterField))
         {
             return new ResponseModel("error", 400, 
                 $"Invalid filter field '{filterField}'. Allowed fields: {string.Join(", ", AllowedFilterFields)}.", null);
         }
 
-        // Validate sort field
+        // ✅ Validate Sort Field
         if (!string.IsNullOrEmpty(sortField) && !AllowedSortFields.Contains(sortField))
         {
             return new ResponseModel("error", 400, 
                 $"Invalid sort field '{sortField}'. Allowed fields: {string.Join(", ", AllowedSortFields)}.", null);
         }
 
-        // Filtering logic
-        Func<IQueryable<User>, IQueryable<User>>? filter = query =>
+        // ✅ Fetch Users from Repository (Without Filtering)
+        var users = await _unitOfWork.UserRepository.GetAllAsync(null, pageNumber, rowsPerPage, sortField, sortDesc);
+
+        // ✅ Apply Filtering (In-Memory After Fetching)
+        if (!string.IsNullOrEmpty(filterField) && !string.IsNullOrEmpty(filterValue))
         {
-            if (!string.IsNullOrEmpty(filterField) && !string.IsNullOrEmpty(filterValue))
-            {
-                query = query.Where(u => EF.Property<string>(u, filterField).Contains(filterValue));
-            }
-            return query;
-        };
+            users = ApplyFilterAfterFetch(users, filterField, filterValue);
+        }
 
-        // Fetch users with filtering, sorting, and pagination
-        var users = await _unitOfWork.UserRepository!.GetAllAsync(
-            null, pageNumber, rowsPerPage, sortField, sortDesc);
+        // ✅ Get Updated Total Count After Filtering
+        int totalUsers = users.Count(); // Count after filtering
 
-        // Get total user count (without pagination)
-        var totalUsers = (await _unitOfWork.UserRepository!.GetAllAsync()).Count();
+        // ✅ Apply Pagination AFTER Filtering
+        var paginatedUsers = users
+            .Skip((pageNumber - 1) * rowsPerPage)
+            .Take(rowsPerPage)
+            .ToList();
 
-        // Convert to DTOs
-        var userViewModel = _mapper.Map<IEnumerable<UserViewModel>>(users);
+        // ✅ Convert to DTOs
+        var userViewModel = _mapper.Map<IEnumerable<UserViewModel>>(paginatedUsers);
 
-        // Response object
+        // ✅ Construct Response
         var response = new
         {
-            TotalCount = totalUsers,
+            TotalCount = totalUsers, // ✅ Corrected Count After Filtering
             PageNumber = pageNumber,
             RowsPerPage = rowsPerPage,
             Users = userViewModel
@@ -94,6 +96,7 @@ public class UserService : IUserService
 
         return new ResponseModel("success", 200, "Users retrieved successfully", response);
     }
+
 
 
 
@@ -228,12 +231,23 @@ public class UserService : IUserService
     // List of allowed filter and sort fields
     private static readonly HashSet<string> AllowedFilterFields = new()
     {
-        "UserName", "Email", "PhoneNumber", "City", "District", "Gender"
+        "UserName", "Email", "PhoneNumber", "City", "District"
     };
 
     private static readonly HashSet<string> AllowedSortFields = new()
     {
-        "UserName", "Email", "Gender", "Weight", "Height", "City", "District"
+        "UserName", "Email", "Weight", "Height", "City", "District"
     };
+    private IEnumerable<User> ApplyFilterAfterFetch(IEnumerable<User> users, string field, string value)
+    {
+        return field switch
+        {
+            "UserName" => users.Where(u => u.UserName.Contains(value, StringComparison.OrdinalIgnoreCase)),
+            "Email" => users.Where(u => u.Email.Contains(value, StringComparison.OrdinalIgnoreCase)),
+            "PhoneNumber" => users.Where(u => u.PhoneNumber.Contains(value)),
+            "City" => users.Where(u => u.City.Contains(value, StringComparison.OrdinalIgnoreCase)),
+            _ => users // If no match, return unchanged
+        };
+    }
 
 }

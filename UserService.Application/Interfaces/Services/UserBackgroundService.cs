@@ -22,9 +22,7 @@ public class UserBackgroundService: BackgroundService
             {
                 var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
-                // get all users
-                var users = await unitOfWork.UserRepository!.GetAllAsync();
-
+                
                 // we do nothing in here
             }
 
