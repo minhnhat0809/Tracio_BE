@@ -1,4 +1,5 @@
-﻿using ContentService.Application.DTOs.BlogDtos.ViewDtos;
+﻿using ContentService.Application.DTOs.BlogDtos.Message;
+using ContentService.Application.DTOs.BlogDtos.ViewDtos;
 using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
 using ContentService.Domain.Enums;
@@ -9,11 +10,17 @@ using Shared.Ultilities;
 
 namespace ContentService.Application.Queries.Handlers;
 
-public class GetBlogsQueryHandler(IBlogRepo blogRepo, IFollowerOnlyBlogRepo followerOnlyBlogRepo, IUserService userService) : IRequestHandler<GetBlogsQuery, ResponseDto>
+public class GetBlogsQueryHandler(
+    IBlogRepo blogRepo, 
+    IFollowerOnlyBlogRepo followerOnlyBlogRepo,
+    IRabbitMqProducer rabbitMqProducer,
+    IUserService userService) : IRequestHandler<GetBlogsQuery, ResponseDto>
 {
     private readonly IBlogRepo _blogRepo = blogRepo;
     
     private readonly IFollowerOnlyBlogRepo _followerOnlyBlogRepo = followerOnlyBlogRepo;
+    
+    private readonly IRabbitMqProducer _rabbitMqProducer = rabbitMqProducer;
 
     private readonly IUserService _userService = userService;
     
@@ -149,6 +156,14 @@ public class GetBlogsQueryHandler(IBlogRepo blogRepo, IFollowerOnlyBlogRepo foll
                 request.PageNumber, halfPageSize,
                 sortBy: sortExpressionFollowerOnly, ascending: false,
                 includes: b => b.Blog);
+            
+            var followerOnlyBlogIds = followerOnlyBlogs.Select(b => b.BlogId).ToList();
+
+            await _rabbitMqProducer.PublishAsync(new MarkBlogsAsReadMessage
+            {
+                UserId =  request.UserRequestId,
+                BlogIds = followerOnlyBlogIds
+            }, "mark-blogs-as-read");
             
             // Merge & Interleave the Blogs
             var finalBlogs = InterleaveLists(followerOnlyBlogs, publicBlogs);

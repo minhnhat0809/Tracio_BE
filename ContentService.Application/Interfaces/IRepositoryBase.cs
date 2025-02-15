@@ -1,4 +1,5 @@
 ﻿using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore.Query;
 
 namespace ContentService.Application.Interfaces;
 
@@ -18,6 +19,8 @@ public interface IRepositoryBase<T> where T : class
         Expression<Func<T, object>>? sortBy = null,
         bool ascending = true,
         params Expression<Func<T, object>>[] includes);
+
+    Task UpdateRangeAsync(Expression<Func<T, bool>> filter, Expression<Func<SetPropertyCalls<T>, SetPropertyCalls<T>>> updateExpression);
     
     Task<bool> CreateAsync(T entity);
     

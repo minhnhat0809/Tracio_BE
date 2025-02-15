@@ -3,6 +3,7 @@ using ContentService.Application.Interfaces;
 using ContentService.Domain;
 using ContentService.Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
 
 namespace ContentService.Infrastructure.Repositories;
 
@@ -67,6 +68,13 @@ public class RepositoryBase<T>(TracioContentDbContext context) : IRepositoryBase
             .Take(pageSize)
             .Select(selector)
             .ToListAsync();
+    }
+
+    public async Task UpdateRangeAsync(Expression<Func<T, bool>> filter, Expression<Func<SetPropertyCalls<T>, SetPropertyCalls<T>>> updateExpression)
+    {
+        await _context.Set<T>()
+            .Where(filter)
+            .ExecuteUpdateAsync(updateExpression);
     }
 
 
