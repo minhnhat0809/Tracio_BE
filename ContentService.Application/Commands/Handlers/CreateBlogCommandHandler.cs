@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using ContentService.Application.DTOs.BlogDtos.ViewDtos;
 using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
 using ContentService.Domain.Enums;
@@ -70,8 +71,11 @@ public class CreateBlogCommandHandler(
             // insert into db
             var blogCreateResult = await _blogRepo.CreateAsync(blog);
             
+            // map to blogDto
+            var blogDto = _mapper.Map<BlogWithCommentsDto>(blog);
+            
             return !blogCreateResult ? ResponseDto.InternalError("Failed to create blog!") : 
-                ResponseDto.CreateSuccess(null, "Blog created successfully!");
+                ResponseDto.CreateSuccess(blogDto, "Blog created successfully!");
         }
         catch (Exception e)
         {

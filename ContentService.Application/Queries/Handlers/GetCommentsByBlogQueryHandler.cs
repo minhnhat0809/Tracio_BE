@@ -60,6 +60,7 @@ public class GetCommentsByBlogQueryHandler(IBlogRepo blogRepo, ICommentRepo comm
                     CommentId = c.CommentId,
                     UserId = c.CyclistId,
                     UserName = c.CyclistName,
+                    Avatar = c.CyclistAvatar,
                     Content = c.Content,
                     CreatedAt = c.CreatedAt,
                     UpdatedAt = c.UpdatedAt,

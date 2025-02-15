@@ -126,13 +126,11 @@ public class GetBlogsQueryHandler(IBlogRepo blogRepo, IFollowerOnlyBlogRepo foll
                 request.PageNumber, halfPageSize,
                 sortExpressionBlog, request.Ascending
             );
-            
-            // fetch followerOnly blogs of user
-            var basePredicateFollowerOnly = PredicateBuilder.New<UserBlogFollowerOnly>(true);
 
             // build sort expression
             var sortExpressionFollowerOnly = SortHelper.BuildSortExpression<UserBlogFollowerOnly>("CreatedAt");
 
+            // fetch followerOnly blogs of user
             var followerOnlyBlogs = await _followerOnlyBlogRepo.FindAsyncWithPagingAndSorting(b => b.UserId == request.UserRequestId, b => 
                 new BlogDtos
                 {
