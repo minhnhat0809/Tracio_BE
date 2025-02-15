@@ -14,7 +14,6 @@ namespace ContentService.Api.Controllers
         private readonly IMediator _mediator = mediator;
         
         [HttpGet]
-        [Authorize]
         public async Task<IActionResult> GetBlogs(
             [FromQuery] int userRequestId,
             [FromQuery] int? userId,

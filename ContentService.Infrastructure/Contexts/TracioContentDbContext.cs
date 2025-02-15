@@ -20,8 +20,6 @@ public partial class TracioContentDbContext : DbContext
 
     public virtual DbSet<BlogCategory> BlogCategories { get; set; }
 
-    public virtual DbSet<BlogPrivacy> BlogPrivacies { get; set; }
-
     public virtual DbSet<Comment> Comments { get; set; }
 
     public virtual DbSet<MediaFile> MediaFiles { get; set; }
@@ -31,7 +29,11 @@ public partial class TracioContentDbContext : DbContext
     public virtual DbSet<Reply> Replies { get; set; }
 
     public virtual DbSet<UserBlogFollowerOnly> UserBlogFollowerOnlies { get; set; }
-    
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseMySql("server=localhost;database=tracio_content;user=root;password=N@hat892003.", Microsoft.EntityFrameworkCore.ServerVersion.Parse("9.2.0-mysql"));
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
@@ -135,27 +137,6 @@ public partial class TracioContentDbContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("updated_at");
-        });
-
-        modelBuilder.Entity<BlogPrivacy>(entity =>
-        {
-            entity.HasKey(e => new { e.BlogId, e.CyclistId })
-                .HasName("PRIMARY")
-                .HasAnnotation("MySql:IndexPrefixLength", new[] { 0, 0 });
-
-            entity.ToTable("blog_privacy");
-
-            entity.Property(e => e.BlogId).HasColumnName("blog_id");
-            entity.Property(e => e.CyclistId).HasColumnName("cyclist_id");
-            entity.Property(e => e.CyclistName)
-                .HasMaxLength(255)
-                .HasColumnName("cyclist_name")
-                .UseCollation("utf8mb4_unicode_ci");
-
-            entity.HasOne(d => d.Blog).WithMany(p => p.BlogPrivacies)
-                .HasForeignKey(d => d.BlogId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fk_blog_privacy_blog");
         });
 
         modelBuilder.Entity<Comment>(entity =>
@@ -363,6 +344,7 @@ public partial class TracioContentDbContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.IsRead).HasColumnName("is_read");
 
             entity.HasOne(d => d.Blog).WithMany(p => p.UserBlogFollowerOnlies)
                 .HasForeignKey(d => d.BlogId)

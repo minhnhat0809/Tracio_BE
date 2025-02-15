@@ -31,8 +31,6 @@ public partial class Blog
 
     public virtual ICollection<BlogBookmark> BlogBookmarks { get; set; } = new List<BlogBookmark>();
 
-    public virtual ICollection<BlogPrivacy> BlogPrivacies { get; set; } = new List<BlogPrivacy>();
-
     public virtual BlogCategory Category { get; set; } = null!;
 
     public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();

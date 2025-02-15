@@ -131,8 +131,9 @@ public class GetBlogsQueryHandler(IBlogRepo blogRepo, IFollowerOnlyBlogRepo foll
             var sortExpressionFollowerOnly = SortHelper.BuildSortExpression<UserBlogFollowerOnly>("CreatedAt");
 
             // fetch followerOnly blogs of user
-            var followerOnlyBlogs = await _followerOnlyBlogRepo.FindAsyncWithPagingAndSorting(b => b.UserId == request.UserRequestId, b => 
-                new BlogDtos
+            var followerOnlyBlogs = await _followerOnlyBlogRepo.FindAsyncWithPagingAndSorting(b => 
+                    b.UserId == request.UserRequestId && b.IsRead != true, 
+                b => new BlogDtos
                 {
                     BlogId = b.BlogId,
                     UserId = b.Blog.CreatorId,
@@ -154,7 +155,7 @@ public class GetBlogsQueryHandler(IBlogRepo blogRepo, IFollowerOnlyBlogRepo foll
             
             return ResponseDto.GetSuccess(new
             {
-                blogs = new List<BlogDtos>(),
+                blogs = finalBlogs,
                 pageNumber = request.PageNumber,
                 pageSize = request.PageSize,
             }, "Blogs retrieved successfully!");
