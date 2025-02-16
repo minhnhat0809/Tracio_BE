@@ -19,18 +19,6 @@ namespace ContentService.Api.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        [HttpPut("{commentId:int}")]
-        public async Task<IActionResult> UpdateComment([FromRoute] int commentId, [FromBody] UpdateCommentCommand? command)
-        {
-            if (command == null) return BadRequest("Request body is empty");
-            
-            command.CommentId = commentId;
-            
-            var result = await _mediator.Send(command);
-            
-            return StatusCode(result.StatusCode, result);
-        }
-
         [HttpDelete("{commentId:int}")]
         public async Task<IActionResult> DeleteComment([FromRoute] int commentId)
         {
