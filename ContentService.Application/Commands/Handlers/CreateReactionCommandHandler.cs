@@ -68,7 +68,8 @@ public class CreateReactionCommandHandler(
         var isSucceed = await reactionRepo.CreateAsync(reaction);
         if (!isSucceed) return ResponseDto.InternalError("Failed to create reaction.");
 
-        await _replyRepo.IncrementReactionCount(request.EntityId);
+        await _replyRepo.UpdateFieldsAsync(r =>  r.ReplyId == request.EntityId,
+            r => r.SetProperty(rr => rr.LikesCount, rr => rr.LikesCount + 1));
         
         var reactionDto = _mapper.Map<ReactionDto>(reaction);
 
@@ -95,7 +96,8 @@ public class CreateReactionCommandHandler(
         var isSucceed = await reactionRepo.CreateAsync(reaction);
         if (!isSucceed) return ResponseDto.InternalError("Failed to create reaction.");
 
-        await _blogRepo.IncrementReactionCount(request.EntityId);
+        await _blogRepo.UpdateFieldsAsync(b => b.BlogId == request.EntityId,
+            b => b.SetProperty(bb => bb.ReactionsCount, bb => bb.ReactionsCount + 1));
         
         var reactionDto = _mapper.Map<ReactionDto>(reaction);
         
@@ -122,7 +124,8 @@ public class CreateReactionCommandHandler(
         var isSucceed = await reactionRepo.CreateAsync(reaction);
         if (!isSucceed) return ResponseDto.InternalError("Failed to create reaction.");
 
-        await _commentRepo.IncrementReactionCount(request.EntityId);
+        await _commentRepo.UpdateFieldsAsync(c => c.CommentId == request.EntityId,
+            c => c.SetProperty(cc => cc.LikesCount, cc => cc.LikesCount + 1));
         
         var reactionDto = _mapper.Map<ReactionDto>(reaction);
         

@@ -1,3 +1,4 @@
+/*
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,14 +10,14 @@ using RabbitMQ.Client.Exceptions;
 namespace ContentService.Infrastructure.MessageBroker;
 
 public abstract class RabbitMqConsumer<TMessage>(
-    IServiceScope serviceScopeFactory,
+    IServiceScopeFactory serviceScopeFactory,
     IConnectionFactory connectionFactory,
-    string queueName,
-    IChannel? channel)
+    string queueName)
     : BackgroundService
 {
     private readonly Task<IConnection> _connectionTask = connectionFactory.CreateConnectionAsync(); // ✅ Use Async Connection\
-    private IChannel? _channel = channel;
+    
+    private IChannel? _channel;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -61,7 +62,7 @@ public abstract class RabbitMqConsumer<TMessage>(
         }
     }
 
-    protected abstract Task ProcessMessageAsync(TMessage message, IServiceScope serviceScope, CancellationToken cancellationToken);
+    protected abstract Task ProcessMessageAsync(TMessage message, IServiceScopeFactory serviceScope, CancellationToken cancellationToken);
 
     public override void Dispose()
     {
@@ -69,3 +70,4 @@ public abstract class RabbitMqConsumer<TMessage>(
         base.Dispose();
     }
 }
+*/

@@ -1,30 +1,66 @@
+using System.Text;
+using System.Text.Json;
 using ContentService.Application.DTOs.BlogDtos.Message;
 using ContentService.Application.Interfaces;
-using ContentService.Domain.Entities;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
+using RabbitMQ.Client.Exceptions;
 
 namespace ContentService.Infrastructure.MessageBroker;
 
 public class MarkBlogsAsReadConsumer(
-    IServiceScope serviceScopeFactory, 
-    IConnectionFactory connectionFactory, 
-    string queueName, 
-    IChannel? channel) : RabbitMqConsumer<MarkBlogsAsReadMessage>(serviceScopeFactory, connectionFactory, queueName, channel)
+    IServiceScopeFactory serviceScopeFactory,
+    IConnectionFactory connectionFactory) : BackgroundService
 {
-    protected override async Task ProcessMessageAsync(MarkBlogsAsReadMessage message, IServiceScope serviceScope,
-        CancellationToken cancellationToken)
+    private readonly Task<IConnection> _connectionTask = connectionFactory.CreateConnectionAsync(); // ✅ Use Async Connection\
+    
+    private IChannel? _channel;
+    
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         try
         {
-            var blogRepo = serviceScope.ServiceProvider.GetRequiredService<IFollowerOnlyBlogRepo>();
-            
-            await blogRepo.UpdateRangeAsync(b => message.BlogIds.Contains(b.BlogId) && b.UserId == message.UserId,
-                bf => bf.SetProperty(b => b.IsRead, true));
+            await using var connection = await _connectionTask; // ✅ Wait for async connection
+            _channel = await connection.CreateChannelAsync(cancellationToken: stoppingToken); // ✅ Create async channel
+
+            await _channel.QueueDeclareAsync(
+                queue: "mark-blogs-as-read",
+                durable: true,
+                exclusive: false,
+                autoDelete: false,
+                arguments: null, cancellationToken: stoppingToken);
+
+            var consumer = new AsyncEventingBasicConsumer(_channel);
+            consumer.ReceivedAsync += async (_, ea) =>
+            {
+                var body = ea.Body.ToArray();
+                var message = Encoding.UTF8.GetString(body);
+
+                var data = JsonSerializer.Deserialize<MarkBlogsAsReadMessage>(message);
+                
+                if (data is null)
+                {
+                    Console.WriteLine("[RabbitMQ] Received null message.");
+                    return;
+                }
+
+                using var scope = serviceScopeFactory.CreateScope();
+                var blogRepo = scope.ServiceProvider.GetRequiredService<IFollowerOnlyBlogRepo>();
+
+                // ✅ Update database with the received data
+                await blogRepo.UpdateFieldsAsync(
+                    b => data.BlogIds.Contains(b.BlogId) && b.UserId == data.UserId,
+                    bf => bf.SetProperty(b => b.IsRead, true));
+            };
+
+            await _channel.BasicConsumeAsync(queue: "mark-blogs-as-read", autoAck: true, consumer: consumer, cancellationToken: stoppingToken);
         }
-        catch (Exception e)
+        catch (BrokerUnreachableException ex)
         {
-            throw new Exception(e.Message);
-        }   
+            Console.WriteLine($"[RabbitMQ] Connection error: {ex.Message}");
+        }
     }
+
 }

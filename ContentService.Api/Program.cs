@@ -63,6 +63,9 @@ builder.Services.AddSingleton<IConnectionFactory>(_ => new ConnectionFactory
 });
 builder.Services.AddSingleton<IRabbitMqProducer, RabbitMqProducer>();
 
+builder.Services.AddHostedService<MarkBlogsAsReadConsumer>();
+
+
 // aws
 builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());
 builder.Services.AddAWSService<IAmazonS3>();

@@ -168,11 +168,11 @@ public class GetBlogsQueryHandler(
             
             var followerOnlyBlogIds = followerOnlyBlogs.Select(b => b.BlogId).ToList();
 
-            /*await _rabbitMqProducer.PublishAsync(new MarkBlogsAsReadMessage
+            await _rabbitMqProducer.PublishAsync(new MarkBlogsAsReadMessage
             {
                 UserId =  request.UserRequestId,
                 BlogIds = followerOnlyBlogIds
-            }, "mark-blogs-as-read");*/
+            }, "mark-blogs-as-read");
             
             // Merge & Interleave the Blogs
             var finalBlogs = InterleaveLists(followerOnlyBlogs, publicBlogs);

@@ -20,7 +20,7 @@ public interface IRepositoryBase<T> where T : class
         bool ascending = true,
         params Expression<Func<T, object>>[] includes);
 
-    Task UpdateRangeAsync(Expression<Func<T, bool>> filter, Expression<Func<SetPropertyCalls<T>, SetPropertyCalls<T>>> updateExpression);
+    Task UpdateFieldsAsync(Expression<Func<T, bool>> filter, Expression<Func<SetPropertyCalls<T>, SetPropertyCalls<T>>> updateExpression);
     
     Task<bool> CreateAsync(T entity);
     

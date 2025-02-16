@@ -35,17 +35,21 @@ public class DeleteReactionCommandHandler(
             var isSucceed = await _reactionRepo.DeleteAsync(request.ReactionId);
             if(!isSucceed) return ResponseDto.InternalError("Failed to delete reaction.");
             
+            // update reaction count
             if (reaction.CommentId.HasValue)
             {
-                await _commentRepo.DecrementReactionCount(reaction.CommentId.Value);
+                await _commentRepo.UpdateFieldsAsync(c => c.CommentId == reaction.CommentId.Value,
+                    c => c.SetProperty(cc => cc.LikesCount, cc => cc.LikesCount - 1));
             }
             else if (reaction.BlogId.HasValue)
             {
-                await _blogRepo.DecrementReactionCount(reaction.BlogId.Value);
+                await _blogRepo.UpdateFieldsAsync(b => b.BlogId == reaction.BlogId.Value,
+                    b => b.SetProperty(bl => bl.ReactionsCount, bl => bl.ReactionsCount - 1));
             }
             else if (reaction.ReplyId.HasValue)
             {
-                await _replyRepo.DecrementReactionCount(reaction.ReplyId.Value);
+                await _replyRepo.UpdateFieldsAsync(r => r.ReplyId == reaction.ReplyId.Value,
+                    r => r.SetProperty(rr => rr.LikesCount, rr => rr.LikesCount - 1));
             }
             
             return ResponseDto.DeleteSuccess(null, "Reaction deleted successfully!");

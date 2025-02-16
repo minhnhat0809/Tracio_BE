@@ -25,32 +25,4 @@ public class ReplyRepo(TracioContentDbContext context) : RepositoryBase<Reply>(c
             throw new Exception(e.Message);
         }
     }
-
-    public async Task IncrementReactionCount(int replyId)
-    {
-        try
-        {
-            await _context.Replies
-                .Where(r => r.ReplyId == replyId)
-                .ExecuteUpdateAsync(b => b.SetProperty(p => p.LikesCount, p => p.LikesCount + 1));
-        }
-        catch (Exception e)
-        {
-            throw new Exception(e.Message);
-        }
-    }
-
-    public async Task DecrementReactionCount(int replyId)
-    {
-        try
-        {
-            await _context.Replies
-                .Where(r => r.ReplyId == replyId)
-                .ExecuteUpdateAsync(b => b.SetProperty(p => p.LikesCount, p => p.LikesCount - 1));
-        }
-        catch (Exception e)
-        {
-            throw new Exception(e.Message);
-        }
-    }
 }
