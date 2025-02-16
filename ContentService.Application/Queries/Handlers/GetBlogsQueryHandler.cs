@@ -76,10 +76,12 @@ public class GetBlogsQueryHandler(
                     CreatedAt = b.CreatedAt,
                     UpdatedAt = b.UpdatedAt,
                     LikesCount = b.ReactionsCount,
-                    CommentsCount = b.CommentsCount
+                    CommentsCount = b.CommentsCount,
+                    IsReacted = b.Reactions.Any(r => r.CyclistId == request.UserRequestId)
                 },
                 request.PageNumber, request.PageSize,
-                sortExpression, request.Ascending
+                sortExpression, request.Ascending,
+                b => b.MediaFiles, b => b.Reactions
             );
             
             return ResponseDto.GetSuccess(new
@@ -131,11 +133,12 @@ public class GetBlogsQueryHandler(
                     CreatedAt = b.CreatedAt,
                     UpdatedAt = b.UpdatedAt,
                     LikesCount = b.ReactionsCount,
-                    CommentsCount = b.CommentsCount
+                    CommentsCount = b.CommentsCount,
+                    IsReacted = b.Reactions.Any(r => r.CyclistId == request.UserRequestId)
                 },
                 request.PageNumber, halfPageSize,
                 sortExpressionBlog, request.Ascending,
-                b => b.MediaFiles
+                b => b.MediaFiles, b => b.Reactions
             );
 
             // build sort expression
@@ -156,19 +159,20 @@ public class GetBlogsQueryHandler(
                     CreatedAt = b.Blog.CreatedAt,
                     UpdatedAt = b.Blog.UpdatedAt,
                     LikesCount = b.Blog.ReactionsCount,
-                    CommentsCount = b.Blog.CommentsCount
+                    CommentsCount = b.Blog.CommentsCount,
+                    IsReacted = b.Blog.Reactions.Any(r => r.CyclistId == request.UserRequestId)
                 },
                 request.PageNumber, halfPageSize,
                 sortBy: sortExpressionFollowerOnly, ascending: false,
-                b => b.Blog, b => b.Blog.MediaFiles);
+                b => b.Blog, b => b.Blog.MediaFiles, b => b.Blog.Reactions);
             
             var followerOnlyBlogIds = followerOnlyBlogs.Select(b => b.BlogId).ToList();
 
-            await _rabbitMqProducer.PublishAsync(new MarkBlogsAsReadMessage
+            /*await _rabbitMqProducer.PublishAsync(new MarkBlogsAsReadMessage
             {
                 UserId =  request.UserRequestId,
                 BlogIds = followerOnlyBlogIds
-            }, "mark-blogs-as-read");
+            }, "mark-blogs-as-read");*/
             
             // Merge & Interleave the Blogs
             var finalBlogs = InterleaveLists(followerOnlyBlogs, publicBlogs);

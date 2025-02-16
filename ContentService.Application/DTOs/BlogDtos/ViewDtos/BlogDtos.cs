@@ -13,7 +13,7 @@ public class BlogDtos
     
     public sbyte PrivacySetting { get; set; }
 
-    public string Tittle { get; set; } = null!;
+    public bool IsReacted { get; set; }
 
     public string Content { get; set; } = null!;
     

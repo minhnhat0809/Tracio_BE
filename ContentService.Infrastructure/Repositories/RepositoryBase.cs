@@ -64,6 +64,7 @@ public class RepositoryBase<T>(TracioContentDbContext context) : IRepositoryBase
         }
 
         return await query
+            .AsNoTracking()
             .Skip((pageIndex - 1) * pageSize)
             .Take(pageSize)
             .Select(selector)
