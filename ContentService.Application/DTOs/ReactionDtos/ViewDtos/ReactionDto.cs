@@ -6,11 +6,11 @@ public class ReactionDto
 {
     public int ReactionId { get; set; }
     
-    public int UserId { get; set; }
+    public int CyclistId { get; set; }
     
-    public string UserName { get; set; } = null!;
-    
-    public string ReactionType { get; set; } = null!;
+    public string CyclistName { get; set; } = null!;
+
+    public string CyclistAvatar { get; set; } = null!;
     
     public DateTime? CreatedAt { get; set; }
 }

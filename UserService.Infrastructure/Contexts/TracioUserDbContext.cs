@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using UserService.Domain.Entities;
 
 namespace UserService.Infrastructure.Contexts;
@@ -7,6 +8,7 @@ public partial class TracioUserDbContext : DbContext
 {
     public TracioUserDbContext()
     {
+        
     }
 
     public TracioUserDbContext(DbContextOptions<TracioUserDbContext> options)
@@ -31,6 +33,14 @@ public partial class TracioUserDbContext : DbContext
     public virtual DbSet<User> Users { get; set; }
 
     public virtual DbSet<UserSession> UserSessions { get; set; }
+    
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.UseMySql("server=localhost;database=tracio_activity;user=root;password=N@hat892003.",
+            new MySqlServerVersion(new Version(9, 0, 0)),
+            mySqlOptions => mySqlOptions.UseNetTopologySuite()
+        );
+    }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

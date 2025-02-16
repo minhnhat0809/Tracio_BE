@@ -1,5 +1,6 @@
 using ContentService.Application.Commands;
 using ContentService.Application.DTOs.BlogDtos;
+using ContentService.Application.DTOs.BookmarkDtos;
 using ContentService.Application.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -59,14 +60,12 @@ namespace ContentService.Api.Controllers
         
         [HttpGet("{blogId:int}/reactions")]
         public async Task<IActionResult> GetReactionsByBlogId(
-            [FromRoute] int blogId,
-            [FromQuery] sbyte reactionType
+            [FromRoute] int blogId
         )
         {
             var query = new GetReactionsByBlogQuery()
             {
-                BlogId = blogId,
-                ReactionType = reactionType
+                BlogId = blogId
             };
             
             var result = await _mediator.Send(query);
@@ -100,6 +99,14 @@ namespace ContentService.Api.Controllers
         {
             var result = await _mediator.Send(new DeleteBlogCommand(blogId));
 
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpPost("bookmarks")]
+        public async Task<IActionResult> BookmarkBlog([FromBody] BookmarkCreateDto bookmarkCreateDto)
+        {
+            var result = await _mediator.Send(new CreateBookmarkCommand(bookmarkCreateDto));
+            
             return StatusCode(result.StatusCode, result);
         }
     }

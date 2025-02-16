@@ -16,17 +16,17 @@ public class GetReactionsByCommentQueryHandler(IReactionRepo reactionRepo, IComm
         try
         {
             // check comment in db
-            var isCommentExisted = await _commentRepo.ExistsAsync(c => c.CommentId == request.CommentId);
-            if(!isCommentExisted) return ResponseDto.NotFound("Comment not found");
-            
-            // count
-            var total = await _reactionRepo.CountAsync(c => c.CommentId == request.CommentId);
+            var isCommentExisted = await _commentRepo.GetByIdAsync(c => c.CommentId == request.CommentId, c => c.RepliesCount);
+            if(!isCommentExisted.HasValue) return ResponseDto.NotFound("Comment not found");
+
+            var total = isCommentExisted.Value;
             
             var reactionDtos = await _reactionRepo.FindAsync(r => r.CommentId == request.CommentId, 
                 r => new ReactionDto
                 {
-                    UserId = r.CyclistId,
-                    UserName = r.CyclistName,
+                    CyclistId = r.CyclistId,
+                    CyclistName = r.CyclistName,
+                    CyclistAvatar = r.CyclistAvatar,
                     CreatedAt = r.CreatedAt
                 });
             

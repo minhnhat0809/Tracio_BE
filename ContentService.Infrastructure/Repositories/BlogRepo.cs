@@ -40,4 +40,46 @@ public class BlogRepo(TracioContentDbContext context) : RepositoryBase<Blog>(con
             throw new Exception(e.Message);
         }
     }
+
+    public async Task IncrementReactionCount(int blogId)
+    {
+        try
+        {
+            await _context.Blogs
+                .Where(b => b.BlogId == blogId)
+                .ExecuteUpdateAsync(b => b.SetProperty(p => p.ReactionsCount, p => p.ReactionsCount + 1));
+        }
+        catch (Exception e)
+        {
+            throw new Exception(e.Message);
+        }
+    }
+
+    public async Task DecrementReactionCount(int blogId)
+    {
+        try
+        {
+            await _context.Blogs
+                .Where(b => b.BlogId == blogId)
+                .ExecuteUpdateAsync(b => b.SetProperty(p => p.ReactionsCount, p => p.ReactionsCount - 1));
+        }
+        catch (Exception e)
+        {
+            throw new Exception(e.Message);
+        }
+    }
+
+    public async Task DecrementCommentCount(int blogId)
+    {
+        try
+        {
+            await _context.Blogs
+                .Where(b => b.BlogId == blogId)
+                .ExecuteUpdateAsync(b => b.SetProperty(p => p.CommentsCount, p => p.CommentsCount - 1));
+        }
+        catch (Exception e)
+        {
+            throw new Exception(e.Message);
+        }
+    }
 }

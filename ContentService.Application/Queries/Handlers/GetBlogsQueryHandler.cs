@@ -1,5 +1,6 @@
 ﻿using ContentService.Application.DTOs.BlogDtos.Message;
 using ContentService.Application.DTOs.BlogDtos.ViewDtos;
+using ContentService.Application.DTOs.MediaFileDTOs.ViewDtos;
 using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
 using ContentService.Domain.Enums;
@@ -71,6 +72,7 @@ public class GetBlogsQueryHandler(
                     Avatar = b.CreatorAvatar,
                     PrivacySetting = b.PrivacySetting,
                     Content = b.Content,
+                    MediaFiles = b.MediaFiles.Select(mf => new MediaFileDto{ MediaId = mf.MediaId, MediaUrl = mf.MediaUrl }).ToList(),
                     CreatedAt = b.CreatedAt,
                     UpdatedAt = b.UpdatedAt,
                     LikesCount = b.ReactionsCount,
@@ -125,13 +127,15 @@ public class GetBlogsQueryHandler(
                     Avatar = b.CreatorAvatar,
                     PrivacySetting = b.PrivacySetting,
                     Content = b.Content,
+                    MediaFiles = b.MediaFiles.Select(mf => new MediaFileDto{ MediaId = mf.MediaId, MediaUrl = mf.MediaUrl }).ToList(),
                     CreatedAt = b.CreatedAt,
                     UpdatedAt = b.UpdatedAt,
                     LikesCount = b.ReactionsCount,
                     CommentsCount = b.CommentsCount
                 },
                 request.PageNumber, halfPageSize,
-                sortExpressionBlog, request.Ascending
+                sortExpressionBlog, request.Ascending,
+                b => b.MediaFiles
             );
 
             // build sort expression
@@ -148,6 +152,7 @@ public class GetBlogsQueryHandler(
                     Avatar = b.Blog.CreatorAvatar,
                     PrivacySetting = b.Blog.PrivacySetting,
                     Content = b.Blog.Content,
+                    MediaFiles = b.Blog.MediaFiles.Select(mf => new MediaFileDto{ MediaId = mf.MediaId, MediaUrl = mf.MediaUrl }).ToList(),
                     CreatedAt = b.Blog.CreatedAt,
                     UpdatedAt = b.Blog.UpdatedAt,
                     LikesCount = b.Blog.ReactionsCount,
@@ -155,7 +160,7 @@ public class GetBlogsQueryHandler(
                 },
                 request.PageNumber, halfPageSize,
                 sortBy: sortExpressionFollowerOnly, ascending: false,
-                includes: b => b.Blog);
+                b => b.Blog, b => b.Blog.MediaFiles);
             
             var followerOnlyBlogIds = followerOnlyBlogs.Select(b => b.BlogId).ToList();
 

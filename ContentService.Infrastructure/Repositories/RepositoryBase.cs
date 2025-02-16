@@ -69,7 +69,7 @@ public class RepositoryBase<T>(TracioContentDbContext context) : IRepositoryBase
             .Select(selector)
             .ToListAsync();
     }
-
+    
     public async Task UpdateRangeAsync(Expression<Func<T, bool>> filter, Expression<Func<SetPropertyCalls<T>, SetPropertyCalls<T>>> updateExpression)
     {
         await _context.Set<T>()

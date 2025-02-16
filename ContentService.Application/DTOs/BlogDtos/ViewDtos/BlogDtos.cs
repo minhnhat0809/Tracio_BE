@@ -1,4 +1,6 @@
-﻿namespace ContentService.Application.DTOs.BlogDtos.ViewDtos;
+﻿using ContentService.Application.DTOs.MediaFileDTOs.ViewDtos;
+
+namespace ContentService.Application.DTOs.BlogDtos.ViewDtos;
 
 public class BlogDtos
 {
@@ -14,6 +16,8 @@ public class BlogDtos
     public string Tittle { get; set; } = null!;
 
     public string Content { get; set; } = null!;
+    
+    public List<MediaFileDto> MediaFiles { get; set; } = [];
 
     public DateTime? CreatedAt { get; set; }
 

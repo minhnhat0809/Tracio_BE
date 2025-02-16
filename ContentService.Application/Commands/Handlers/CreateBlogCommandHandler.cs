@@ -35,7 +35,7 @@ public class CreateBlogCommandHandler(
     {
         try
         {
-            // check userId and get user's name
+            // check userId and get user's name, avatar
             var userDto = await _userService.ValidateUser(request.CreatorId);
             if (!userDto.IsUserValid) return ResponseDto.NotFound("User does not exist");
 

@@ -12,7 +12,7 @@ public class UserService(Userservice.UserService.UserServiceClient userServiceCl
         var request = new UserRequest { UserId = creatorId };
         var response = await userServiceClient.ValidateUserAsync(request);
         
-        return new UserDto{IsUserValid = response.IsValid, Username = response.UserName};
+        return new UserDto{IsUserValid = response.IsValid, Username = response.UserName, Avatar = response.Avatar};
     }
 
     public async Task<bool> IsFollower(int userRequestId, int userId)

@@ -26,23 +26,18 @@ public class GetReactionsByBlogQueryHandler(IReactionRepo reactionRepo, IBlogRep
             
             var basePredicate = PredicateBuilder.New<Reaction>(true);
             
+            basePredicate = basePredicate.And(r => r.BlogId == request.BlogId);
+            
             // count reactions
             var total = await _reactionRepo.CountAsync(basePredicate);
-            if (total == 0) return ResponseDto.GetSuccess(
-                new
-                {
-                    reactions = new List<ReactionDto>(),
-                    total
-                },
-                "Not found reactions"
-                );
             
             // fetch reactions
             var reactionsDto = await _reactionRepo.FindAsync(basePredicate,
                 c => new ReactionDto
                 {
-                    UserId = c.CyclistId,
-                    UserName = c.CyclistName,
+                    CyclistId = c.CyclistId,
+                    CyclistName = c.CyclistName,
+                    CyclistAvatar = c.CyclistAvatar,
                     CreatedAt = c.CreatedAt
                 });
 

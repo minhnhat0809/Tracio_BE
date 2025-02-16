@@ -19,6 +19,7 @@ builder.Services.AddSwaggerGen();
 
 // repo
 builder.Services.AddServices();
+
 // service
 builder.Services.AddScoped<IAuthService, AuthService>();
         
