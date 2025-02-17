@@ -166,8 +166,10 @@ public class GetBlogsQueryHandler(
                 sortBy: sortExpressionFollowerOnly, ascending: false,
                 b => b.Blog, b => b.Blog.MediaFiles, b => b.Blog.Reactions);
             
+            // get followerOnlyBlogIds to update
             var followerOnlyBlogIds = followerOnlyBlogs.Select(b => b.BlogId).ToList();
-
+            
+            // publish message for rabbit
             await _rabbitMqProducer.PublishAsync(new MarkBlogsAsReadMessage
             {
                 UserId =  request.UserRequestId,

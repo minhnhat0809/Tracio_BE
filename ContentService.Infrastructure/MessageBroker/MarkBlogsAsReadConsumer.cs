@@ -6,7 +6,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using RabbitMQ.Client.Exceptions;
 
 namespace ContentService.Infrastructure.MessageBroker;
 
@@ -51,10 +50,10 @@ public class MarkBlogsAsReadConsumer(
 
                     using var scope = serviceScopeFactory.CreateScope();
                     
-                    /*var blogRepo = scope.ServiceProvider.GetRequiredService<IBlogRepo>();
+                    var followerOnlyBlogRepo = scope.ServiceProvider.GetRequiredService<IFollowerOnlyBlogRepo>();
 
-                    await blogRepo.UpdateFieldsAsync(b => b.BlogId == 1,
-                        b => b.SetProperty(bb => bb.ReactionsCount, bb => bb.ReactionsCount + 1));*/
+                    // update IsRead 
+                    await followerOnlyBlogRepo.MarkBlogsAsReadAsync(data.UserId, data.BlogIds);
                     
                     Console.WriteLine("[RabbitMQ] Received");
 
