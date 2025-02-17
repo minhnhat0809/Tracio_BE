@@ -20,47 +20,59 @@ public class MarkBlogsAsReadConsumer(
     
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        try
+        while (!stoppingToken.IsCancellationRequested)
         {
-            await using var connection = await _connectionTask; // ✅ Wait for async connection
-            _channel = await connection.CreateChannelAsync(cancellationToken: stoppingToken); // ✅ Create async channel
-
-            await _channel.QueueDeclareAsync(
-                queue: "mark-blogs-as-read",
-                durable: true,
-                exclusive: false,
-                autoDelete: false,
-                arguments: null, cancellationToken: stoppingToken);
-
-            var consumer = new AsyncEventingBasicConsumer(_channel);
-            consumer.ReceivedAsync += async (_, ea) =>
+            try
             {
-                var body = ea.Body.ToArray();
-                var message = Encoding.UTF8.GetString(body);
+                await using var connection = await _connectionTask;
+                _channel = await connection.CreateChannelAsync(cancellationToken: stoppingToken);
 
-                var data = JsonSerializer.Deserialize<MarkBlogsAsReadMessage>(message);
-                
-                if (data is null)
+                await _channel.QueueDeclareAsync(
+                    queue: "mark-blogs-as-read",
+                    durable: true,
+                    exclusive: false,
+                    autoDelete: false,
+                    arguments: null,
+                    cancellationToken: stoppingToken);
+
+                var consumer = new AsyncEventingBasicConsumer(_channel);
+                consumer.ReceivedAsync += async (_, ea) =>
                 {
-                    Console.WriteLine("[RabbitMQ] Received null message.");
-                    return;
-                }
+                    var body = ea.Body.ToArray();
+                    var message = Encoding.UTF8.GetString(body);
+                    var data = JsonSerializer.Deserialize<MarkBlogsAsReadMessage>(message);
 
-                using var scope = serviceScopeFactory.CreateScope();
-                var blogRepo = scope.ServiceProvider.GetRequiredService<IFollowerOnlyBlogRepo>();
+                    if (data is null)
+                    {
+                        Console.WriteLine("[RabbitMQ] Received null message.");
+                        await _channel.BasicAckAsync(ea.DeliveryTag, false, stoppingToken);
+                        return;
+                    }
 
-                // ✅ Update database with the received data
-                await blogRepo.UpdateFieldsAsync(
-                    b => data.BlogIds.Contains(b.BlogId) && b.UserId == data.UserId,
-                    bf => bf.SetProperty(b => b.IsRead, true));
-            };
+                    using var scope = serviceScopeFactory.CreateScope();
+                    
+                    /*var blogRepo = scope.ServiceProvider.GetRequiredService<IBlogRepo>();
 
-            await _channel.BasicConsumeAsync(queue: "mark-blogs-as-read", autoAck: true, consumer: consumer, cancellationToken: stoppingToken);
-        }
-        catch (BrokerUnreachableException ex)
-        {
-            Console.WriteLine($"[RabbitMQ] Connection error: {ex.Message}");
+                    await blogRepo.UpdateFieldsAsync(b => b.BlogId == 1,
+                        b => b.SetProperty(bb => bb.ReactionsCount, bb => bb.ReactionsCount + 1));*/
+                    
+                    Console.WriteLine("[RabbitMQ] Received");
+
+                    await _channel.BasicAckAsync(ea.DeliveryTag, false, stoppingToken);
+                };
+
+                await _channel.BasicConsumeAsync(queue: "mark-blogs-as-read", autoAck: false, consumer: consumer, cancellationToken: stoppingToken);
+
+                Console.WriteLine("[RabbitMQ] Consumer is running...");
+                await Task.Delay(Timeout.Infinite, stoppingToken);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[RabbitMQ] Consumer error: {ex.Message}. Retrying in 5 seconds...");
+                await Task.Delay(5000, stoppingToken); // Retry after 5s
+            }
         }
     }
+
 
 }
