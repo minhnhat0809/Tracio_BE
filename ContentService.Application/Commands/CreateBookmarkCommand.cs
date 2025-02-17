@@ -4,9 +4,9 @@ using Shared.Dtos;
 
 namespace ContentService.Application.Commands;
 
-public class CreateBookmarkCommand (BookmarkCreateDto bookmarkCreateDto) : IRequest<ResponseDto>
+public class CreateBookmarkCommand (int OwnerId, BookmarkCreateDto bookmarkCreateDto) : IRequest<ResponseDto>
 {
-    public int OwnerId { get; set; } = bookmarkCreateDto.OwnerId;
+    public int OwnerId { get; set; } = OwnerId;
 
     public int BlogId { get; set; } = bookmarkCreateDto.BlogId;
 
