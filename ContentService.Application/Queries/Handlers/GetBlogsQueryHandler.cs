@@ -77,7 +77,14 @@ public class GetBlogsQueryHandler(
                     UpdatedAt = b.UpdatedAt,
                     LikesCount = b.ReactionsCount,
                     CommentsCount = b.CommentsCount,
-                    IsReacted = b.Reactions.Any(r => r.CyclistId == request.UserRequestId)
+                    ReactionId = b.Reactions
+                        .Where(r => r.CyclistId == request.UserRequestId)
+                        .Select(r => r.ReactionId)
+                        .FirstOrDefault(),
+                    // ReSharper disable once ReplaceWithSingleCallToAny
+                    IsReacted = b.Reactions
+                        .Where(r => r.CyclistId == request.UserRequestId)
+                        .Any()
                 },
                 request.PageNumber, request.PageSize,
                 sortExpression, request.Ascending,
@@ -134,7 +141,8 @@ public class GetBlogsQueryHandler(
                     UpdatedAt = b.UpdatedAt,
                     LikesCount = b.ReactionsCount,
                     CommentsCount = b.CommentsCount,
-                    IsReacted = b.Reactions.Any(r => r.CyclistId == request.UserRequestId)
+                    IsReacted = b.Reactions.Any(r => r.CyclistId == request.UserRequestId),
+                    ReactionId = b.Reactions.Where(r => r.CyclistId == request.UserRequestId).Select(r => r.CyclistId).FirstOrDefault()
                 },
                 request.PageNumber, halfPageSize,
                 sortExpressionBlog, request.Ascending,
@@ -160,7 +168,8 @@ public class GetBlogsQueryHandler(
                     UpdatedAt = b.Blog.UpdatedAt,
                     LikesCount = b.Blog.ReactionsCount,
                     CommentsCount = b.Blog.CommentsCount,
-                    IsReacted = b.Blog.Reactions.Any(r => r.CyclistId == request.UserRequestId)
+                    IsReacted = b.Blog.Reactions.Any(r => r.CyclistId == request.UserRequestId),
+                    ReactionId = b.Blog.Reactions.Where(r => r.CyclistId == request.UserRequestId).Select(r => r.CyclistId).FirstOrDefault()
                 },
                 request.PageNumber, halfPageSize,
                 sortBy: sortExpressionFollowerOnly, ascending: false,

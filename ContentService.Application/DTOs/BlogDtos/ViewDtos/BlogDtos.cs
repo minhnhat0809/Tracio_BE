@@ -14,6 +14,8 @@ public class BlogDtos
     public sbyte PrivacySetting { get; set; }
 
     public bool IsReacted { get; set; }
+    
+    public int ReactionId { get; set; }
 
     public string Content { get; set; } = null!;
     
