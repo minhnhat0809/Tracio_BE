@@ -1,7 +1,16 @@
-﻿namespace RouteService.Infrastructure.UnitOfWork;
+﻿using RouteService.Application.Interfaces;
+using RouteService.Infrastructure.Contexts;
+using RouteService.Infrastructure.Repositories;
+
+namespace RouteService.Infrastructure.UnitOfWork;
 
 public class UnitOfWork : IUnitOfWork
 {
+    public IRouteRepository? RouteRepository { get; private set; }
+    public UnitOfWork(TracioRouteDbContext context)
+    {
+        RouteRepository = new RouteRepository(context);
+    }
     public void Dispose()
     {
         throw new NotImplementedException();
