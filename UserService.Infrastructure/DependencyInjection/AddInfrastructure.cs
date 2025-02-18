@@ -23,9 +23,8 @@ public static class AddInfrastructure
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, Application.Interfaces.Services.UserService>();
         
-        // mapper
-        services.AddAutoMapper(typeof(MapperConfig).Assembly);
         
+
         return services;
     }
 }

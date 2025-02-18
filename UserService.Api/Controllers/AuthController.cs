@@ -20,7 +20,7 @@ namespace UserService.Api.Controllers
 
         // POST: api/auth/login
         [HttpPost("login")]
-        public async Task<ActionResult> Login([FromBody] LoginRequestModel loginRequest) // ✅ Expect JSON request body
+        public async Task<ActionResult> Login([FromBody] LoginRequestModel? loginRequest) // ✅ Expect JSON request body
         {
             if (loginRequest == null)
                 return BadRequest(new ResponseModel("error", 400, "Invalid request data.", null));
@@ -31,7 +31,7 @@ namespace UserService.Api.Controllers
 
         // POST: api/auth/register-user (Register a new user)
         [HttpPost("register-user")]
-        public async Task<ActionResult> RegisterUser([FromForm] UserRegisterModel request)
+        public async Task<ActionResult> RegisterUser([FromForm] UserRegisterModel? request)
         {
             if (request == null)
                 return BadRequest(new ResponseModel("error", 400, "Invalid request data.", null));
@@ -43,7 +43,7 @@ namespace UserService.Api.Controllers
         
         // POST: api/auth/register-shop (Register a new user)
         [HttpPost("register-shop")]
-        public async Task<ActionResult> RegisterShop([FromForm] ShopOwnerRegisterModel request)
+        public async Task<ActionResult> RegisterShop([FromForm] ShopOwnerRegisterModel? request)
         {
             if (request == null)
                 return BadRequest(new ResponseModel("error", 400, "Invalid request data.", null));
@@ -66,19 +66,7 @@ namespace UserService.Api.Controllers
             return StatusCode(response.StatusCode, response);
         }
         
-        // POST: api/Authentication/url-avatar 
-        [HttpPost("url-avatar")]
-        [Consumes("multipart/form-data")] // Tell Swagger this is a file upload endpoint
-        public async Task<ActionResult> UploadAvatar( IFormFile file)
-        {
-            if (file == null || file.Length == 0)
-            {
-                return BadRequest(new ResponseModel("error", 400, "No file uploaded.", null));
-            }
-
-            var response = await _authService.GetUrlAvatar(file);
-            return Ok(response);
-        }
+        
 
         
     }
