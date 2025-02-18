@@ -27,6 +27,7 @@ builder.Services.ConfigureGrpcClients();
 builder.Services.ConfigureAwsServices(builder.Configuration);
 builder.Services.ConfigureMediatr();
 builder.Services.ConfigureMapper();
+builder.Services.ConfigureAzure(builder.Configuration);
 
 var app = builder.Build();
 

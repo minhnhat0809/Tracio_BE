@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using RabbitMQ.Client;
 using Amazon.S3;
+using ContentService.Application.DTOs;
 using Microsoft.AspNetCore.Http.Features;
 using ContentService.Application.Interfaces;
 using ContentService.Application.Mappings;
@@ -15,6 +16,13 @@ namespace ContentService.Api.Extensions;
 
 public static class ServiceExtensions
 {
+    
+    // 🔹 Configure azure
+    public static IServiceCollection ConfigureAzure(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<ContentSafetySettings>(configuration.GetSection("AzureContentSafety"));
+        return services;
+    }
     
     // 🔹 Add Mediatr
     public static IServiceCollection ConfigureMediatr(this IServiceCollection services)

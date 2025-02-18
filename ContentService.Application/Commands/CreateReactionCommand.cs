@@ -5,9 +5,9 @@ using Shared.Dtos;
 
 namespace ContentService.Application.Commands;
 
-public class CreateReactionCommand(ReactionCreateDto reactionCreateDto) : IRequest<ResponseDto>
+public class CreateReactionCommand(int cyclistId, ReactionCreateDto reactionCreateDto) : IRequest<ResponseDto>
 {
-    public int CyclistId { get;} = reactionCreateDto.CyclistId;
+    public int CyclistId { get;} = cyclistId;
 
     public int EntityId { get; } = reactionCreateDto.EntityId;
 
