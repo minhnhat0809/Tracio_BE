@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using ContentService.Application.DTOs.CommentDtos.Message;
 using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
 using MediatR;
@@ -12,7 +13,8 @@ public class CreateCommentCommandHandler(
     ICommentRepo commentRepo, 
     IImageService imageService,
     IUserService userService,
-    IModerationService moderationService) 
+    IModerationService moderationService,
+    IRabbitMqProducer rabbitMqProducer) 
     : IRequestHandler<CreateCommentCommand, ResponseDto>
 {
     private readonly ICommentRepo _commentRepo = commentRepo;
@@ -26,6 +28,8 @@ public class CreateCommentCommandHandler(
     private readonly IUserService _userService = userService;
     
     private readonly IModerationService _moderationService = moderationService;
+    
+    private readonly IRabbitMqProducer _rabbitMqProducer = rabbitMqProducer;
     
     private const string BucketName = "blogtracio";
     
@@ -62,9 +66,8 @@ public class CreateCommentCommandHandler(
             // insert comment into db
             var commentCreateResult = await _commentRepo.CreateAsync(comment);
             
-            // update the comment count in blog
-            var blogUpdateResult = await _blogRepo.UpdateFieldsAsync(b => b.BlogId == request.BlogId,
-                b => b.SetProperty(bb => bb.CommentsCount, bb => bb.CommentsCount +1)); 
+            // publish comment create event
+            await _rabbitMqProducer.PublishAsync(new CommentCreatedEvent(request.BlogId), "comment_created", cancellationToken);
             
             return commentCreateResult ? ResponseDto.CreateSuccess(null, "Comment created successfully!"):
                     ResponseDto.InternalError("Failed to create comment");

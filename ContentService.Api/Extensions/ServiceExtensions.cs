@@ -10,6 +10,7 @@ using ContentService.Application.Queries.Handlers;
 using ContentService.Application.Services;
 using ContentService.Infrastructure;
 using ContentService.Infrastructure.MessageBroker;
+using ContentService.Infrastructure.MessageBroker.BlogConsumers;
 using Userservice;
 
 namespace ContentService.Api.Extensions;
