@@ -16,15 +16,31 @@ public partial class Route
 
     public string RouteName { get; set; } = null!;
 
+    public Point StartLocation { get; set; } = null!;
+
+    public Point EndLocation { get; set; } = null!;
+
     public LineString RoutePath { get; set; } = null!;
 
-    public Point StartLocation { get; set; } = null!;
+    public LineString? Waypoints { get; set; }
+
+    public sbyte Weighting { get; set; }
+
+    public Point? Avoid { get; set; }
+
+    public string? AvoidsRoads { get; set; }
+
+    public bool OptimizeRoute { get; set; }
 
     public float TotalDistance { get; set; }
 
-    public float? Pace { get; set; }
+    public float ElevationGain { get; set; }
 
-    public float? TotalTime { get; set; }
+    public float MovingTime { get; set; }
+
+    public float AvgSpeed { get; set; }
+
+    public float Calories { get; set; }
 
     public sbyte? Mood { get; set; }
 
