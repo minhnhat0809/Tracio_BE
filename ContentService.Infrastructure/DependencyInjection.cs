@@ -1,4 +1,5 @@
 ﻿using ContentService.Application.Interfaces;
+using ContentService.Domain.Entities;
 using ContentService.Infrastructure.Contexts;
 using ContentService.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,7 @@ public static class DependencyInjection
         services.AddScoped<ICategoryRepo, CategoryRepo>();
         services.AddScoped<IBookmarkRepo, BookmarkRepo>();
         services.AddScoped<IFollowerOnlyBlogRepo, FollowerOnlyBlogRepo>();
+        services.AddScoped<IBlogCategoryRepo, BlogCategoryRepo>();
 
         return services;
     }

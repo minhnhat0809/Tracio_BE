@@ -179,7 +179,7 @@ public class GetBlogsQueryHandler(
             var followerOnlyBlogIds = followerOnlyBlogs.Select(b => b.BlogId).ToList();
             
             // publish message for rabbit
-            await _rabbitMqProducer.PublishAsync(new MarkBlogsAsReadMessage
+            await _rabbitMqProducer.PublishAsync(new MarkBlogsAsReadEvent
             {
                 UserId =  request.UserRequestId,
                 BlogIds = followerOnlyBlogIds
