@@ -13,14 +13,14 @@ namespace UserService.Infrastructure.Repositories;
 
 public class FirebaseStorageRepository : IFirebaseStorageRepository
 {
-    private const string BucketName = "rally-wave-438116.appspot.com"; // Firebase Storage bucket name
+    private const string BucketName = "tracio-cbd26.firebasestorage.app"; // Firebase Storage bucket name
     private readonly StorageClient _storageClient;
 
     public FirebaseStorageRepository()
     {
         // Initialize Google Cloud Storage client with the service account
         _storageClient = StorageClient.Create(
-            GoogleCredential.FromFile("rally-wave-438116-firebase-adminsdk.json")
+            GoogleCredential.FromFile("tracio-firebase-adminsdk.json")
         );
     }
 
