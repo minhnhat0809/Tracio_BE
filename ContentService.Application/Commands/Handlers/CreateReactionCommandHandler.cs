@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using ContentService.Application.DTOs.ReactionDtos.Message;
 using ContentService.Application.DTOs.ReactionDtos.ViewDtos;
 using ContentService.Application.DTOs.UserDtos.View;
 using ContentService.Application.Interfaces;
@@ -67,14 +68,14 @@ public class CreateReactionCommandHandler(
 
         var isSucceed = await reactionRepo.CreateAsync(reaction);
         if (!isSucceed) return ResponseDto.InternalError("Failed to create reaction.");
-
-        await _replyRepo.UpdateFieldsAsync(r =>  r.ReplyId == request.EntityId,
-            r => r.SetProperty(rr => rr.LikesCount, rr => rr.LikesCount + 1));
         
         var reactionDto = _mapper.Map<ReactionDto>(reaction);
 
         // publish for notification
         //await rabbitMqProducer.PublishAsync(new ReactionToReplyEvent(request.EntityId), "notification_queue");
+        
+        // publish reaction create event
+        await rabbitMqProducer.PublishAsync(new ReactionCreateEvent(request.EntityId, request.EntityType), "reaction_created");
 
         return ResponseDto.CreateSuccess(reactionDto, "Reaction created successfully!");
     }
@@ -95,14 +96,14 @@ public class CreateReactionCommandHandler(
 
         var isSucceed = await reactionRepo.CreateAsync(reaction);
         if (!isSucceed) return ResponseDto.InternalError("Failed to create reaction.");
-
-        await _blogRepo.UpdateFieldsAsync(b => b.BlogId == request.EntityId,
-            b => b.SetProperty(bb => bb.ReactionsCount, bb => bb.ReactionsCount + 1));
         
         var reactionDto = _mapper.Map<ReactionDto>(reaction);
         
         // publish for notification
         //await rabbitMqProducer.PublishAsync(new ReactionToBlogEvent(request.EntityId), "notification_queue");
+        
+        // publish reaction create event
+        await rabbitMqProducer.PublishAsync(new ReactionCreateEvent(request.EntityId, request.EntityType), "reaction_created");
 
         return ResponseDto.CreateSuccess(reactionDto, "Reaction created successfully!");
     }
@@ -123,14 +124,14 @@ public class CreateReactionCommandHandler(
 
         var isSucceed = await reactionRepo.CreateAsync(reaction);
         if (!isSucceed) return ResponseDto.InternalError("Failed to create reaction.");
-
-        await _commentRepo.UpdateFieldsAsync(c => c.CommentId == request.EntityId,
-            c => c.SetProperty(cc => cc.LikesCount, cc => cc.LikesCount + 1));
         
         var reactionDto = _mapper.Map<ReactionDto>(reaction);
         
         // publish for notification
         //await rabbitMqProducer.PublishAsync(new ReactionToCommentEvent(request.EntityId), "notification_queue");
+        
+        // publish reaction create event
+        await rabbitMqProducer.PublishAsync(new ReactionCreateEvent(request.EntityId, request.EntityType), "reaction_created");
 
         return ResponseDto.CreateSuccess(reactionDto, "Reaction created successfully!");
     }

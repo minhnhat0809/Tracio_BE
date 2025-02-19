@@ -66,11 +66,12 @@ public class CreateCommentCommandHandler(
             // insert comment into db
             var commentCreateResult = await _commentRepo.CreateAsync(comment);
             
-            // publish comment create event
-            await _rabbitMqProducer.PublishAsync(new CommentCreatedEvent(request.BlogId), "comment_created", cancellationToken);
+            if(!commentCreateResult) return ResponseDto.InternalError("Failed to create comment");
             
-            return commentCreateResult ? ResponseDto.CreateSuccess(null, "Comment created successfully!"):
-                    ResponseDto.InternalError("Failed to create comment");
+            // publish comment create event
+            await _rabbitMqProducer.PublishAsync(new CommentCreateEvent(request.BlogId), "comment_created", cancellationToken);
+
+            return ResponseDto.CreateSuccess(null, "Comment created successfully!");
         }
         catch (Exception e)
         {

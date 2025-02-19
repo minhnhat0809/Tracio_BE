@@ -6,9 +6,9 @@ using RabbitMQ.Client;
 namespace ContentService.Infrastructure.MessageBroker.CommentConsumers;
 
 public class CommentCreatedConsumer(IServiceScopeFactory serviceScopeFactory, IConnectionFactory connectionFactory) 
-    : RabbitMqConsumer<CommentCreatedEvent>(serviceScopeFactory, connectionFactory, "comment_created")
+    : RabbitMqConsumer<CommentCreateEvent>(serviceScopeFactory, connectionFactory, "comment_created")
 {
-    protected override async Task ProcessMessageAsync(CommentCreatedEvent message, IServiceScopeFactory serviceScope,
+    protected override async Task ProcessMessageAsync(CommentCreateEvent message, IServiceScopeFactory serviceScope,
         CancellationToken cancellationToken)
     {
         using var scope = serviceScope.CreateScope();

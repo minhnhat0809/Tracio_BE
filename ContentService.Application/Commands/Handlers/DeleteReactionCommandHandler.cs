@@ -1,3 +1,4 @@
+using ContentService.Application.DTOs.ReactionDtos.Message;
 using ContentService.Application.Interfaces;
 using MediatR;
 using Shared.Dtos;
@@ -8,7 +9,8 @@ public class DeleteReactionCommandHandler(
     IReactionRepo reactionRepo, 
     ICommentRepo commentRepo, 
     IReplyRepo replyRepo, 
-    IBlogRepo blogRepo) : IRequestHandler<DeleteReactionCommand, ResponseDto>
+    IBlogRepo blogRepo,
+    IRabbitMqProducer rabbitMqProducer) : IRequestHandler<DeleteReactionCommand, ResponseDto>
 {
     private readonly IReactionRepo _reactionRepo = reactionRepo;
     
@@ -17,6 +19,8 @@ public class DeleteReactionCommandHandler(
     private readonly IReplyRepo _replyRepo = replyRepo;
     
     private readonly IBlogRepo _blogRepo = blogRepo;
+    
+    private readonly IRabbitMqProducer _rabbitMqProducer = rabbitMqProducer;
     
     public async Task<ResponseDto> Handle(DeleteReactionCommand request, CancellationToken cancellationToken)
     {
@@ -38,18 +42,15 @@ public class DeleteReactionCommandHandler(
             // update reaction count
             if (reaction.CommentId.HasValue)
             {
-                await _commentRepo.UpdateFieldsAsync(c => c.CommentId == reaction.CommentId.Value,
-                    c => c.SetProperty(cc => cc.LikesCount, cc => cc.LikesCount - 1));
+                await _rabbitMqProducer.PublishAsync(new ReactionDeleteEvent(reaction.CommentId.Value, "comment"), "content_deleted", cancellationToken);
             }
             else if (reaction.BlogId.HasValue)
             {
-                await _blogRepo.UpdateFieldsAsync(b => b.BlogId == reaction.BlogId.Value,
-                    b => b.SetProperty(bl => bl.ReactionsCount, bl => bl.ReactionsCount - 1));
+                await _rabbitMqProducer.PublishAsync(new ReactionDeleteEvent(reaction.BlogId.Value, "blog"), "content_deleted", cancellationToken);
             }
             else if (reaction.ReplyId.HasValue)
             {
-                await _replyRepo.UpdateFieldsAsync(r => r.ReplyId == reaction.ReplyId.Value,
-                    r => r.SetProperty(rr => rr.LikesCount, rr => rr.LikesCount - 1));
+                await _rabbitMqProducer.PublishAsync(new ReactionDeleteEvent(reaction.ReplyId.Value, "reply"), "content_deleted", cancellationToken);
             }
             
             return ResponseDto.DeleteSuccess(null, "Reaction deleted successfully!");

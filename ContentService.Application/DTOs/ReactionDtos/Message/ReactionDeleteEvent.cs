@@ -1,8 +1,8 @@
 namespace ContentService.Application.DTOs.ReactionDtos.Message;
 
-public class ReactionCreatedEvent(int reactionId, string entityType)
+public class ReactionDeleteEvent(int entityId, string entityType)
 {
-    public int ReactionId { get; set; } = reactionId;
+    public int EntityId { get; set; } = entityId;
 
     public string EntityType { get; set; } = entityType;
 }

@@ -1,4 +1,5 @@
 using AutoMapper;
+using ContentService.Application.DTOs.ReplyDtos.Message;
 using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
 using MediatR;
@@ -12,7 +13,8 @@ public class CreateReplyCommandHandler(
     ICommentRepo commentRepo, 
     IImageService imageService,
     IUserService userService,
-    IModerationService moderationService
+    IModerationService moderationService,
+    IRabbitMqProducer rabbitMqProducer
     ) : IRequestHandler<CreateReplyCommand, ResponseDto>
 {
     private readonly ICommentRepo _commentRepo = commentRepo;
@@ -26,6 +28,8 @@ public class CreateReplyCommandHandler(
     private readonly IUserService _userService = userService;
     
     private readonly IModerationService _moderationService = moderationService;
+    
+    private readonly IRabbitMqProducer _rabbitMqProducer = rabbitMqProducer;
     
     private const string BucketName = "blogtracio";
     
@@ -61,13 +65,13 @@ public class CreateReplyCommandHandler(
             
             // insert reply into db
             var replyCreateResult = await _replyRepo.CreateAsync(reply);
+
+            if (!replyCreateResult) return ResponseDto.InternalError("Failed to create reply");
             
-            // update the replies count in comment
-            await _commentRepo.UpdateFieldsAsync(c => c.CommentId == request.CommentId,
-                c => c.SetProperty(cc => cc.RepliesCount, cc => cc.RepliesCount +1));
+            // publish reply create event
+            await _rabbitMqProducer.PublishAsync(new ReplyCreateEvent(request.CommentId), "reply_created", cancellationToken);
             
-            return !replyCreateResult ? ResponseDto.InternalError("Failed to create reply") :
-                ResponseDto.CreateSuccess(null, "Reply created successfully!");
+            return ResponseDto.CreateSuccess(null, "Reply created successfully!");
         }
         catch (Exception e)
         {

@@ -102,12 +102,12 @@ namespace ContentService.Api.Controllers
         [HttpPut("{blogId:int}")]
         public async Task<IActionResult> UpdateBlog(
             [FromRoute] int blogId,
-            [FromBody] UpdateBlogCommand updateCommand
+            [FromBody] BlogUpdateDto blogUpdateDto
         )
         {
-            var result = await _mediator.Send(updateCommand);
+            var result = await _mediator.Send(new UpdateBlogCommand(blogId, blogUpdateDto));
 
-        return StatusCode(result.StatusCode, result);
+            return StatusCode(result.StatusCode, result);
         }
         
         [HttpDelete("{blogId:int}")]
