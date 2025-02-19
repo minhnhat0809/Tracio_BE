@@ -33,7 +33,7 @@ public class CreateReplyCommandHandler(
     {
         try
         {
-            // check blog in db
+            // check comment in db
             var isCommentExisted = await _commentRepo.ExistsAsync(c => c.CommentId == request.CommentId);
             if (!isCommentExisted) return ResponseDto.NotFound("Comment not found");
             
@@ -59,13 +59,14 @@ public class CreateReplyCommandHandler(
             reply.MediaFiles = mediaFiles;
             reply.CyclistName = userDto.Username;
             
-            // insert comment into db
-            var commentCreateResult = await _replyRepo.CreateAsync(reply);
+            // insert reply into db
+            var replyCreateResult = await _replyRepo.CreateAsync(reply);
             
-            // update the comment count in blog
-            await _commentRepo.IncrementReplyCount(request.CommentId);
+            // update the replies count in comment
+            await _commentRepo.UpdateFieldsAsync(c => c.CommentId == request.CommentId,
+                c => c.SetProperty(cc => cc.RepliesCount, cc => cc.RepliesCount +1));
             
-            return !commentCreateResult ? ResponseDto.InternalError("Failed to create reply") :
+            return !replyCreateResult ? ResponseDto.InternalError("Failed to create reply") :
                 ResponseDto.CreateSuccess(null, "Reply created successfully!");
         }
         catch (Exception e)

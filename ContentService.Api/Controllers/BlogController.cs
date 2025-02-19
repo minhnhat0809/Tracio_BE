@@ -1,5 +1,6 @@
 using ContentService.Application.Commands;
 using ContentService.Application.DTOs.BlogDtos;
+using ContentService.Application.DTOs.BookmarkDtos;
 using ContentService.Application.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -14,26 +15,31 @@ namespace ContentService.Api.Controllers
         private readonly IMediator _mediator = mediator;
         
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> GetBlogs(
-            [FromQuery] int userRequestId,
             [FromQuery] int? userId,
             [FromQuery] string? sortBy = "CreatedAt",
             [FromQuery] bool ascending = true,
             [FromQuery] int pageSize = 5,
             [FromQuery] int pageNumber = 1)
         {
-                var query = new GetBlogsQuery
-                {
-                    UserRequestId = userRequestId,
-                    UserId = userId,
-                    SortBy = sortBy,
-                    Ascending = ascending,
-                    PageSize = pageSize,
-                    PageNumber = pageNumber
-                };
+            var value = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "custom_id")?.Value;
+            if (value == null) return StatusCode(StatusCodes.Status401Unauthorized);
+            var userBrowsingId = int.Parse(value);
+            
+            var query = new GetBlogsQuery
+            {
+                UserRequestId = userBrowsingId,
+                UserId = userId,
+                SortBy = sortBy,
+                Ascending = ascending,
+                PageSize = pageSize,
+                PageNumber = pageNumber
+            };
 
-                var result = await _mediator.Send(query);
-                return StatusCode(result.StatusCode, result);
+            var result = await _mediator.Send(query);
+            return StatusCode(result.StatusCode, result);
+
         }
 
         [HttpGet("{blogId:int}/comments")]
@@ -59,14 +65,12 @@ namespace ContentService.Api.Controllers
         
         [HttpGet("{blogId:int}/reactions")]
         public async Task<IActionResult> GetReactionsByBlogId(
-            [FromRoute] int blogId,
-            [FromQuery] sbyte reactionType
+            [FromRoute] int blogId
         )
         {
             var query = new GetReactionsByBlogQuery()
             {
-                BlogId = blogId,
-                ReactionType = reactionType
+                BlogId = blogId
             };
             
             var result = await _mediator.Send(query);
@@ -75,9 +79,14 @@ namespace ContentService.Api.Controllers
         }
         
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> CreateBlog([FromForm] BlogCreateDto blogCreateDto, [FromForm] List<IFormFile> mediaFiles)
         {
-            var result = await _mediator.Send(new CreateBlogCommand(blogCreateDto, mediaFiles));
+            var value = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "custom_id")?.Value;
+            if (value == null) return StatusCode(StatusCodes.Status401Unauthorized);
+            var userBrowsingId = int.Parse(value);
+            
+            var result = await _mediator.Send(new CreateBlogCommand(userBrowsingId, blogCreateDto, mediaFiles));
             
             return StatusCode(result.StatusCode, result);
         }
@@ -100,6 +109,19 @@ namespace ContentService.Api.Controllers
         {
             var result = await _mediator.Send(new DeleteBlogCommand(blogId));
 
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpPost("bookmarks")]
+        [Authorize]
+        public async Task<IActionResult> BookmarkBlog([FromBody] BookmarkCreateDto bookmarkCreateDto)
+        {
+            var value = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "custom_id")?.Value;
+            if (value == null) return StatusCode(StatusCodes.Status401Unauthorized);
+            var userBrowsingId = int.Parse(value);
+            
+            var result = await _mediator.Send(new CreateBookmarkCommand(userBrowsingId, bookmarkCreateDto));
+            
             return StatusCode(result.StatusCode, result);
         }
     }

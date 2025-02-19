@@ -7,16 +7,16 @@ public class BlogWithCommentsDto
     public int BlogId { get; set; }
     
     public int CreatorId { get; set; }
-    
-    public int CreatorName { get; set; }
+
+    public string CreatorName { get; set; } = null!;
 
     public string CreatorAvatar { get; set; } = null!;
     
     public string CategoryName { get; set; } = null!;
 
-    public string Tittle { get; set; } = null!;
-
     public string Content { get; set; } = null!;
+    
+    
 
     public DateTime CreatedAt { get; set; }
     

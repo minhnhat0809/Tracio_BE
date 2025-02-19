@@ -63,10 +63,11 @@ public class CreateCommentCommandHandler(
             var commentCreateResult = await _commentRepo.CreateAsync(comment);
             
             // update the comment count in blog
-            await _blogRepo.IncrementCommentCount(request.BlogId);
+            var blogUpdateResult = await _blogRepo.UpdateFieldsAsync(b => b.BlogId == request.BlogId,
+                b => b.SetProperty(bb => bb.CommentsCount, bb => bb.CommentsCount +1)); 
             
-            return !commentCreateResult ? ResponseDto.InternalError("Failed to create comment") :
-                ResponseDto.CreateSuccess(null, "Comment created successfully!");
+            return commentCreateResult ? ResponseDto.CreateSuccess(null, "Comment created successfully!"):
+                    ResponseDto.InternalError("Failed to create comment");
         }
         catch (Exception e)
         {

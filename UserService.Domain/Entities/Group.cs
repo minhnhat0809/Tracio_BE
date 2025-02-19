@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using NetTopologySuite.Geometries;
 
 namespace UserService.Domain.Entities;
@@ -18,6 +19,7 @@ public partial class Group
 
     public DateTime? StartTime { get; set; }
 
+    
     public Point? StartLocation { get; set; }
 
     public bool? IsPublic { get; set; }

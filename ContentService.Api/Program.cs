@@ -1,87 +1,37 @@
-using Amazon.S3;
-using ContentService.Application.DTOs;
-using ContentService.Application.Interfaces;
-using ContentService.Application.Mappings;
-using ContentService.Application.Queries.Handlers;
+using ContentService.Api.Extensions;
 using ContentService.Application.Services;
 using ContentService.Infrastructure;
-using ContentService.Infrastructure.MessageBroker;
-using Microsoft.AspNetCore.Http.Features;
-using RabbitMQ.Client;
-using Userservice;
-
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+// Load Firebase Admin SDK Credentials
+var secret = new GetSecrets();
+var firebaseCredentials = await secret.GetFireBaseCredentials();
+
+Console.WriteLine(firebaseCredentials);
+
+FirebaseApp.Create(new AppOptions { Credential = GoogleCredential.FromJson(firebaseCredentials) });
+
+// Add services
 builder.Services.AddControllers();
-
-// azure ai content safety
-builder.Services.Configure<ContentSafetySettings>(builder.Configuration.GetSection("AzureContentSafety"));
-
-// mediatR
-builder.Services.AddMediatR(config =>
-{
-    config.RegisterServicesFromAssembly(typeof(GetBlogsQueryHandler).Assembly);
-});
-
-//service
-builder.Services.AddScoped<IImageService, ImageService>();
-builder.Services.AddScoped<IUserService, ContentService.Api.Services.UserService>();
-builder.Services.AddScoped<IModerationService, ModerationService>();
-
-// unit of work
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-
-// mapper
-builder.Services.AddAutoMapper(typeof(BlogProfile).Assembly);
-
-// repository
+builder.Services.ConfigureSwagger();
+builder.Services.ConfigureAuthentication();
+builder.Services.ConfigureAuthorization();
+builder.Services.ConfigureDatabase(builder.Configuration);
+builder.Services.ConfigureApplicationServices();
 builder.Services.AddInfrastructure(builder.Configuration);
-
-// cors
-builder.Services.AddCors(opts =>
-{
-    opts.AddPolicy("CORSPolicy", corsPolicyBuilder => corsPolicyBuilder
-        .AllowAnyHeader().WithOrigins()
-        .AllowAnyMethod()
-        .AllowCredentials()
-        .SetIsOriginAllowed((_) => true));
-});
-
-// set volume limit
-builder.Services.Configure<FormOptions>(builder.Configuration.GetSection("FormOptions"));
-
-// rabbitmq
-builder.Services.AddSingleton<IConnectionFactory>(_ => new ConnectionFactory
-{
-    HostName = "localhost",
-    UserName = "guest",
-    Password = "guest"
-});
-builder.Services.AddSingleton<IRabbitMqProducer, RabbitMqProducer>();
-
-// aws
-builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());
-builder.Services.AddAWSService<IAmazonS3>();
-
-// grpc
-builder.Services.AddGrpcClient<UserService.UserServiceClient>(o =>
-{
-    o.Address = new Uri("http://localhost:5001");  // Replace with UserService URL
-}).ConfigurePrimaryHttpMessageHandler(() =>
-{
-    var handler = new HttpClientHandler();
-    handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator; 
-    handler.SslProtocols = System.Security.Authentication.SslProtocols.Tls12; 
-    return handler;
-});
+builder.Services.ConfigureCors();
+builder.Services.ConfigureRabbitMq();
+builder.Services.ConfigureGrpcClients();
+builder.Services.ConfigureAwsServices(builder.Configuration);
+builder.Services.ConfigureMediatr();
+builder.Services.ConfigureMapper();
+builder.Services.ConfigureAzure(builder.Configuration);
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Middleware pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -89,7 +39,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseCors("CORSPolicy");
 app.MapControllers();
 app.Run();

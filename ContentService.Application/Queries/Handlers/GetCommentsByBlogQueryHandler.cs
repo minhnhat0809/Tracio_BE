@@ -33,7 +33,7 @@ public class GetCommentsByBlogQueryHandler(IBlogRepo blogRepo, ICommentRepo comm
             
             // build filter expression
             basePredicate = basePredicate
-                .And(c => c.BlogId.Equals(request.BlogId));
+                .And(c => c.BlogId.Equals(request.BlogId) && c.IsDeleted != true);
             
             // build sort expression
             var sortExpression = SortHelper.BuildSortExpression<Comment>("CreatedAt");

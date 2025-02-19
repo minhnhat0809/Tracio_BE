@@ -1,4 +1,6 @@
-﻿using ContentService.Application.DTOs.BlogDtos.ViewDtos;
+﻿using ContentService.Application.DTOs.BlogDtos.Message;
+using ContentService.Application.DTOs.BlogDtos.ViewDtos;
+using ContentService.Application.DTOs.MediaFileDTOs.ViewDtos;
 using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
 using ContentService.Domain.Enums;
@@ -9,11 +11,17 @@ using Shared.Ultilities;
 
 namespace ContentService.Application.Queries.Handlers;
 
-public class GetBlogsQueryHandler(IBlogRepo blogRepo, IFollowerOnlyBlogRepo followerOnlyBlogRepo, IUserService userService) : IRequestHandler<GetBlogsQuery, ResponseDto>
+public class GetBlogsQueryHandler(
+    IBlogRepo blogRepo, 
+    IFollowerOnlyBlogRepo followerOnlyBlogRepo,
+    IRabbitMqProducer rabbitMqProducer,
+    IUserService userService) : IRequestHandler<GetBlogsQuery, ResponseDto>
 {
     private readonly IBlogRepo _blogRepo = blogRepo;
     
     private readonly IFollowerOnlyBlogRepo _followerOnlyBlogRepo = followerOnlyBlogRepo;
+    
+    private readonly IRabbitMqProducer _rabbitMqProducer = rabbitMqProducer;
 
     private readonly IUserService _userService = userService;
     
@@ -64,13 +72,23 @@ public class GetBlogsQueryHandler(IBlogRepo blogRepo, IFollowerOnlyBlogRepo foll
                     Avatar = b.CreatorAvatar,
                     PrivacySetting = b.PrivacySetting,
                     Content = b.Content,
+                    MediaFiles = b.MediaFiles.Select(mf => new MediaFileDto{ MediaId = mf.MediaId, MediaUrl = mf.MediaUrl }).ToList(),
                     CreatedAt = b.CreatedAt,
                     UpdatedAt = b.UpdatedAt,
                     LikesCount = b.ReactionsCount,
-                    CommentsCount = b.CommentsCount
+                    CommentsCount = b.CommentsCount,
+                    ReactionId = b.Reactions
+                        .Where(r => r.CyclistId == request.UserRequestId)
+                        .Select(r => r.ReactionId)
+                        .FirstOrDefault(),
+                    // ReSharper disable once ReplaceWithSingleCallToAny
+                    IsReacted = b.Reactions
+                        .Where(r => r.CyclistId == request.UserRequestId)
+                        .Any()
                 },
                 request.PageNumber, request.PageSize,
-                sortExpression, request.Ascending
+                sortExpression, request.Ascending,
+                b => b.MediaFiles, b => b.Reactions
             );
             
             return ResponseDto.GetSuccess(new
@@ -118,13 +136,17 @@ public class GetBlogsQueryHandler(IBlogRepo blogRepo, IFollowerOnlyBlogRepo foll
                     Avatar = b.CreatorAvatar,
                     PrivacySetting = b.PrivacySetting,
                     Content = b.Content,
+                    MediaFiles = b.MediaFiles.Select(mf => new MediaFileDto{ MediaId = mf.MediaId, MediaUrl = mf.MediaUrl }).ToList(),
                     CreatedAt = b.CreatedAt,
                     UpdatedAt = b.UpdatedAt,
                     LikesCount = b.ReactionsCount,
-                    CommentsCount = b.CommentsCount
+                    CommentsCount = b.CommentsCount,
+                    IsReacted = b.Reactions.Any(r => r.CyclistId == request.UserRequestId),
+                    ReactionId = b.Reactions.Where(r => r.CyclistId == request.UserRequestId).Select(r => r.CyclistId).FirstOrDefault()
                 },
                 request.PageNumber, halfPageSize,
-                sortExpressionBlog, request.Ascending
+                sortExpressionBlog, request.Ascending,
+                b => b.MediaFiles, b => b.Reactions
             );
 
             // build sort expression
@@ -141,14 +163,27 @@ public class GetBlogsQueryHandler(IBlogRepo blogRepo, IFollowerOnlyBlogRepo foll
                     Avatar = b.Blog.CreatorAvatar,
                     PrivacySetting = b.Blog.PrivacySetting,
                     Content = b.Blog.Content,
+                    MediaFiles = b.Blog.MediaFiles.Select(mf => new MediaFileDto{ MediaId = mf.MediaId, MediaUrl = mf.MediaUrl }).ToList(),
                     CreatedAt = b.Blog.CreatedAt,
                     UpdatedAt = b.Blog.UpdatedAt,
                     LikesCount = b.Blog.ReactionsCount,
-                    CommentsCount = b.Blog.CommentsCount
+                    CommentsCount = b.Blog.CommentsCount,
+                    IsReacted = b.Blog.Reactions.Any(r => r.CyclistId == request.UserRequestId),
+                    ReactionId = b.Blog.Reactions.Where(r => r.CyclistId == request.UserRequestId).Select(r => r.CyclistId).FirstOrDefault()
                 },
                 request.PageNumber, halfPageSize,
                 sortBy: sortExpressionFollowerOnly, ascending: false,
-                includes: b => b.Blog);
+                b => b.Blog, b => b.Blog.MediaFiles, b => b.Blog.Reactions);
+            
+            // get followerOnlyBlogIds to update
+            var followerOnlyBlogIds = followerOnlyBlogs.Select(b => b.BlogId).ToList();
+            
+            // publish message for rabbit
+            await _rabbitMqProducer.PublishAsync(new MarkBlogsAsReadMessage
+            {
+                UserId =  request.UserRequestId,
+                BlogIds = followerOnlyBlogIds
+            }, "mark-blogs-as-read");
             
             // Merge & Interleave the Blogs
             var finalBlogs = InterleaveLists(followerOnlyBlogs, publicBlogs);

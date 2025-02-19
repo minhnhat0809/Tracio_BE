@@ -1,8 +1,10 @@
-﻿using System.Linq.Expressions;
-using ContentService.Application.Interfaces;
-using ContentService.Domain;
+﻿using System.Data.SqlClient;
+using System.Linq.Expressions;
+using ContentService.Application.Interfaces;    
 using ContentService.Infrastructure.Contexts;
+using Dapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
 
 namespace ContentService.Infrastructure.Repositories;
 
@@ -63,13 +65,20 @@ public class RepositoryBase<T>(TracioContentDbContext context) : IRepositoryBase
         }
 
         return await query
+            .AsNoTracking()
             .Skip((pageIndex - 1) * pageSize)
             .Take(pageSize)
             .Select(selector)
             .ToListAsync();
     }
-
-
+    
+    public async Task<bool> UpdateFieldsAsync(Expression<Func<T, bool>> filter, Expression<Func<SetPropertyCalls<T>, SetPropertyCalls<T>>> updateExpression)
+    {
+        return await _context.Set<T>()
+            .Where(filter)
+            .ExecuteUpdateAsync(updateExpression) > 0;
+    }
+    
     public async Task<bool> CreateAsync(T entity)
     {
         ArgumentNullException.ThrowIfNull(entity);
