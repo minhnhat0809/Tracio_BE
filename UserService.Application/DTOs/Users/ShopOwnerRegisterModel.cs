@@ -21,7 +21,6 @@ public class ShopOwnerRegisterModel
     [StringLength(50, ErrorMessage = "Provider ID cannot exceed 50 characters.")]
     public string? ProviderId { get; set; }
 
-    [FileExtensions(Extensions = "jpg,jpeg,png", ErrorMessage = "Only JPG, JPEG, or PNG files are allowed.")]
     public IFormFile? AvatarFile { get; set; }
 
     // Shop Information

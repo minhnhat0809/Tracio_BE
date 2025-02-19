@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Firebase.Auth.Requests;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -66,8 +67,56 @@ namespace UserService.Api.Controllers
             return StatusCode(response.StatusCode, response);
         }
         
-        
+        // POST: api/auth/send-verify-email
+        [HttpPost("send-verify-email")]
+        public async Task<IActionResult> SendVerifyEmail([FromBody] string? email)
+        {
+            if (email == null)
+            {
+                return BadRequest(new ResponseModel("error", 400, "Email is required.", null));
+            }
 
+            var response = await _authService.SendEmailVerify(email);
+            return StatusCode(response.StatusCode, response);
+        }
         
+        // POST: api/auth/send-otp
+        [HttpPost("send-otp")]
+        public async Task<IActionResult> SendOtp([FromBody] SendPhoneOtpRequestModel loginOtpRequest)
+        {
+            if (string.IsNullOrEmpty(loginOtpRequest.PhoneNumber))
+            {
+                return BadRequest(new ResponseModel("error", 400, "PhoneNumber is required.", null));
+            }
+            var response = await _authService.SendPhoneOtp(loginOtpRequest);
+            return StatusCode(response.StatusCode, response);
+        }
+        
+        // POST: api/auth/verify-otp-login
+        [HttpPost("verify-otp-login")]
+        public async Task<IActionResult> VerifyOtpForLogin([FromBody] VerifyPhoneOtpRequestModel? requestModel)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new ResponseModel("error", 400, "IdToken is required.", null));
+            }
+            var response = await _authService.VerifyPhoneOtp(requestModel);
+            return StatusCode(response.StatusCode, response);
+            
+        }
+
+        // POST: api/auth/verify-otp-link-credential-user
+        [HttpPost("verify-otp-link-credential-user")]
+        public async Task<IActionResult> VerifyOtpForLinkWithCredentialUser([FromBody] VerifyPhoneNumberLinkRequestModel? requestModel)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new ResponseModel("error", 400, "FirebaseId is required.", null));
+            }
+            var response = await _authService.VerifyPhoneNumberLinkWithCredential(requestModel);
+            return StatusCode(response.StatusCode, response);
+            
+        }
+
     }
 }
