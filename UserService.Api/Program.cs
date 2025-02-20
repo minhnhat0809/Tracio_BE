@@ -1,11 +1,14 @@
 //using UserService.Api.Services;
 
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using UserService.Api.Exceptions;
 using UserService.Api.Helper;
 using UserService.Api.Services;
+using UserService.Application.Commands;
 using UserService.Application.Interfaces.Services;
 using UserService.Application.Mappings;
+using UserService.Application.Queries;
 using UserService.Domain;
 using UserService.Infrastructure.Contexts;
 using UserService.Infrastructure.DependencyInjection;
@@ -16,6 +19,19 @@ FirebaseConfig.InitializeFirebase();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+// mediatr
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssemblies(
+        typeof(LoginQuery).Assembly,     
+        typeof(UserRegisterCommand).Assembly, 
+        typeof(ShopRegisterCommand).Assembly, 
+        typeof(VerifyPhoneOtpCommand).Assembly, 
+        typeof(SendEmailVerifyCommand).Assembly, 
+        typeof(SendEmailVerifyCommand).Assembly, 
+        typeof(ResetPasswordCommand).Assembly, 
+        Assembly.GetExecutingAssembly());
+});
 
 // repo
 builder.Services.AddServices();

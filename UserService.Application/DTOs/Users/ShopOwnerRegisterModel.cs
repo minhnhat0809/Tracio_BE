@@ -13,7 +13,7 @@ public class ShopOwnerRegisterModel
     public string Email { get; set; } = null!;
 
     [StringLength(100, ErrorMessage = "UserName cannot exceed 100 characters.")]
-    public string? UserName { get; set; }
+    public required string UserName { get; set; }
 
     [Phone(ErrorMessage = "Invalid phone number format.")]
     public string? PhoneNumber { get; set; }

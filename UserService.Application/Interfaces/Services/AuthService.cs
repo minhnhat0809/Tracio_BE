@@ -25,7 +25,6 @@ public interface IAuthService
     Task<ResponseModel> SendEmailVerify(string? email);
     Task<ResponseModel> SendPhoneOtp(SendPhoneOtpRequestModel? loginModel);
     Task<ResponseModel> VerifyPhoneOtp(VerifyPhoneOtpRequestModel? email);
-    Task<ResponseModel> VerifyPhoneNumberLinkWithCredential(VerifyPhoneNumberLinkRequestModel? requestModel);
 
 }
 public class AuthService : IAuthService
@@ -753,90 +752,8 @@ public class AuthService : IAuthService
     }
 }
 
-    public async Task<ResponseModel> VerifyPhoneNumberLinkWithCredential(
-        VerifyPhoneNumberLinkRequestModel? requestModel)
-    {
-        try
-        {
-            if (requestModel == null || string.IsNullOrEmpty(requestModel.VerificationId) ||
-                string.IsNullOrEmpty(requestModel.OtpCode))
-            {
-                return new ResponseModel("error", 400, "Verification ID and OTP are required.", null);
-            }
+  
 
-            var firebaseApiKey = _configuration["Firebase:ApiKey"];
-            if (string.IsNullOrEmpty(firebaseApiKey))
-            {
-                return new ResponseModel("error", 500, "Firebase API Key is missing!", null);
-            }
 
-            // Firebase API URL to verify OTP
-            var verifyOtpUrl =
-                $"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPhoneNumber?key={firebaseApiKey}";
-
-            // Payload to verify OTP
-            var payload = new
-            {
-                sessionInfo = requestModel.VerificationId, // The verification ID from frontend
-                code = requestModel.OtpCode // The OTP code entered by the user
-            };
-
-            var jsonPayload = JsonSerializer.Serialize(payload);
-            var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
-            // do verify phone otp
-            using var client = new HttpClient();
-            var response = await client.PostAsync(verifyOtpUrl, content);
-            var responseBody = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-            {
-                return new ResponseModel("error", (int)response.StatusCode, "Invalid OTP.", responseBody);
-            }
-
-            var result = JsonSerializer.Deserialize<FirebaseAuthResponse>(
-                responseBody,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
-            );
-            if (string.IsNullOrEmpty(result?.IdToken))
-            {
-                return new ResponseModel("error", 401, "Authentication failed. No token received.", null);
-            }
-
-            var linkPhoneUrl = $"https://identitytoolkit.googleapis.com/v1/accounts:update?key={firebaseApiKey}";
-            var linkPayload = new
-            {
-                idToken = result.IdToken, // Authenticated user's ID token
-                phoneNumber = requestModel.PhoneNumber, // Phone number to link
-                returnSecureToken = true
-            };
-
-            var jsonLinkPayload = JsonSerializer.Serialize(linkPayload);
-            var linkContent = new StringContent(jsonLinkPayload, Encoding.UTF8, "application/json");
-            // link phone to user credential
-            var linkResponse = await client.PostAsync(linkPhoneUrl, linkContent);
-            var linkResponseBody = await linkResponse.Content.ReadAsStringAsync();
-
-            if (!linkResponse.IsSuccessStatusCode)
-            {
-                return new ResponseModel("error", (int)linkResponse.StatusCode, "Failed to link phone number.",
-                    linkResponseBody);
-            }
-
-            /*var linkResult = JsonSerializer.Deserialize<FirebaseAuthResponse>(linkResponseBody,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            if (string.IsNullOrEmpty(linkResult?.IdToken))
-            {
-                return new ResponseModel("error", 500,
-                    "Failed to obtain updated user token after linking phone number.", null);
-            }
-            */
-
-            return new ResponseModel("success", 200, "Phone number linked successfully.", linkResponseBody);
-        }
-        catch (Exception ex)
-        {
-            return new ResponseModel("error", 500, "Unexpected error occurred.", ex.Message);
-        }
-    }
 
 }
