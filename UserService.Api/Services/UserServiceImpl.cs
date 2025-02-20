@@ -46,23 +46,4 @@ public class UserServiceImpl(IUserRepository userRepo) : Userservice.UserService
             throw new RpcException(new Status(StatusCode.Internal, $"Internal Error: {ex.Message}"));
         }
     }
-
-    public override async Task<FollowBatchResponse> CheckFollowingBatch(FollowBatchRequest request,
-        ServerCallContext context)
-    {
-        try
-        {
-            var result = await userRepo.GetFollowingsOfUser(request.FollowerId, request.AuthorIds.ToList());
-
-            var response = new FollowBatchResponse();
-
-            response.FollowingAuthors.AddRange(result);
-
-            return response;
-        }
-        catch (Exception ex)
-        {
-            throw new RpcException(new Status(StatusCode.Internal, $"Internal Error: {ex.Message}"));
-        }
-    }
 }

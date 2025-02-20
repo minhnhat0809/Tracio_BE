@@ -9,5 +9,4 @@ public interface IUserRepository : IRepositoryBase<User>
 
     Task<bool> AreBothUsersExistAsync(int userId1, int userId2);
 
-    Task<List<int>> GetFollowingsOfUser(int userId, List<int> authorIds);
 }

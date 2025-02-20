@@ -47,12 +47,4 @@ public class UserRepository(TracioUserDbContext context) : RepositoryBase<User>(
 
         return count == 2; 
     }
-
-    public async Task<List<int>> GetFollowingsOfUser(int userId, List<int> authorIds)
-    {
-        return  await _context.Followers
-            .Where(f => f.FollowerId == userId && authorIds.Contains(f.FollowedId))
-            .Select(f => f.FollowedId)
-            .ToListAsync();
-    }
 }

@@ -5,7 +5,6 @@ package userservice;
 service UserService {
   rpc ValidateUser (UserRequest) returns (UserResponse);
   rpc CheckIsFollow (CheckIsFollowRequest) returns (CheckIsFollowResponse);
-  rpc CheckFollowingBatch(FollowBatchRequest) returns (FollowBatchResponse);
 }
 
 message UserRequest {
@@ -27,12 +26,4 @@ message CheckIsFollowResponse {
   bool is_follower = 1;
 }
 
-message FollowBatchRequest {
-  int32 follower_id = 1;
-  repeated int32 author_ids = 2;
-}
-
-message FollowBatchResponse {
-  repeated int32 following_authors = 1;
-}
 

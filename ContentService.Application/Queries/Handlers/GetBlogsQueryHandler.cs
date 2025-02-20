@@ -177,13 +177,16 @@ public class GetBlogsQueryHandler(
             
             // get followerOnlyBlogIds to update
             var followerOnlyBlogIds = followerOnlyBlogs.Select(b => b.BlogId).ToList();
-            
-            // publish message for rabbit
-            await _rabbitMqProducer.PublishAsync(new MarkBlogsAsReadEvent
+
+            if (followerOnlyBlogs.Count > 0)
             {
-                UserId =  request.UserRequestId,
-                BlogIds = followerOnlyBlogIds
-            }, "mark-blogs-as-read");
+                // publish message for rabbit
+                await _rabbitMqProducer.PublishAsync(new MarkBlogsAsReadEvent
+                {
+                    UserId =  request.UserRequestId,
+                    BlogIds = followerOnlyBlogIds
+                }, "mark-blogs-as-read");
+            }
             
             // Merge & Interleave the Blogs
             var finalBlogs = InterleaveLists(followerOnlyBlogs, publicBlogs);

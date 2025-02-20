@@ -23,18 +23,4 @@ public class UserService(Userservice.UserService.UserServiceClient userServiceCl
         return response.IsFollower;
     }
 
-    public async Task<List<int>> CheckFollowings(int userId, List<int> authorIds)
-    {
-        var request = new FollowBatchRequest 
-        { 
-            FollowerId = userId
-        };
-
-        request.AuthorIds.AddRange(authorIds); 
-
-        var response = await userServiceClient.CheckFollowingBatchAsync(request);
-
-        return response.FollowingAuthors.ToList(); 
-    }
-
 }
