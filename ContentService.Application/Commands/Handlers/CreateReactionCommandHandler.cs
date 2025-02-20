@@ -4,7 +4,6 @@ using ContentService.Application.DTOs.ReactionDtos.ViewDtos;
 using ContentService.Application.DTOs.UserDtos.View;
 using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
-using ContentService.Domain.Events;
 using MediatR;
 using Shared.Dtos;
 
@@ -70,9 +69,6 @@ public class CreateReactionCommandHandler(
         if (!isSucceed) return ResponseDto.InternalError("Failed to create reaction.");
         
         var reactionDto = _mapper.Map<ReactionDto>(reaction);
-
-        // publish for notification
-        //await rabbitMqProducer.PublishAsync(new ReactionToReplyEvent(request.EntityId), "notification_queue");
         
         // publish reaction create event
         await rabbitMqProducer.PublishAsync(new ReactionCreateEvent(request.EntityId, request.EntityType), "reaction_created");

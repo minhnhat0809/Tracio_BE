@@ -30,7 +30,7 @@ public class DeleteCommentCommandHandler(ICommentRepo commentRepo, IBlogRepo blo
             // publish comment delete event
             await _rabbitMqProducer.PublishAsync(new CommentDeleteEvent(blogIdOfComment), "content_deleted", cancellationToken);
             
-            return ResponseDto.DeleteSuccess(null, "Comment deleted successfully!");
+            return ResponseDto.DeleteSuccess("Comment deleted successfully!");
         }
         catch (Exception e)
         {

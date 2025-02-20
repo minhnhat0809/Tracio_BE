@@ -39,12 +39,4 @@ public class UserRepository(TracioUserDbContext context) : RepositoryBase<User>(
         return await query.FirstOrDefaultAsync();
     }
     
-    public async Task<bool> AreBothUsersExistAsync(int userId1, int userId2)
-    {
-        var count = await _context.Users
-            .Where(u => u.UserId == userId1 || u.UserId == userId2)
-            .CountAsync();
-
-        return count == 2; 
-    }
 }

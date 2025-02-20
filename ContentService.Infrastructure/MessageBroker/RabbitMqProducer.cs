@@ -1,69 +1,31 @@
-using System.Text;
 using System.Text.Json;
 using ContentService.Application.Interfaces;
-using RabbitMQ.Client;
-using RabbitMQ.Client.Exceptions;
+using MassTransit;
 
 namespace ContentService.Infrastructure.MessageBroker;
 
-public class RabbitMqProducer(IConnectionFactory factory) : IRabbitMqProducer, IAsyncDisposable
+public class RabbitMqProducer(IPublishEndpoint publishEndpoint) : IRabbitMqProducer
 {
-    private readonly Task<IConnection> _connectionTask = factory.CreateConnectionAsync(); // ✅ Use async connection initialization
-    private IChannel? _channel;
-
+    private readonly IPublishEndpoint _publishEndpoint = publishEndpoint;
+    
     public async Task PublishAsync<T>(T message, string queueName, CancellationToken cancellationToken = default)
     {
+        if (message == null)
+        {
+            Console.WriteLine($"[MassTransit] Warning: Attempted to publish a null message to {queueName}. Ignoring.");
+            return; 
+        }
+        
         try
         {
-            var connection = await _connectionTask; // ✅ Await the connection
-            _channel ??= await connection.CreateChannelAsync(cancellationToken: cancellationToken); // ✅ Ensure channel is initialized
+            Console.WriteLine($"[MassTransit] Publishing message to {queueName}: {JsonSerializer.Serialize(message)}");
 
-            await _channel.QueueDeclareAsync(
-                queue: queueName,
-                durable: true,
-                exclusive: false,
-                autoDelete: false,
-                arguments: new Dictionary<string, object>
-                {
-                    { "x-dead-letter-exchange", $"{queueName}_dlx" }, // Send failed messages to DLX
-                    { "x-dead-letter-routing-key", $"{queueName}_retry" }, // Route to retry queue if failure
-                }!,
-                cancellationToken: cancellationToken);
-
-            var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
-
-            var properties = new BasicProperties
-            {
-                Persistent = true 
-            };
-
-            await _channel.BasicPublishAsync(
-                exchange: "",
-                routingKey: queueName,
-                mandatory: false,
-                basicProperties: properties,
-                body: body,
-                cancellationToken: cancellationToken);
+            await _publishEndpoint.Publish(message, cancellationToken);
         }
-        catch (BrokerUnreachableException ex)
+        catch (Exception ex)
         {
-            Console.WriteLine($"[RabbitMQ] Connection error: {ex.Message}");
+            Console.WriteLine($"[MassTransit] ERROR publishing message to {queueName}: {ex.Message}");
             throw;
-        }
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (_channel is not null)
-        {
-            await _channel.CloseAsync();
-            await _channel.DisposeAsync();
-        }
-
-        if (await _connectionTask is { } connection)
-        {
-            await connection.CloseAsync();
-            await connection.DisposeAsync();
         }
     }
 }

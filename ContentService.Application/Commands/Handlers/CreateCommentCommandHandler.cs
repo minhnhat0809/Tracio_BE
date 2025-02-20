@@ -46,12 +46,12 @@ public class CreateCommentCommandHandler(
             if (!userDto.IsUserValid) return ResponseDto.NotFound("User does not exist");
             
             // moderate content
-            var moderationResult = await _moderationService.ProcessModerationResult(request.Content);
-            if(!moderationResult.IsSafe) return ResponseDto.BadRequest("Content contains harmful or offensive language.");
+            /*var moderationResult = await _moderationService.ProcessModerationResult(request.Content);
+            if(!moderationResult.IsSafe) return ResponseDto.BadRequest("Content contains harmful or offensive language.");*/
             
             // upload file to aws s3 and get url
             var mediaFileUrl = new List<string>();
-            if (request.MediaFiles != null)
+            if (request.MediaFiles != null && request.MediaFiles.Count != 0)
             {
                 mediaFileUrl = await _imageService.UploadFiles(request.MediaFiles, BucketName, null);
             }
@@ -62,6 +62,7 @@ public class CreateCommentCommandHandler(
             
             comment.MediaFiles = mediaFiles;
             comment.CyclistName = userDto.Username;
+            comment.CyclistAvatar = userDto.Avatar;
             
             // insert comment into db
             var commentCreateResult = await _commentRepo.CreateAsync(comment);

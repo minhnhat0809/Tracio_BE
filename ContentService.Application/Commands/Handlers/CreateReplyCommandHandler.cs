@@ -62,6 +62,7 @@ public class CreateReplyCommandHandler(
             
             reply.MediaFiles = mediaFiles;
             reply.CyclistName = userDto.Username;
+            reply.CyclistAvatar = userDto.Avatar;
             
             // insert reply into db
             var replyCreateResult = await _replyRepo.CreateAsync(reply);

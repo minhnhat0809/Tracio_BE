@@ -6,6 +6,7 @@ using UserService.Api.Helper;
 using UserService.Api.Services;
 using UserService.Application.Interfaces.Services;
 using UserService.Application.Mappings;
+using UserService.Application.Queries;
 using UserService.Domain;
 using UserService.Infrastructure.Contexts;
 using UserService.Infrastructure.DependencyInjection;
@@ -65,6 +66,11 @@ builder.Services.AddCors(opts =>
         .AllowAnyMethod()
         .AllowCredentials()
         .SetIsOriginAllowed((_) => true));
+});
+
+builder.Services.AddMediatR(config =>
+{
+    config.RegisterServicesFromAssembly(typeof(GetFollowerIdsQuery).Assembly);
 });
 
 var app = builder.Build();

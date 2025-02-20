@@ -6,5 +6,7 @@ public interface IUserService
 {
     Task<UserDto> ValidateUser(int creatorId);
     
-    Task<bool> IsFollower(int userRequestId, int userId);
+    Task<UserFollowerDto> CheckUserFollower(int browsingUserId, int userId);
+
+    Task<List<int>> GetFollowingUserIds(int userId);
 }

@@ -24,9 +24,9 @@ public class ResponseDto(object? result, string? message, bool isSucceed, int st
         return new ResponseDto(result, message, true, 200);
     }
     
-    public static ResponseDto DeleteSuccess(object? result, string? message)
+    public static ResponseDto DeleteSuccess(string? message)
     {
-        return new ResponseDto(result, message, true, 204);
+        return new ResponseDto(null, message, true, 204);
     }
 
     public static ResponseDto InternalError(string? message)

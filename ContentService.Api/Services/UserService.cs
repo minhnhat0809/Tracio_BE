@@ -15,12 +15,20 @@ public class UserService(Userservice.UserService.UserServiceClient userServiceCl
         return new UserDto{IsUserValid = response.IsValid, Username = response.UserName, Avatar = response.Avatar};
     }
 
-    public async Task<bool> IsFollower(int userRequestId, int userId)
+    public async Task<UserFollowerDto> CheckUserFollower(int browsingUserId, int userId)
     {
-        var request = new CheckIsFollowRequest { UserId1 = userRequestId, UserId2 = userId };
-        var response = await userServiceClient.CheckIsFollowAsync(request);
+        var request = new UserFollowerRequest { UserId = userId, BrowsingUserId = browsingUserId };
+        var response = await userServiceClient.CheckUserAndFollowerAsync(request);
 
-        return response.IsFollower;
+        return new UserFollowerDto{IsExisted = response.IsExisted, IsFollower = response.IsFollower};
     }
 
+    public async Task<List<int>> GetFollowingUserIds(int userId)
+    {
+        var request = new GetFollowersRequest { UserId = userId };
+        
+        var response = await userServiceClient.GetFollowerIdsAsync(request);
+
+        return response.FollowerIds.ToList();
+    }
 }

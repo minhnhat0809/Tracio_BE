@@ -18,6 +18,7 @@ namespace ContentService.Api.Controllers
         [Authorize]
         public async Task<IActionResult> GetBlogs(
             [FromQuery] int? userId,
+            [FromQuery] int? categoryId,
             [FromQuery] string? sortBy = "CreatedAt",
             [FromQuery] bool ascending = true,
             [FromQuery] int pageSize = 5,
@@ -31,6 +32,7 @@ namespace ContentService.Api.Controllers
             {
                 UserRequestId = userBrowsingId,
                 UserId = userId,
+                CategoryId = categoryId,
                 SortBy = sortBy,
                 Ascending = ascending,
                 PageSize = pageSize,
@@ -46,6 +48,22 @@ namespace ContentService.Api.Controllers
         public async Task<IActionResult> GetBlogCategories()
         {
             var result = await _mediator.Send(new GetBlogCategoriesQuery());
+            
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpGet("/bookmarks")]
+        [Authorize]
+        public async Task<IActionResult> GetBookmarks(
+            [FromQuery] int pageSize = 5,
+            [FromQuery] int pageNumber = 1
+            )
+        {
+            var value = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "custom_id")?.Value;
+            if (value == null) return StatusCode(StatusCodes.Status401Unauthorized);
+            var userBrowsingId = int.Parse(value);
+            
+            var result = await _mediator.Send(new GetBookmarksQuery(userBrowsingId, pageSize, pageNumber));
             
             return StatusCode(result.StatusCode, result);
         }

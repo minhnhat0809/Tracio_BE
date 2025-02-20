@@ -47,8 +47,7 @@ public class UpdateBlogCommandHandler(
                 var privacySetting = await _blogRepo.GetByIdAsync(b => b.BlogId == request.BlogId, b => b.PrivacySetting);
                 if (request.PrivacySetting.Value != privacySetting)
                 {
-                    // get list of followerIds
-                    var followerIds = new List<int>();
+                    var userId = await _blogRepo.GetByIdAsync(b => b.BlogId == request.BlogId, b => b.CreatorId);
                     
                     // update privacy setting
                     await _blogRepo.UpdateFieldsAsync(b => b.BlogId == request.BlogId, 
@@ -57,12 +56,12 @@ public class UpdateBlogCommandHandler(
                     if (request.PrivacySetting == (sbyte)PrivacySetting.FollowerOnly)
                     {
                         // publish an event to add blog in UserFollowerOnlyBlog
-                        await _rabbitMqProducer.PublishAsync(new BlogPrivacyUpdateEvent(request.BlogId, followerIds, "add"), "blog_privacy_updated",cancellationToken: cancellationToken);
+                        await _rabbitMqProducer.PublishAsync(new BlogPrivacyUpdateEvent(userId, request.BlogId,"add"), "blog_privacy_updated",cancellationToken: cancellationToken);
                     }
                     else
                     {
                         // publish an event to remove blog in UserFollowerOnlyBlog
-                        await _rabbitMqProducer.PublishAsync(new BlogPrivacyUpdateEvent(request.BlogId, followerIds, "remove"), "blog_privacy_updated",cancellationToken: cancellationToken);
+                        await _rabbitMqProducer.PublishAsync(new BlogPrivacyUpdateEvent(userId, request.BlogId ,"remove"), "blog_privacy_updated",cancellationToken: cancellationToken);
                     }
                 }
             }

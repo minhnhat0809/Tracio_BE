@@ -1,20 +1,23 @@
 using ContentService.Application.DTOs.BlogDtos.Message;
 using ContentService.Application.Interfaces;
+using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
 
 namespace ContentService.Infrastructure.MessageBroker.BlogConsumers;
 
-public class MarkBlogsAsReadConsumer(IServiceScopeFactory serviceScopeFactory, IConnectionFactory connectionFactory) 
-    : RabbitMqConsumer<MarkBlogsAsReadEvent>(serviceScopeFactory, connectionFactory, "mark-blogs-as-read")
+public class MarkBlogsAsReadConsumer(IServiceScopeFactory serviceScopeFactory) : IConsumer<MarkBlogsAsReadEvent>
 {
-    protected override async Task ProcessMessageAsync(MarkBlogsAsReadEvent @event, IServiceScopeFactory serviceScope, CancellationToken cancellationToken)
+    private readonly IServiceScopeFactory _serviceScopeFactory = serviceScopeFactory;
+
+    public async Task Consume(ConsumeContext<MarkBlogsAsReadEvent> context)
     {
-        using var scope = serviceScope.CreateScope();
+        using var scope = _serviceScopeFactory.CreateScope();
         var followerOnlyBlogRepo = scope.ServiceProvider.GetRequiredService<IFollowerOnlyBlogRepo>();
+        
 
-        await followerOnlyBlogRepo.MarkBlogsAsReadAsync(@event.UserId, @event.BlogIds);
+        await followerOnlyBlogRepo.MarkBlogsAsReadAsync(context.Message.UserId, context.Message.BlogIds);
 
-        Console.WriteLine($"[RabbitMQ] Processed MarkBlogsAsRead for User {@event.UserId}");
+        Console.WriteLine($"[RabbitMQ] Processed MarkBlogsAsRead for User {context.Message.UserId}");
     }
 }

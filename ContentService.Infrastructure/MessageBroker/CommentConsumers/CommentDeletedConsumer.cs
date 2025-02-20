@@ -1,26 +1,23 @@
 using ContentService.Application.DTOs.CommentDtos.Message;
 using ContentService.Application.Interfaces;
+using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
-using RabbitMQ.Client;
 
 namespace ContentService.Infrastructure.MessageBroker.CommentConsumers;
 
-public class CommentDeletedConsumer(IServiceScopeFactory serviceScopeFactory, IConnectionFactory connectionFactory) 
-    : RabbitMqConsumer<CommentDeleteEvent>(serviceScopeFactory, connectionFactory, "content_deleted")
+public class CommentDeletedConsumer(IServiceScopeFactory serviceScopeFactory) : IConsumer<CommentDeleteEvent>
 {
-    protected override async Task ProcessMessageAsync(CommentDeleteEvent message, IServiceScopeFactory serviceScope,
-        CancellationToken cancellationToken)
+    private readonly IServiceScopeFactory _serviceScopeFactory = serviceScopeFactory;
+
+    public async Task Consume(ConsumeContext<CommentDeleteEvent> context)
     {
-        using var scope = serviceScope.CreateScope();
-        var commentRepo = scope.ServiceProvider.GetRequiredService<ICommentRepo>();
+        using var scope = _serviceScopeFactory.CreateScope();
         
         var blogRepo = scope.ServiceProvider.GetRequiredService<IBlogRepo>();
 
-        var blogId = await commentRepo.GetByIdAsync(c => c.CommentId == message.BlogId, c => c.BlogId);
-
-        await blogRepo.UpdateFieldsAsync(b => b.BlogId == blogId,
+        await blogRepo.UpdateFieldsAsync(b => b.BlogId == context.Message.BlogId,
             b => b.SetProperty(bb => bb.CommentsCount, bb => bb.CommentsCount - 1));
         
-        Console.WriteLine($"[RabbitMQ] Processed CommentDeleted for Blog {message.BlogId}");
+        Console.WriteLine($"[RabbitMQ] Processed CommentDeleted for Blog {context.Message.BlogId}");
     }
 }

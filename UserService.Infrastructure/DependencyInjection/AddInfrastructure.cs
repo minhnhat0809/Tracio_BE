@@ -18,6 +18,7 @@ public static class AddInfrastructure
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IAuthRepository, AuthRepository>();
         services.AddScoped<IFirebaseStorageRepository, FirebaseStorageRepository>();
+        services.AddScoped<IFollowerRepo, FollowerRepo>();
         
         // service
         services.AddScoped<IAuthService, AuthService>();

@@ -31,20 +31,26 @@ public class GetBlogsQueryHandler(
         {
             var basePredicate = PredicateBuilder.New<Blog>(true);
 
+            if (request.CategoryId.HasValue)
+            {
+                basePredicate = basePredicate.And(b => b.CategoryId == request.CategoryId);
+            }
+
             if (request.UserId.HasValue)
             {
+                // check if user request and author is follower
+                var result = await _userService.CheckUserFollower(request.UserId.Value, request.UserRequestId);
+                if(!result.IsExisted) return ResponseDto.NotFound("User not found");
+                
                 basePredicate = basePredicate.And(b => b.CreatorId.Equals(request.UserId));
                 
                 if (request.UserRequestId != request.UserId.Value)
                 {
-                    // check if user request and author is follower
-                    var isFollower = await _userService.IsFollower(request.UserId.Value, request.UserRequestId);
-                    
                     // fetch only published blogs
                     basePredicate = basePredicate.And(b => b.Status == (sbyte) BlogStatus.Published);
                     
                     // fetch followerOnly if they follow each other
-                    basePredicate = isFollower ? basePredicate.And(b => b.Status != (sbyte) PrivacySetting.Private) :
+                    basePredicate = result.IsFollower ? basePredicate.And(b => b.Status != (sbyte) PrivacySetting.Private) :
                         basePredicate.And(b => b.PrivacySetting == (sbyte) PrivacySetting.Public);
                 }
             }
@@ -56,6 +62,19 @@ public class GetBlogsQueryHandler(
             if (string.IsNullOrWhiteSpace(request.SortBy))
             {
                 request.SortBy = "CreatedAt";
+            }else switch (request.SortBy.ToLower())
+            {
+                case "mostlike":
+                    request.SortBy = "ReactionsCount";
+                    request.Ascending = false;
+                    break;
+                case "mostcomment":
+                    request.SortBy = "CommentsCount";
+                    request.Ascending = false;
+                    break;
+                default:
+                    request.SortBy = "CreatedAt";
+                    break;
             }
             
             // build sort expression
@@ -117,9 +136,27 @@ public class GetBlogsQueryHandler(
             basePredicate = basePredicate.And(b => b.PrivacySetting == (sbyte)PrivacySetting.Public &&
                                                    b.Status == (sbyte)BlogStatus.Published);
             
+            if (request.CategoryId.HasValue)
+            {
+                basePredicate = basePredicate.And(b => b.CategoryId == request.CategoryId);
+            }
+            
             if (string.IsNullOrWhiteSpace(request.SortBy))
             {
                 request.SortBy = "CreatedAt";
+            }else switch (request.SortBy.ToLower())
+            {
+                case "mostlike":
+                    request.SortBy = "ReactionsCount";
+                    request.Ascending = false;
+                    break;
+                case "mostcomment":
+                    request.SortBy = "CommentsCount";
+                    request.Ascending = false;
+                    break;
+                default:
+                    request.SortBy = "CreatedAt";
+                    break;
             }
             
             // build sort expression

@@ -29,7 +29,7 @@ public class DeleteReplyCommandHandler(IReplyRepo replyRepo, ICommentRepo commen
             // decrease the replies of comment
             await _rabbitMqProducer.PublishAsync(new ReplyDeleteEvent(commentIdOfReply), "content_deleted", cancellationToken);
             
-            return ResponseDto.DeleteSuccess(null, "Reply deleted successfully!");
+            return ResponseDto.DeleteSuccess("Reply deleted successfully!");
         }
         catch (Exception e)
         {

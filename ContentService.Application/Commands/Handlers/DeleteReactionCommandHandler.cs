@@ -53,7 +53,7 @@ public class DeleteReactionCommandHandler(
                 await _rabbitMqProducer.PublishAsync(new ReactionDeleteEvent(reaction.ReplyId.Value, "reply"), "content_deleted", cancellationToken);
             }
             
-            return ResponseDto.DeleteSuccess(null, "Reaction deleted successfully!");
+            return ResponseDto.DeleteSuccess("Reaction deleted successfully!");
         }
         catch (Exception e)
         {

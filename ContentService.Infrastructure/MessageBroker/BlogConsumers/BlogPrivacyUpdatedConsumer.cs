@@ -1,29 +1,39 @@
 using ContentService.Application.DTOs.BlogDtos.Message;
 using ContentService.Application.Interfaces;
-using ContentService.Domain.Entities;
+using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
-using RabbitMQ.Client;
+using Microsoft.Extensions.Logging;
 
 namespace ContentService.Infrastructure.MessageBroker.BlogConsumers;
 
-public class BlogPrivacyUpdatedConsumer(IServiceScopeFactory serviceScopeFactory, IConnectionFactory connectionFactory) 
-    : RabbitMqConsumer<BlogPrivacyUpdateEvent>(serviceScopeFactory, connectionFactory, "blog_privacy_updated")
+public class BlogPrivacyUpdatedConsumer(
+    IServiceScopeFactory serviceScopeFactory,
+    IUserService userService)
+    : IConsumer<BlogPrivacyUpdateEvent>
 {
-    protected override async Task ProcessMessageAsync(BlogPrivacyUpdateEvent message, IServiceScopeFactory serviceScope,
-        CancellationToken cancellationToken)
+    private readonly IUserService _userService = userService; 
+
+    private readonly IServiceScopeFactory _serviceScopeFactory = serviceScopeFactory;
+    
+
+    public async Task Consume(ConsumeContext<BlogPrivacyUpdateEvent> context)
     {
-        using var scope = serviceScope.CreateScope();
+        using var scope = _serviceScopeFactory.CreateScope();
         var followerOnlyBlogRepo = scope.ServiceProvider.GetRequiredService<IFollowerOnlyBlogRepo>();
 
-        switch (message.Action.ToLower())
+        switch (context.Message.Action.ToLower())
         {
             case "add":
-                
+                // Fetch follower IDs from UserService
+                var followerIds = await _userService.GetFollowingUserIds(context.Message.UserId);
+
+                await followerOnlyBlogRepo.AddFollowerOnlyBlogsAsync(context.Message.BlogId, followerIds);
                 break;
+
             case "remove":
+                await followerOnlyBlogRepo.RemoveFollowerOnlyBlogsAsync(context.Message.BlogId);
                 break;
         }
-
-        Console.WriteLine($"[RabbitMQ] Processed BlogPrivacyUpdated for Blog {message.BlogId}");
+        
     }
 }
