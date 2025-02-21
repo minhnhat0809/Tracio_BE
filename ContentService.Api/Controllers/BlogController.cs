@@ -19,7 +19,7 @@ namespace ContentService.Api.Controllers
         public async Task<IActionResult> GetBlogs(
             [FromQuery] int? userId,
             [FromQuery] int? categoryId,
-            [FromQuery] string? sortBy = "CreatedAt",
+            [FromQuery] string sortBy = "CreatedAt",
             [FromQuery] bool ascending = true,
             [FromQuery] int pageSize = 5,
             [FromQuery] int pageNumber = 1)
@@ -29,15 +29,7 @@ namespace ContentService.Api.Controllers
             var userBrowsingId = int.Parse(value);
             
             var query = new GetBlogsQuery
-            {
-                UserRequestId = userBrowsingId,
-                UserId = userId,
-                CategoryId = categoryId,
-                SortBy = sortBy,
-                Ascending = ascending,
-                PageSize = pageSize,
-                PageNumber = pageNumber
-            };
+            (userBrowsingId, userId, categoryId, sortBy, ascending, pageSize, pageNumber);
 
             var result = await _mediator.Send(query);
             return StatusCode(result.StatusCode, result);
