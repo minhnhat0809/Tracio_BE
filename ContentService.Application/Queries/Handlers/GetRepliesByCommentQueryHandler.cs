@@ -14,8 +14,6 @@ public class GetRepliesByCommentQueryHandler(IMapper mapper, ICommentRepo commen
     
     private readonly IReplyRepo _replyRepo = replyRepo;
 
-    private readonly IMapper _mapper = mapper;
-    
     public async Task<ResponseDto> Handle(GetRepliesByCommentQuery request, CancellationToken cancellationToken)
     {
         try

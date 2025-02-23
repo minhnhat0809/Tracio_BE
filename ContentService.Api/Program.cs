@@ -9,8 +9,6 @@ var builder = WebApplication.CreateBuilder(args);
 var secret = new GetSecrets();
 var firebaseCredentials = await secret.GetFireBaseCredentials();
 
-Console.WriteLine(firebaseCredentials);
-
 FirebaseApp.Create(new AppOptions { Credential = GoogleCredential.FromJson(firebaseCredentials) });
 
 // Add services

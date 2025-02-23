@@ -1,6 +1,5 @@
 using ContentService.Application.DTOs.UserDtos.View;
 using ContentService.Application.Interfaces;
-using Google.Protobuf.Collections;
 using Userservice;
 
 namespace ContentService.Api.Services;

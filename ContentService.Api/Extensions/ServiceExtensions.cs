@@ -1,9 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
-using RabbitMQ.Client;
 using Amazon.S3;
 using ContentService.Application.DTOs;
-using ContentService.Application.DTOs.CommentDtos.Message;
 using Microsoft.AspNetCore.Http.Features;
 using ContentService.Application.Interfaces;
 using ContentService.Application.Mappings;
