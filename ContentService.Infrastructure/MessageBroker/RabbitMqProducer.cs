@@ -23,7 +23,12 @@ public class RabbitMqProducer(IConnectionFactory factory) : IRabbitMqProducer, I
                 durable: true,
                 exclusive: false,
                 autoDelete: false,
-                arguments: null, cancellationToken: cancellationToken);
+                arguments: new Dictionary<string, object>
+                {
+                    { "x-dead-letter-exchange", $"{queueName}_dlx" }, // Send failed messages to DLX
+                    { "x-dead-letter-routing-key", $"{queueName}_retry" }, // Route to retry queue if failure
+                }!,
+                cancellationToken: cancellationToken);
 
             var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
 

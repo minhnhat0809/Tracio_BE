@@ -5,9 +5,9 @@ using Shared.Dtos;
 
 namespace ContentService.Application.Commands;
 
-public class CreateBlogCommand(int CreatorId, BlogCreateDto blogCreateDto, List<IFormFile> mediaFiles) : IRequest<ResponseDto>
+public class CreateBlogCommand(int creatorId, BlogCreateDto blogCreateDto, List<IFormFile> mediaFiles) : IRequest<ResponseDto>
 {
-    public int CreatorId { get; set; } = CreatorId;
+    public int CreatorId { get; set; } = creatorId;
 
     public int CategoryId { get; set; } = blogCreateDto.CategoryId;
 

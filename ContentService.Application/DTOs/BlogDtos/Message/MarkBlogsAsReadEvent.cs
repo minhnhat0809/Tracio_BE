@@ -1,6 +1,6 @@
 namespace ContentService.Application.DTOs.BlogDtos.Message;
 
-public class MarkBlogsAsReadMessage
+public class MarkBlogsAsReadEvent
 {
     public int UserId { get; set; }
     

@@ -42,6 +42,14 @@ namespace ContentService.Api.Controllers
 
         }
 
+        [HttpGet("/categories")]
+        public async Task<IActionResult> GetBlogCategories()
+        {
+            var result = await _mediator.Send(new GetBlogCategoriesQuery());
+            
+            return StatusCode(result.StatusCode, result);
+        }
+
         [HttpGet("{blogId:int}/comments")]
         public async Task<IActionResult> GetCommentsByBlogId(
             [FromRoute] int blogId,
