@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using UserService.Application.DTOs.Auths;
+using UserService.Application.DTOs.Sessions;
 using UserService.Application.DTOs.Users;
 using UserService.Application.Interfaces;
 
@@ -21,96 +22,77 @@ public class VerifyPhoneOtpCommandHandler : IRequestHandler<VerifyPhoneOtpComman
     private readonly IUnitOfWork _repository;
     private readonly IConfiguration _configuration;
     private readonly IMapper _mapper;
-    
-    public VerifyPhoneOtpCommandHandler(IUnitOfWork repository, IConfiguration configuration, IMapper mapper)
+    private readonly IFirebaseAuthenticationRepository _firebaseAuthenticationRepository;
+    public VerifyPhoneOtpCommandHandler(IUnitOfWork repository, IConfiguration configuration, IMapper mapper, IFirebaseAuthenticationRepository firebaseAuthenticationRepository)
     {
         _repository = repository;
         _configuration = configuration;
         _mapper = mapper;
+        _firebaseAuthenticationRepository = firebaseAuthenticationRepository;
     }
 
     public async Task<ResponseModel> Handle(VerifyPhoneOtpCommand? requestModel, CancellationToken cancellationToken)
     {
-        try
-        {
-            if (requestModel == null || string.IsNullOrEmpty(requestModel.RequestModel?.VerificationId) || string.IsNullOrEmpty(requestModel.RequestModel.OtpCode))
-            {
-                return new ResponseModel("error", 400, "Verification ID and OTP are required.", null);
-            }
+       if (requestModel == null || string.IsNullOrEmpty(requestModel.RequestModel?.VerificationId) || string.IsNullOrEmpty(requestModel.RequestModel.OtpCode))
+       {
+           return new ResponseModel("error", 400, "Verification ID and OTP are required.", null);
+       }
 
-            var firebaseApiKey = _configuration["Firebase:ApiKey"];
-            if (string.IsNullOrEmpty(firebaseApiKey))
-            {
-                return new ResponseModel("error", 500, "Firebase API Key is missing!", null);
-            }
+       var firebaseApiKey = _configuration["Firebase:ApiKey"];
+       if (string.IsNullOrEmpty(firebaseApiKey))
+       {
+           return new ResponseModel("error", 500, "Firebase API Key is missing!", null);
+       }
 
-            // Firebase API URL to verify OTP
-            var verifyOtpUrl = $"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPhoneNumber?key={firebaseApiKey}";
+       try
+       {
+           // Delegate OTP verification to FirebaseService.
+           var authResponse = await _firebaseAuthenticationRepository.VerifyPhoneOtpAsync(
+               requestModel.RequestModel.VerificationId, 
+               requestModel.RequestModel.OtpCode, 
+               firebaseApiKey,
+               cancellationToken);
+           
+           if (string.IsNullOrEmpty(authResponse?.IdToken))
+           {
+               return new ResponseModel("error", 401, "Authentication failed. No token received.", null);
+           }
 
-            // Payload to verify OTP
-            var payload = new
-            {
-                sessionInfo = requestModel.RequestModel.VerificationId, // The verification ID from frontend
-                code = requestModel.RequestModel.OtpCode // The OTP code entered by the user
-            };
+           // Verify the token and retrieve the UID.
+           var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(authResponse.IdToken, cancellationToken);
+           var uid = decodedToken.Uid;
 
-            var jsonPayload = JsonSerializer.Serialize(payload);
-            var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+           // Retrieve the Firebase user.
+           var firebaseUser = await FirebaseAuth.DefaultInstance.GetUserAsync(uid, cancellationToken);
+           if (firebaseUser == null)
+           {
+               return new ResponseModel("error", 404, "User not found.", null);
+           }
 
-            using var client = new HttpClient();
-            var response = await client.PostAsync(verifyOtpUrl, content, cancellationToken);
-            var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+           // Retrieve the user from your local database.
+           var user = await _repository.UserRepository.GetUserByPropertyAsync(uid);
+           if (user == null)
+           {
+               return new ResponseModel("error", 404, "User not found in Database", null);
+           }
 
-            if (!response.IsSuccessStatusCode)
-            {
-                return new ResponseModel("error", (int)response.StatusCode, "Invalid OTP.", responseBody);
-            }
+           // Create a session for the user.
+           var session = new UserSession
+           {
+               UserId = user.UserId,
+               AccessToken = authResponse.IdToken,
+               RefreshToken = authResponse.RefreshToken,
+               ExpiresAt = DateTime.UtcNow.AddHours(2),
+               CreatedAt = DateTime.UtcNow
+           };
 
-            // Extract idToken from response
-            var result = JsonSerializer.Deserialize<FirebaseAuthResponse>(
-                responseBody,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
-            );
-            if (string.IsNullOrEmpty(result?.IdToken))
-            {
-                return new ResponseModel("error", 401, "Authentication failed. No token received.", null);
-            }
+           await _repository.UserSessionRepository.CreateAsync(session);
 
-            // Get user info from Firebase
-            var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(result.IdToken, cancellationToken);
-            var uid = decodedToken.Uid;
-
-            var firebaseUser = await FirebaseAuth.DefaultInstance.GetUserAsync(uid, cancellationToken);
-            if (firebaseUser == null)
-            {
-                return new ResponseModel("error", 404, "User not found.", null);
-            }
-
-            // Check if user exists in the database
-            var user = await _repository.UserRepository.GetUserByPropertyAsync(uid);
-            if (user == null)
-            {
-                return new ResponseModel("error", 404, "User not found in Database", null);
-            }
-
-            // Create session for the user
-            var session = new UserSession
-            {
-                UserId = user.UserId,
-                AccessToken = result.IdToken,
-                RefreshToken = result.RefreshToken,
-                ExpiresAt = DateTime.UtcNow.AddHours(2),
-                CreatedAt = DateTime.UtcNow
-            };
-
-            await _repository.UserSessionRepository.CreateAsync(session);
-
-
-            return new ResponseModel("success", 200, "Phone login successful.", _mapper.Map<UserViewModel>(user));
-        }
-        catch (Exception ex)
-        {
-            return new ResponseModel("error", 500, "Unexpected error occurred.", ex.Message);
-        }
+           return new ResponseModel("success", 200, "Phone login successful.", _mapper.Map<UserViewModel>(user));
+       }
+       catch (Exception ex)
+       {
+           return new ResponseModel("error", 500, "Unexpected error occurred.", ex.Message);
+       }
     }
 }

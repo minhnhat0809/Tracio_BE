@@ -1,4 +1,4 @@
-﻿using UserService.Application.DTOs.Auths;
+﻿using UserService.Application.Interfaces;
 
 namespace UserService.Application.Commands.Handlers;
 using System;
@@ -15,64 +15,45 @@ using UserService.Application.DTOs.ResponseModel;
 public class SendPhoneOtpCommandHandler : IRequestHandler<SendPhoneOtpCommand, ResponseModel>
 {
     private readonly IConfiguration _configuration;
-
-    public SendPhoneOtpCommandHandler(IConfiguration configuration)
+    private readonly IFirebaseAuthenticationRepository _firebaseAuthenticationRepository;
+    public SendPhoneOtpCommandHandler(IConfiguration configuration, IFirebaseAuthenticationRepository firebaseAuthenticationRepository)
     {
         _configuration = configuration;
+        _firebaseAuthenticationRepository = firebaseAuthenticationRepository;
     }
 
     public async Task<ResponseModel> Handle(SendPhoneOtpCommand? requestModel, CancellationToken cancellationToken)
     {
+        if (requestModel == null || string.IsNullOrEmpty(requestModel.RequestModel?.PhoneNumber))
+        {
+            return new ResponseModel("error", 400, "Phone number is required.", null);
+        }
+
+        // Validate phone number against E.164 format.
+        if (!Regex.IsMatch(requestModel.RequestModel.PhoneNumber, @"^\+?[1-9]\d{1,14}$"))
+        {
+            return new ResponseModel("error", 400, "Invalid phone number format.", null);
+        }
+
+        var firebaseApiKey = _configuration["Firebase:ApiKey"];
+        if (string.IsNullOrEmpty(firebaseApiKey))
+        {
+            return new ResponseModel("error", 500, "Firebase API Key is missing!", null);
+        }
+
         try
         {
-            if (requestModel == null || string.IsNullOrEmpty(requestModel.RequestModel?.PhoneNumber))
-            {
-                return new ResponseModel("error", 400, "Phone number is required.", null);
-            }
-
-            if (!Regex.IsMatch(requestModel.RequestModel.PhoneNumber, @"^\+?[1-9]\d{1,14}$")) // E.164 format check
-            {
-                return new ResponseModel("error", 400, "Invalid phone number format.", null);
-            }
-
-            var firebaseApiKey = _configuration["Firebase:ApiKey"];
-
-            // Firebase REST API for sending OTP
-            var sendOtpUrl = $"https://identitytoolkit.googleapis.com/v1/accounts:sendVerificationCode?key={firebaseApiKey}";
-
-            var payload = new
-            {
-                phoneNumber = requestModel.RequestModel.PhoneNumber,
-                recaptchaToken = requestModel.RequestModel.RecaptchaToken
-            };
-
-            var jsonPayload = JsonSerializer.Serialize(payload);
-            var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
-
-            using var client = new HttpClient();
-            var response = await client.PostAsync(sendOtpUrl, content);
-            var responseBody = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-            {
-                return new ResponseModel("error", (int)response.StatusCode, "Failed to send OTP.", responseBody);
-            }
-
-            // Extract VerificationId (sessionInfo) from Firebase response
-            var result = JsonSerializer.Deserialize<FirebaseSendOtpResponse>(
-                responseBody,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
-            );
-
-            if (string.IsNullOrEmpty(result?.SessionInfo))
+            var otpResponse = await _firebaseAuthenticationRepository.SendPhoneOtpAsync(
+                requestModel.RequestModel.PhoneNumber, 
+                requestModel.RequestModel.RecaptchaToken, 
+                firebaseApiKey, 
+                cancellationToken);
+            if (string.IsNullOrEmpty(otpResponse?.SessionInfo))
             {
                 return new ResponseModel("error", 500, "Failed to generate verification ID.", null);
             }
 
-            return new ResponseModel("success", 200, "OTP sent successfully.", new
-            {
-                VerificationId = result.SessionInfo
-            });
+            return new ResponseModel("success", 200, "OTP sent successfully.", new { VerificationId = otpResponse.SessionInfo });
         }
         catch (Exception ex)
         {
