@@ -5,12 +5,30 @@ namespace ContentService.Application.Hubs;
 
 public class ContentHub : Hub
 {
+    public override async Task OnConnectedAsync()
+    {
+        await Clients.All.SendAsync("OnConnected");
+    }
+
     private static readonly ConcurrentDictionary<string, HashSet<string>> UserGroups = new();
     
     // Join general blog updates
     public async Task JoinBlogUpdates()
     {
-        await Groups.AddToGroupAsync(Context.ConnectionId, "BlogUpdates");
+        try
+        {
+            Console.WriteLine($"🔵 Client {Context.ConnectionId} is joining BlogUpdates");
+
+            await Groups.AddToGroupAsync(Context.ConnectionId, "BlogUpdates");
+
+            Console.WriteLine($"✅ Client {Context.ConnectionId} successfully joined BlogUpdates");
+
+            await Clients.Caller.SendAsync("JoinedBlogUpdate", "12345");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error in JoinBlogUpdates: {ex.Message}");
+        }
     }
     
     // User leaves "BlogUpdates" when entering a specific blog
@@ -23,7 +41,11 @@ public class ContentHub : Hub
     // Join a specific blog group
     public async Task JoinBlog(string blogId)
     {
+        Console.WriteLine($"Client {Context.ConnectionId} is joining Blog-{blogId}");
+        
         await Groups.AddToGroupAsync(Context.ConnectionId, $"Blog-{blogId}");
+        
+        await Clients.Caller.SendAsync("JoinedGroup", $"Blog-{blogId}");
     }
     
     // Leave groups when navigating away
