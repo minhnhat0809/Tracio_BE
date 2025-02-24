@@ -25,7 +25,30 @@ public class GetCommentsByBlogQueryHandler(IBlogRepo blogRepo, ICommentRepo comm
             if (request.BlogId <= 0) return ResponseDto.BadRequest("Blog Id is required");
             
             // check blog in db
-            var blog = await _blogRepo.GetByIdAsync(b => b.BlogId.Equals(request.BlogId), b => b);
+            var blog = await _blogRepo.GetByIdAsync(b => b.BlogId.Equals(request.BlogId), b => new BlogWithCommentsDto
+            {
+                BlogId = b.BlogId,
+                CategoryName = b.Category.CategoryName,
+                Content = b.Content,
+                CreatedAt = b.CreatedAt,
+                CommentsCount = b.Comments.Count,
+                LikesCount = b.ReactionsCount!.Value,
+                CreatorAvatar = b.CreatorAvatar,
+                CreatorId = b.CreatorId,
+                CreatorName = b.CreatorName
+            });
+
+            // handle the event when user click notification
+            var pageNumber = request.PageNumber;
+            if (request.CommentId.HasValue)
+            {
+                var commentIndex = await _commentRepo.GetCommentIndex(request.BlogId, request.CommentId.Value);
+
+                if (commentIndex > -1)
+                {
+                    pageNumber = (int)Math.Ceiling((double) commentIndex / request.PageSize);
+                }
+            }
 
             if (blog == null) return ResponseDto.NotFound($"Blog not found with this id : {request.BlogId}");
             
@@ -44,7 +67,7 @@ public class GetCommentsByBlogQueryHandler(IBlogRepo blogRepo, ICommentRepo comm
                 {
                     comments = new List<CommentDto>(), 
                     count = total, 
-                    pageNumber = request.PageNumber, 
+                    pageNumber, 
                     pageSize = request.PageSize
                 }, 
                 "Comments retrieved successfully!");
@@ -63,9 +86,7 @@ public class GetCommentsByBlogQueryHandler(IBlogRepo blogRepo, ICommentRepo comm
                     Avatar = c.CyclistAvatar,
                     Content = c.Content,
                     CreatedAt = c.CreatedAt,
-                    UpdatedAt = c.UpdatedAt,
-                    IsEdited = c.IsEdited,
-                    LikesCount = c.LikesCount
+                    LikesCount = c.LikesCount!.Value
                 },
                 request.PageNumber, request.PageSize,
                 sortExpression, request.IsAscending
@@ -73,13 +94,18 @@ public class GetCommentsByBlogQueryHandler(IBlogRepo blogRepo, ICommentRepo comm
 
             // map comments to blogDto
             blogDto.Comments = commentsDto;
+
+            var totalPages = (int)Math.Ceiling((double)total / request.PageSize);
             
             return ResponseDto.GetSuccess(new
                 {
                     blog = blogDto, 
-                    total = 0, 
-                    pageNumber = request.PageNumber, 
-                    pageSize = request.PageSize
+                    pageNumber, 
+                    pageSize = request.PageSize,
+                    totalComments = total, 
+                    totalPages,
+                    hasNextPage = pageNumber < totalPages,
+                    hasPreviousPage = pageNumber > 1
                 }, 
                 "Comments of the blog retrieved successfully!");
         }

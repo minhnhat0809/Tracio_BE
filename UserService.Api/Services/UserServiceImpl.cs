@@ -1,22 +1,25 @@
 using Grpc.Core;
+using MediatR;
 using Userservice;
-using UserService.Application.Interfaces;
+using UserService.Application.Queries;
 
 namespace UserService.Api.Services;
 
-public class UserServiceImpl(IUserRepository userRepo) : Userservice.UserService.UserServiceBase
+public class UserServiceImpl(IMediator mediator) : Userservice.UserService.UserServiceBase
 {
+    private readonly IMediator _mediator = mediator;
+    
     public override async Task<UserResponse> ValidateUser(UserRequest request, ServerCallContext context)
     {
         try
         {
-            var user = await userRepo.GetById(u => u.UserId == request.UserId, u => new {u.UserName, u.ProfilePicture});
+            var user = await _mediator.Send(new GetUserInformationQuery(request.UserId));
             if (user != null)
                 return new UserResponse
                 {
                     IsValid = true,
-                    UserName = user.UserName,
-                    Avatar = user.ProfilePicture
+                    UserName = user.Username,
+                    Avatar = user.Avatar
                 };
 
             return new UserResponse
@@ -32,14 +35,14 @@ public class UserServiceImpl(IUserRepository userRepo) : Userservice.UserService
         }
     }
 
-    public override async Task<CheckIsFollowResponse> CheckIsFollow(CheckIsFollowRequest request,
+    public override async Task<UserFollowerResponse> CheckUserAndFollower(UserFollowerRequest request,
         ServerCallContext context)
     {
         try
         {
-            var result = await userRepo.AreBothUsersExistAsync(request.UserId1, request.UserId2);
-            
-            return result ? new CheckIsFollowResponse {IsFollower = true} : new CheckIsFollowResponse {IsFollower = false};
+            var result = await _mediator.Send(new CheckIsFollowQuery(request.UserId, request.BrowsingUserId));
+
+            return new UserFollowerResponse { IsExisted = result.IsExisted, IsFollower = result.IsFollower};
         }
         catch (Exception ex)
         {
@@ -47,17 +50,16 @@ public class UserServiceImpl(IUserRepository userRepo) : Userservice.UserService
         }
     }
 
-    public override async Task<FollowBatchResponse> CheckFollowingBatch(FollowBatchRequest request,
-        ServerCallContext context)
+    public override async Task<GetFollowersResponse> GetFollowerIds(GetFollowersRequest request, ServerCallContext context)
     {
         try
         {
-            var result = await userRepo.GetFollowingsOfUser(request.FollowerId, request.AuthorIds.ToList());
+            var result = await _mediator.Send(new GetFollowerIdsQuery(request.UserId));
 
-            var response = new FollowBatchResponse();
-
-            response.FollowingAuthors.AddRange(result);
-
+            var response = new GetFollowersResponse();
+            
+            response.FollowerIds.AddRange(result);
+            
             return response;
         }
         catch (Exception ex)

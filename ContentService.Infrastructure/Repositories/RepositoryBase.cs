@@ -1,8 +1,6 @@
-﻿using System.Data.SqlClient;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using ContentService.Application.Interfaces;    
 using ContentService.Infrastructure.Contexts;
-using Dapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 

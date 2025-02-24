@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
 using ContentService.Application.DTOs.CommentDtos.Message;
+using ContentService.Application.Hubs;
 using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
 using MediatR;
+using Microsoft.AspNetCore.SignalR;
 using Shared.Dtos;
 
 namespace ContentService.Application.Commands.Handlers;
@@ -14,7 +16,8 @@ public class CreateCommentCommandHandler(
     IImageService imageService,
     IUserService userService,
     IModerationService moderationService,
-    IRabbitMqProducer rabbitMqProducer) 
+    IRabbitMqProducer rabbitMqProducer,
+    IHubContext<ContentHub> hubContext) 
     : IRequestHandler<CreateCommentCommand, ResponseDto>
 {
     private readonly ICommentRepo _commentRepo = commentRepo;
@@ -31,6 +34,8 @@ public class CreateCommentCommandHandler(
     
     private readonly IRabbitMqProducer _rabbitMqProducer = rabbitMqProducer;
     
+    private readonly IHubContext<ContentHub> _hubContext = hubContext;
+    
     private const string BucketName = "blogtracio";
     
     public async Task<ResponseDto> Handle(CreateCommentCommand request, CancellationToken cancellationToken)
@@ -46,12 +51,12 @@ public class CreateCommentCommandHandler(
             if (!userDto.IsUserValid) return ResponseDto.NotFound("User does not exist");
             
             // moderate content
-            var moderationResult = await _moderationService.ProcessModerationResult(request.Content);
-            if(!moderationResult.IsSafe) return ResponseDto.BadRequest("Content contains harmful or offensive language.");
+            /*var moderationResult = await _moderationService.ProcessModerationResult(request.Content);
+            if(!moderationResult.IsSafe) return ResponseDto.BadRequest("Content contains harmful or offensive language.");*/
             
             // upload file to aws s3 and get url
             var mediaFileUrl = new List<string>();
-            if (request.MediaFiles != null)
+            if (request.MediaFiles != null && request.MediaFiles.Count != 0)
             {
                 mediaFileUrl = await _imageService.UploadFiles(request.MediaFiles, BucketName, null);
             }
@@ -62,15 +67,35 @@ public class CreateCommentCommandHandler(
             
             comment.MediaFiles = mediaFiles;
             comment.CyclistName = userDto.Username;
+            comment.CyclistAvatar = userDto.Avatar;
             
             // insert comment into db
             var commentCreateResult = await _commentRepo.CreateAsync(comment);
             
-            // publish comment create event
-            await _rabbitMqProducer.PublishAsync(new CommentCreatedEvent(request.BlogId), "comment_created", cancellationToken);
+            if(!commentCreateResult) return ResponseDto.InternalError("Failed to create comment");
             
-            return commentCreateResult ? ResponseDto.CreateSuccess(null, "Comment created successfully!"):
-                    ResponseDto.InternalError("Failed to create comment");
+            // publish comment create event
+            await _rabbitMqProducer.PublishAsync(new CommentCreateEvent(request.BlogId), "comment_created", cancellationToken);
+            
+            // publish new comment into signalR
+            await _hubContext.Clients.Group("BlogUpdates")
+                .SendAsync("ReceiveNewComment", new
+                {
+                    request.BlogId
+                }, cancellationToken: cancellationToken);
+
+            await _hubContext.Clients.Group($"Blog-{request.BlogId}")
+                .SendAsync("ReceiveNewComment", new
+                {
+                    request.BlogId,
+                    CyclistId = request.CreatorId,
+                    CyclistName = userDto.Username,
+                    CyclistAvatar = userDto.Avatar,
+                    request.Content,
+                    MediaFiles = mediaFiles
+                }, cancellationToken: cancellationToken);
+
+            return ResponseDto.CreateSuccess(null, "Comment created successfully!");
         }
         catch (Exception e)
         {

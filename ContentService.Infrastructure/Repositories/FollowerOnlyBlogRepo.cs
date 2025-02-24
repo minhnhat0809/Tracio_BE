@@ -4,6 +4,7 @@ using ContentService.Domain.Entities;
 using ContentService.Infrastructure.Contexts;
 using Dapper;
 using Microsoft.EntityFrameworkCore;
+using MySqlConnector;
 
 namespace ContentService.Infrastructure.Repositories;
 
@@ -16,8 +17,10 @@ public class FollowerOnlyBlogRepo(TracioContentDbContext context) : RepositoryBa
         if (blogIds.Count == 0)
             return;
 
-        await using var connection = _context.Database.GetDbConnection();
-    
+        var connectionString = _context.Database.GetDbConnection().ConnectionString;
+
+        await using var connection = new MySqlConnection(connectionString);
+
         if (connection.State == ConnectionState.Closed)
         {
             await connection.OpenAsync();
@@ -35,4 +38,26 @@ public class FollowerOnlyBlogRepo(TracioContentDbContext context) : RepositoryBa
         await connection.ExecuteAsync(sql, parameters);
     }
 
+    public async Task AddFollowerOnlyBlogsAsync(int blogId, List<int> userIds)
+    {
+        var newEntries = userIds.Select(userId => new UserBlogFollowerOnly
+        {
+            BlogId = blogId,
+            UserId = userId,
+            CreatedAt = DateTime.UtcNow,
+            IsRead = false
+        }).ToList();
+
+        await _context.UserBlogFollowerOnlies.AddRangeAsync(newEntries);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task RemoveFollowerOnlyBlogsAsync(int blogId)
+    {
+        var entriesToRemove = _context.UserBlogFollowerOnlies
+            .Where(entry => entry.BlogId == blogId);
+
+        _context.UserBlogFollowerOnlies.RemoveRange(entriesToRemove);
+        await _context.SaveChangesAsync();
+    }
 }

@@ -3,13 +3,15 @@ using Shared.Dtos;
 
 namespace ContentService.Application.Queries;
 
-public class GetCommentsByBlogQuery : IRequest<ResponseDto>
+public class GetCommentsByBlogQuery(int blogId, int? commentId, int pageNumber, int pageSize, bool isAscending) : IRequest<ResponseDto>
 {
-    public int BlogId { get; set; }
+    public int BlogId { get; set; } = blogId;
     
-    public int PageNumber { get; set; } = 1;
+    public int? CommentId { get; set; } = commentId;
     
-    public int PageSize { get; set; } = 5;
+    public int PageNumber { get; set; } = pageNumber;
     
-    public bool IsAscending { get; set; } = true;
+    public int PageSize { get; set; } = pageSize;
+    
+    public bool IsAscending { get; set; } = isAscending;
 }

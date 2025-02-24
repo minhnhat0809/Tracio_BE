@@ -29,6 +29,10 @@ public class CreateBookmarkCommandHandler(IBlogRepo blogRepo, IBookmarkRepo book
             var userDto = await _userService.ValidateUser(request.OwnerId);
             if (!userDto.IsUserValid) return ResponseDto.NotFound("User does not exist");
             
+            // check is bookmark
+            var isBookmarked = await _bookmarkRepo.ExistsAsync(bm => bm.BlogId == request.BlogId && bm.OwnerId == request.OwnerId);
+            if(isBookmarked) return ResponseDto.BadRequest("Bookmark already exists");
+            
             var bookMark = _mapper.Map<BlogBookmark>(request);
             
             var isBookmarkSuccess = await _bookmarkRepo.CreateAsync(bookMark);
