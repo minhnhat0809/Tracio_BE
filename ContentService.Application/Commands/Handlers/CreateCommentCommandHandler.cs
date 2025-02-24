@@ -77,31 +77,21 @@ public class CreateCommentCommandHandler(
             // publish comment create event
             await _rabbitMqProducer.PublishAsync(new CommentCreateEvent(request.BlogId), "comment_created", cancellationToken);
             
-            // send notification
-            await _rabbitMqProducer.PublishAsync(new CommentCreateNotificationEvent(
-                request.BlogId, 
-                comment.CommentId,
-                comment.Content, 
-                comment.CyclistName, 
-                comment.CyclistAvatar,
-                comment.CreatedAt
-            ), "notification_comment_created", cancellationToken);
-            
             // publish new comment into signalR
             await _hubContext.Clients.Group("BlogUpdates")
                 .SendAsync("ReceiveNewComment", new
                 {
-                    BlogId = request.BlogId
+                    request.BlogId
                 }, cancellationToken: cancellationToken);
 
             await _hubContext.Clients.Group($"Blog-{request.BlogId}")
                 .SendAsync("ReceiveNewComment", new
                 {
-                    BlogId = request.BlogId,
+                    request.BlogId,
                     CyclistId = request.CreatorId,
                     CyclistName = userDto.Username,
                     CyclistAvatar = userDto.Avatar,
-                    Content = request.Content,
+                    request.Content,
                     MediaFiles = mediaFiles
                 }, cancellationToken: cancellationToken);
 
