@@ -38,11 +38,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.MapHub<ContentHub>("/contentHub");
+app.UseWebSockets();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseCors("CORSPolicy");
+app.MapHub<ContentHub>("content-hub");
 app.MapControllers();
 app.Run();
 
