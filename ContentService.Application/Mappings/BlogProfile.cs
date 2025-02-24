@@ -14,5 +14,7 @@ public class BlogProfile : Profile
 
         CreateMap<CreateBlogCommand, Blog>()
             .ForMember(dest => dest.MediaFiles, opt => opt.Ignore());
+
+        CreateMap<CreateBookmarkCommand, BlogBookmark>();
     }
 }

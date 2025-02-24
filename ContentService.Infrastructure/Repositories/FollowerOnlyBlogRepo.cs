@@ -35,4 +35,26 @@ public class FollowerOnlyBlogRepo(TracioContentDbContext context) : RepositoryBa
         await connection.ExecuteAsync(sql, parameters);
     }
 
+    public async Task AddFollowerOnlyBlogsAsync(int blogId, List<int> userIds)
+    {
+        var newEntries = userIds.Select(userId => new UserBlogFollowerOnly
+        {
+            BlogId = blogId,
+            UserId = userId,
+            CreatedAt = DateTime.UtcNow,
+            IsRead = false
+        }).ToList();
+
+        await _context.UserBlogFollowerOnlies.AddRangeAsync(newEntries);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task RemoveFollowerOnlyBlogsAsync(int blogId)
+    {
+        var entriesToRemove = _context.UserBlogFollowerOnlies
+            .Where(entry => entry.BlogId == blogId);
+
+        _context.UserBlogFollowerOnlies.RemoveRange(entriesToRemove);
+        await _context.SaveChangesAsync();
+    }
 }

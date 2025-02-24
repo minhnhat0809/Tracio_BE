@@ -3,6 +3,7 @@ using Microsoft.OpenApi.Models;
 using RabbitMQ.Client;
 using Amazon.S3;
 using ContentService.Application.DTOs;
+using ContentService.Application.DTOs.CommentDtos.Message;
 using Microsoft.AspNetCore.Http.Features;
 using ContentService.Application.Interfaces;
 using ContentService.Application.Mappings;
@@ -11,6 +12,10 @@ using ContentService.Application.Services;
 using ContentService.Infrastructure;
 using ContentService.Infrastructure.MessageBroker;
 using ContentService.Infrastructure.MessageBroker.BlogConsumers;
+using ContentService.Infrastructure.MessageBroker.CommentConsumers;
+using ContentService.Infrastructure.MessageBroker.ReactionConsumers;
+using ContentService.Infrastructure.MessageBroker.ReplyConsumers;
+using MassTransit;
 using Userservice;
 
 namespace ContentService.Api.Extensions;
@@ -127,15 +132,43 @@ public static class ServiceExtensions
     // 🔹 RabbitMQ Configuration
     public static IServiceCollection ConfigureRabbitMq(this IServiceCollection services)
     {
-        services.AddSingleton<IConnectionFactory>(_ => new ConnectionFactory
+        services.AddScoped<IRabbitMqProducer, RabbitMqProducer>();
+        
+        services.AddMassTransit(x =>
         {
-            HostName = "localhost",
-            UserName = "guest",
-            Password = "guest"
-        });
+            // ✅ Auto-register all consumers in the assembly
+            x.AddConsumers(typeof(BlogPrivacyUpdatedConsumer).Assembly);
 
-        services.AddSingleton<IRabbitMqProducer, RabbitMqProducer>();
-        services.AddHostedService<MarkBlogsAsReadConsumer>();
+            x.UsingRabbitMq((context, cfg) =>
+            {
+                cfg.Host("rabbitmq://localhost"); // Change to your RabbitMQ settings
+
+                // ✅ Blog Consumers
+                cfg.ReceiveEndpoint("blog_privacy_updated", e => e.ConfigureConsumer<BlogPrivacyUpdatedConsumer>(context));
+                cfg.ReceiveEndpoint("mark_blogs_as_read", e => e.ConfigureConsumer<MarkBlogsAsReadConsumer>(context));
+
+                // ✅ Comment Consumers
+                cfg.ReceiveEndpoint("comment_created", e => e.ConfigureConsumer<CommentCreatedConsumer>(context));
+                // ✅ Reaction Consumers
+                cfg.ReceiveEndpoint("reaction_created", e => e.ConfigureConsumer<ReactionCreatedConsumer>(context));
+                // ✅ Reply Consumers
+                cfg.ReceiveEndpoint("reply_created", e => e.ConfigureConsumer<ReplyCreatedConsumer>(context));
+                
+                // ✅ Reply, Comment, Reaction Consumers
+                cfg.ReceiveEndpoint("content_deleted", e =>
+                {
+                    e.ConfigureConsumer<CommentDeletedConsumer>(context);
+                    e.ConfigureConsumer<ReplyDeletedConsumer>(context);
+                    e.ConfigureConsumer<ReactionDeletedConsumer>(context);
+                });
+
+                // ✅ Add Retry Policy (Exponential Backoff)
+                cfg.UseMessageRetry(r => r.Exponential(3, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(30)));
+
+                // ✅ Enable Dead-Letter Queue (DLQ)
+                cfg.UseDelayedRedelivery(r => r.Intervals(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(1)));
+            });
+        });
 
         return services;
     }

@@ -20,7 +20,7 @@ public class DeleteBlogCommandHandler(IBlogRepo blogRepo) : IRequestHandler<Dele
             var isSucceed = await _blogRepo.ArchiveBlog(request.BlogId);
             
             return !isSucceed ? ResponseDto.InternalError("Failed to delete blog") : 
-                ResponseDto.DeleteSuccess(null, "Blog deleted successfully!");
+                ResponseDto.DeleteSuccess("Blog deleted successfully!");
         }
         catch (Exception e)
         {

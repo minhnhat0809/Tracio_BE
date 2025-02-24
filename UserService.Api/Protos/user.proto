@@ -4,8 +4,8 @@ package userservice;
 
 service UserService {
   rpc ValidateUser (UserRequest) returns (UserResponse);
-  rpc CheckIsFollow (CheckIsFollowRequest) returns (CheckIsFollowResponse);
-  rpc CheckFollowingBatch(FollowBatchRequest) returns (FollowBatchResponse);
+  rpc GetFollowerIds (GetFollowersRequest) returns (GetFollowersResponse);
+  rpc CheckUserAndFollower (UserFollowerRequest) returns (UserFollowerResponse);
 }
 
 message UserRequest {
@@ -18,21 +18,21 @@ message UserResponse {
   string avatar = 3;
 }
 
-message CheckIsFollowRequest {
-  int32 user_id_1 = 1;
-  int32 user_id_2 = 2;
+message GetFollowersRequest {
+  int32 user_id = 1;
 }
 
-message CheckIsFollowResponse {
-  bool is_follower = 1;
+message GetFollowersResponse {
+  repeated int32 follower_ids = 1;
 }
 
-message FollowBatchRequest {
-  int32 follower_id = 1;
-  repeated int32 author_ids = 2;
+message UserFollowerRequest {
+  int32 user_id = 1;
+  int32 browsing_user_id = 2;
 }
 
-message FollowBatchResponse {
-  repeated int32 following_authors = 1;
+message UserFollowerResponse {
+  bool is_existed = 1;
+  bool is_follower = 2;
 }
 

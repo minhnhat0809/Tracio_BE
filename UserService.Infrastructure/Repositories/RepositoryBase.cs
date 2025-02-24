@@ -150,4 +150,24 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : class
             }
         }
     }
+    
+    public async Task<bool> ExistsAsync(Expression<Func<T, bool>> filter)
+    {
+        ArgumentNullException.ThrowIfNull(filter);
+
+        return await _context.Set<T>().AnyAsync(filter);
+    }
+    
+    public async Task<List<TResult>> FindAsync<TResult>(
+        Expression<Func<T, bool>> filter,
+        Expression<Func<T, TResult>> selector)
+    {
+        ArgumentNullException.ThrowIfNull(filter);
+        ArgumentNullException.ThrowIfNull(selector);
+
+        return await _context.Set<T>()
+            .Where(filter)
+            .Select(selector)
+            .ToListAsync();
+    }
 }

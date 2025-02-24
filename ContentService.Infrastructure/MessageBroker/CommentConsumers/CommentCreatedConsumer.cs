@@ -1,22 +1,23 @@
 using ContentService.Application.DTOs.CommentDtos.Message;
 using ContentService.Application.Interfaces;
+using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
 
 namespace ContentService.Infrastructure.MessageBroker.CommentConsumers;
 
-public class CommentCreatedConsumer(IServiceScopeFactory serviceScopeFactory, IConnectionFactory connectionFactory) 
-    : RabbitMqConsumer<CommentCreatedEvent>(serviceScopeFactory, connectionFactory, "comment_created")
+public class CommentCreatedConsumer(IServiceScopeFactory serviceScopeFactory) : IConsumer<CommentCreateEvent>
 {
-    protected override async Task ProcessMessageAsync(CommentCreatedEvent message, IServiceScopeFactory serviceScope,
-        CancellationToken cancellationToken)
+    private readonly IServiceScopeFactory _serviceScopeFactory = serviceScopeFactory;
+
+    public async Task Consume(ConsumeContext<CommentCreateEvent> context)
     {
-        using var scope = serviceScope.CreateScope();
+        using var scope = _serviceScopeFactory.CreateScope();
         var blogRepo = scope.ServiceProvider.GetRequiredService<IBlogRepo>();
 
-        await blogRepo.UpdateFieldsAsync(b => b.BlogId == message.BlogId,
+        await blogRepo.UpdateFieldsAsync(b => b.BlogId == context.Message.BlogId,
             b => b.SetProperty(bb => bb.CommentsCount, bb => bb.CommentsCount + 1));
         
-        Console.WriteLine($"[RabbitMQ] Processed CommentCreated for Blog {message.BlogId}");
+        Console.WriteLine($"[RabbitMQ] Processed CommentCreated for Blog {context.Message.BlogId}");
     }
 }
