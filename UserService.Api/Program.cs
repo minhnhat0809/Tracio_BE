@@ -28,7 +28,7 @@ builder.Services.AddServices();
 // config http2 for grpc
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.ListenAnyIP(5001, listenOptions =>
+    options.ListenAnyIP(5000, listenOptions =>
     {
         listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2; // gRPC requires HTTP/2
     });

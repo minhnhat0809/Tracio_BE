@@ -15,16 +15,11 @@ public class BlogWithCommentsDto
     public string CategoryName { get; set; } = null!;
 
     public string Content { get; set; } = null!;
-    
-    
 
     public DateTime CreatedAt { get; set; }
-    
-    public DateTime UpdatedAt { get; set; }
 
     public int LikesCount { get; set; } = 0;
 
     public int CommentsCount { get; set; } = 0;
-    
     public List<CommentDto> Comments { get; set; } = null!;
 }

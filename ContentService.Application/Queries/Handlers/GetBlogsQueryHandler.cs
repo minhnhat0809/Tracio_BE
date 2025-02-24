@@ -63,7 +63,21 @@ public class GetBlogsQueryHandler(
                 b => b.MediaFiles, b => b.Reactions
             );
 
-            return ResponseDto.GetSuccess(new { blogs, request.PageNumber, request.PageSize }, "Blogs retrieved successfully!");
+            // count blogs
+            var totalBlogs = await _blogRepo.CountAsync(basePredicate);
+            
+            var totalPages = (request.PageSize / totalBlogs) +1;
+
+            return ResponseDto.GetSuccess(new
+            {
+                blogs, 
+                request.PageNumber, 
+                request.PageSize,
+                totalBlogs,
+                totalPages,
+                hasNextPage = request.PageNumber < totalPages,
+                hasPreviousPage = request.PageNumber > 1,
+            }, "Blogs retrieved successfully!");
         }
         catch (Exception e)
         {
@@ -87,6 +101,7 @@ public class GetBlogsQueryHandler(
             var sortExpressionBlog = SortHelper.BuildSortExpression<Blog>(request.SortBy);
             var sortExpressionFollowerOnly = SortHelper.BuildSortExpression<UserBlogFollowerOnly>("CreatedAt");
             
+            // fetch followerOnly blogs
             var followerOnlyBlogs = await _followerOnlyBlogRepo.FindAsyncWithPagingAndSorting(
                 b => b.UserId == request.UserRequestId && !b.IsRead,
                 SelectFollowerOnlyBlogDtos(request.UserRequestId),
@@ -94,6 +109,9 @@ public class GetBlogsQueryHandler(
                 sortExpressionFollowerOnly, false,
                 b => b.Blog, b => b.Blog.MediaFiles, b => b.Blog.Reactions
             );
+            
+            // count followerOnly blogs
+            var totalFollowerOnlyBlogs = await _followerOnlyBlogRepo.CountAsync(fb => fb.UserId == request.UserRequestId && !fb.IsRead);
 
             var estimatedPublicSize = request.PageSize - followerOnlyBlogs.Count;
 
@@ -104,6 +122,13 @@ public class GetBlogsQueryHandler(
                 sortExpressionBlog, request.Ascending,
                 b => b.MediaFiles, b => b.Reactions
             );
+            
+            // count public blogs
+            var totalPublicBlogs = await _blogRepo.CountAsync(basePredicate);
+            
+            var totalBlogs = totalPublicBlogs + totalFollowerOnlyBlogs;
+            
+            var totalPages = (request.PageSize / totalBlogs) +1;
 
             var finalBlogs = InterleaveLists(followerOnlyBlogs, publicBlogs).Take(request.PageSize).ToList();
 
@@ -116,7 +141,16 @@ public class GetBlogsQueryHandler(
                 }, "mark-blogs-as-read");
             }
 
-            return ResponseDto.GetSuccess(new { blogs = finalBlogs, request.PageNumber, request.PageSize },
+            return ResponseDto.GetSuccess(new
+                {
+                    blogs = finalBlogs, 
+                    request.PageNumber, 
+                    request.PageSize,
+                    totalBlogs,
+                    totalPages,
+                    hasNextPage = request.PageNumber < totalPages,
+                    hasPreviousPage = request.PageNumber > 1
+                },
                 "Blogs retrieved successfully!");
         }
         catch (Exception e)

@@ -63,18 +63,13 @@ namespace ContentService.Api.Controllers
         [HttpGet("{blogId:int}/comments")]
         public async Task<IActionResult> GetCommentsByBlogId(
             [FromRoute] int blogId,
-            [FromQuery] int pageSize = 5,
+            [FromQuery] int? commentId,
+            [FromQuery] int pageSize = 10,
             [FromQuery] int pageNumber = 1,
-            [FromQuery] bool ascending = true
+            [FromQuery] bool ascending = false
             )
         {
-            var query = new GetCommentsByBlogQuery
-            {
-                BlogId = blogId,
-                PageSize = pageSize,
-                PageNumber = pageNumber,
-                IsAscending = ascending
-            };
+            var query = new GetCommentsByBlogQuery(blogId, commentId, pageNumber, pageSize, ascending);
             
             var result = await _mediator.Send(query);
             

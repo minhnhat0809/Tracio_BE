@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
 using ContentService.Application.DTOs.CommentDtos.Message;
+using ContentService.Application.Hubs;
 using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
 using MediatR;
+using Microsoft.AspNetCore.SignalR;
 using Shared.Dtos;
 
 namespace ContentService.Application.Commands.Handlers;
@@ -14,7 +16,8 @@ public class CreateCommentCommandHandler(
     IImageService imageService,
     IUserService userService,
     IModerationService moderationService,
-    IRabbitMqProducer rabbitMqProducer) 
+    IRabbitMqProducer rabbitMqProducer,
+    IHubContext<ContentHub> hubContext) 
     : IRequestHandler<CreateCommentCommand, ResponseDto>
 {
     private readonly ICommentRepo _commentRepo = commentRepo;
@@ -30,6 +33,8 @@ public class CreateCommentCommandHandler(
     private readonly IModerationService _moderationService = moderationService;
     
     private readonly IRabbitMqProducer _rabbitMqProducer = rabbitMqProducer;
+    
+    private readonly IHubContext<ContentHub> _hubContext = hubContext;
     
     private const string BucketName = "blogtracio";
     
@@ -71,6 +76,24 @@ public class CreateCommentCommandHandler(
             
             // publish comment create event
             await _rabbitMqProducer.PublishAsync(new CommentCreateEvent(request.BlogId), "comment_created", cancellationToken);
+            
+            // publish new comment into signalR
+            await _hubContext.Clients.Group("BlogUpdates")
+                .SendAsync("ReceiveNewComment", new
+                {
+                    request.BlogId
+                }, cancellationToken: cancellationToken);
+
+            await _hubContext.Clients.Group($"Blog-{request.BlogId}")
+                .SendAsync("ReceiveNewComment", new
+                {
+                    request.BlogId,
+                    CyclistId = request.CreatorId,
+                    CyclistName = userDto.Username,
+                    CyclistAvatar = userDto.Avatar,
+                    request.Content,
+                    MediaFiles = mediaFiles
+                }, cancellationToken: cancellationToken);
 
             return ResponseDto.CreateSuccess(null, "Comment created successfully!");
         }

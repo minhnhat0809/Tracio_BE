@@ -1,6 +1,8 @@
 using ContentService.Application.DTOs.CommentDtos.Message;
+using ContentService.Application.Hubs;
 using ContentService.Application.Interfaces;
 using MassTransit;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
 
