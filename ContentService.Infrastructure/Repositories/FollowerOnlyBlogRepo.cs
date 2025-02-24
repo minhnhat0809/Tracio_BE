@@ -4,6 +4,7 @@ using ContentService.Domain.Entities;
 using ContentService.Infrastructure.Contexts;
 using Dapper;
 using Microsoft.EntityFrameworkCore;
+using MySqlConnector;
 
 namespace ContentService.Infrastructure.Repositories;
 
@@ -16,8 +17,10 @@ public class FollowerOnlyBlogRepo(TracioContentDbContext context) : RepositoryBa
         if (blogIds.Count == 0)
             return;
 
-        await using var connection = _context.Database.GetDbConnection();
-    
+        var connectionString = _context.Database.GetDbConnection().ConnectionString;
+
+        await using var connection = new MySqlConnection(connectionString);
+
         if (connection.State == ConnectionState.Closed)
         {
             await connection.OpenAsync();

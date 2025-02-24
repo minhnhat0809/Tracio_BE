@@ -1,4 +1,5 @@
 using ContentService.Api.Extensions;
+using ContentService.Application.Hubs;
 using ContentService.Application.Services;
 using ContentService.Infrastructure;
 using FirebaseAdmin;
@@ -26,6 +27,7 @@ builder.Services.ConfigureAwsServices(builder.Configuration);
 builder.Services.ConfigureMediatr();
 builder.Services.ConfigureMapper();
 builder.Services.ConfigureAzure(builder.Configuration);
+builder.Services.ConfigureHub();
 
 var app = builder.Build();
 
@@ -36,6 +38,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.MapHub<ContentHub>("/contentHub");
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();

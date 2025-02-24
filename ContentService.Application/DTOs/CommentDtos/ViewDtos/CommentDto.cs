@@ -15,9 +15,5 @@ public class CommentDto
     
     public DateTime? CreatedAt { get; set; }
     
-    public DateTime? UpdatedAt { get; set; }
-    
-    public bool? IsEdited { get; set; }
-    
-    public int? LikesCount { get; set; }
+    public int LikesCount { get; set; }
 }

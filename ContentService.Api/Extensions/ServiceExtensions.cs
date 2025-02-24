@@ -176,7 +176,7 @@ public static class ServiceExtensions
     {
         services.AddGrpcClient<UserService.UserServiceClient>(o =>
         {
-            o.Address = new Uri("http://localhost:5001"); // Replace with UserService URL
+            o.Address = new Uri("http://localhost:5000"); // Replace with UserService URL
         }).ConfigurePrimaryHttpMessageHandler(() =>
         {
             var handler = new HttpClientHandler();
@@ -216,6 +216,13 @@ public static class ServiceExtensions
             options.MultipartBodyLengthLimit = 104857600; // Example: Set max upload size
         });
 
+        return services;
+    }
+    
+    // 🔹 SignalR hub
+    public static IServiceCollection ConfigureHub(this IServiceCollection services)
+    {
+        services.AddSignalR();
         return services;
     }
 }

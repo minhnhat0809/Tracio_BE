@@ -4,5 +4,5 @@ namespace ContentService.Application.Interfaces;
 
 public interface ICommentRepo : IRepositoryBase<Comment>
 {
-    Task<bool> DeleteComment(int commentId);
+    Task<int> GetCommentIndex(int blogId, int commentId);
 }
