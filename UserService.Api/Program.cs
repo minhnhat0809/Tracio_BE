@@ -1,14 +1,18 @@
 //using UserService.Api.Services;
 
+using System.IdentityModel.Tokens.Jwt;
+using System.Reflection;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using UserService.Api.DependencyInjection;
 using UserService.Api.Exceptions;
 using UserService.Api.Helper;
 using UserService.Api.Services;
 using UserService.Application.Interfaces.Services;
-using UserService.Application.Mappings;
-using UserService.Domain;
 using UserService.Infrastructure.Contexts;
-using UserService.Infrastructure.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 FirebaseConfig.InitializeFirebase();
@@ -17,14 +21,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// repo
+
 builder.Services.AddServices();
 
-// service
-builder.Services.AddScoped<IAuthService, AuthService>();
-        
-// mapper
-builder.Services.AddAutoMapper(typeof(MapperConfig).Assembly);
 
 // config http2 for grpc
 builder.WebHost.ConfigureKestrel(options =>
@@ -40,6 +39,53 @@ builder.WebHost.ConfigureKestrel(options =>
     });
 });
 
+// auth    
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.Authority = "https://securetoken.google.com/tracio-cbd26"; 
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = "https://securetoken.google.com/tracio-cbd26",
+            ValidateAudience = true,
+            ValidAudience = "tracio-cbd26",
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true, // Ensure signature validation
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = context =>
+            {
+                var claimsIdentity = context.Principal?.Identity as ClaimsIdentity;
+                if (claimsIdentity == null)
+                {
+                    context.Fail("Invalid token.");
+                    return Task.CompletedTask;
+                }
+
+                // 🔹 Extract "role" claim from Firebase token
+                var roleClaim = context.Principal?.FindFirst("role");
+                if (roleClaim != null)
+                {
+                    claimsIdentity.AddClaim(new Claim(ClaimTypes.Role, roleClaim.Value));
+                }
+
+                return Task.CompletedTask;
+            }
+            
+        };
+    });
+
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("RequireShopOwner", policy =>
+        policy.RequireClaim("role", "shop_owner"))
+    .AddPolicy("RequireCyclist", policy =>
+        policy.RequireClaim("role", "cyclist"))
+    .AddPolicy("RequireAdmin", policy =>
+        policy.RequireClaim("role", "admin"));
+
+builder.Services.AddAuthorization();
 // background service
 builder.Services.AddHostedService<UserBackgroundService>();
 
@@ -67,17 +113,57 @@ builder.Services.AddCors(opts =>
         .SetIsOriginAllowed((_) => true));
 });
 
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "UserService API", Version = "v1" });
+
+    // 🔹 Add JWT Bearer authentication
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter 'Bearer' [space] and then your valid token in the text input below.\n\nExample: Bearer eyJhbGciOi..."
+    });
+
+    // 🔹 Require token globally
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+            },
+            new string[] { }
+        }
+    });
+});
+
 var app = builder.Build();
+
 app.MapGrpcService<UserServiceImpl>();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "UserService API V1");
+        c.DocumentTitle = "UserService API Documentation";
+    });
 }
 
+
 app.UseHttpsRedirection();
+
 app.UseRouting();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.UseCors("CORSPolicy");
 app.MapControllers();
 app.Run();

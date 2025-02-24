@@ -13,7 +13,7 @@ public class ShopOwnerRegisterModel
     public string Email { get; set; } = null!;
 
     [StringLength(100, ErrorMessage = "UserName cannot exceed 100 characters.")]
-    public string? UserName { get; set; }
+    public required string UserName { get; set; }
 
     [Phone(ErrorMessage = "Invalid phone number format.")]
     public string? PhoneNumber { get; set; }
@@ -21,7 +21,6 @@ public class ShopOwnerRegisterModel
     [StringLength(50, ErrorMessage = "Provider ID cannot exceed 50 characters.")]
     public string? ProviderId { get; set; }
 
-    [FileExtensions(Extensions = "jpg,jpeg,png", ErrorMessage = "Only JPG, JPEG, or PNG files are allowed.")]
     public IFormFile? AvatarFile { get; set; }
 
     // Shop Information

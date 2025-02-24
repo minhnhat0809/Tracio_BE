@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿/*
+using System.Linq.Expressions;
 using System.Reflection;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
@@ -105,7 +106,7 @@ public class UserService : IUserService
     /// </summary>
     public async Task<ResponseModel> GetUserByIdAsync(int userId)
     {
-        var user = await _unitOfWork.UserRepository!.GetByIdAsync(userId,"");
+        var user = await _unitOfWork.UserRepository.GetByIdAsync(userId,"");
         if (user == null)
             return new ResponseModel("error", 404, "User not found", null);
 
@@ -118,7 +119,7 @@ public class UserService : IUserService
     /// </summary>
     public async Task<ResponseModel> GetUserByPropertyAsync(string property)
     {
-        var user = await _unitOfWork.UserRepository!.GetUserByPropertyAsync(property);
+        var user = await _unitOfWork.UserRepository.GetUserByPropertyAsync(property);
         if (user == null)
             return new ResponseModel("error", 404, "User not found", null);
 
@@ -131,7 +132,7 @@ public class UserService : IUserService
     /// </summary>
     public async Task<ResponseModel> UpdateUserAsync(int userId, UpdateUserProfileModel userModel)
     {
-        var user = await _unitOfWork.UserRepository!.GetByIdAsync(userId);
+        var user = await _unitOfWork.UserRepository.GetByIdAsync(userId);
         if (user == null)
             return new ResponseModel("error", 404, "User not found", null);
 
@@ -251,3 +252,4 @@ public class UserService : IUserService
     }
 
 }
+*/

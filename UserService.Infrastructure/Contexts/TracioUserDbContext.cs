@@ -36,7 +36,7 @@ public partial class TracioUserDbContext : DbContext
     
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        optionsBuilder.UseMySql("server=localhost;database=tracio_activity;user=root;password=N@hat892003.",
+        optionsBuilder.UseMySql("server=localhost;database=tracio_activity;user=root;password=Nhat2003.",
             new MySqlServerVersion(new Version(9, 0, 0)),
             mySqlOptions => mySqlOptions.UseNetTopologySuite()
         );

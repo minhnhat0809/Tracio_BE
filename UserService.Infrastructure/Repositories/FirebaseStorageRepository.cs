@@ -1,33 +1,28 @@
 ﻿using System.Web;
-using Firebase.Auth;
-using Firebase.Auth.Providers;
-using FirebaseAdmin.Auth;
 using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Storage.V1;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
 using UserService.Application.Interfaces;
-using User = UserService.Domain.Entities.User;
 
 namespace UserService.Infrastructure.Repositories;
 
 public class FirebaseStorageRepository : IFirebaseStorageRepository
 {
-    private const string BucketName = "rally-wave-438116.appspot.com"; // Firebase Storage bucket name
+    private const string BucketName = "tracio-cbd26.firebasestorage.app"; // Firebase Storage bucket name
     private readonly StorageClient _storageClient;
 
     public FirebaseStorageRepository()
     {
         // Initialize Google Cloud Storage client with the service account
         _storageClient = StorageClient.Create(
-            GoogleCredential.FromFile("rally-wave-438116-firebase-adminsdk.json")
+            GoogleCredential.FromFile("tracio-firebase-adminsdk.json")
         );
     }
 
     /// <summary>
     /// Uploads multiple image files and returns their public URLs.
     /// </summary>
-    public async Task<List<string>> UploadImagesAsync(string name, List<IFormFile> files, string imgFolderName)
+    public async Task<List<string>> UploadImagesAsync(string name, List<IFormFile> files, string imgFolderName, CancellationToken cancellationToken)
     {
         if (files == null || files.Count == 0)
             throw new ArgumentException("No files provided for upload.");
@@ -37,7 +32,7 @@ public class FirebaseStorageRepository : IFirebaseStorageRepository
         foreach (var file in files)
         {
             var uniqueName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{Guid.NewGuid()}";
-            var url = await UploadImageAsync(uniqueName, file, imgFolderName);
+            var url = await UploadImageAsync(uniqueName, file, imgFolderName, cancellationToken);
             uploadedUrls.Add(url);
         }
 
@@ -47,7 +42,7 @@ public class FirebaseStorageRepository : IFirebaseStorageRepository
     /// <summary>
     /// Uploads a single image file and returns its public URL.
     /// </summary>
-    public async Task<string> UploadImageAsync(string name, IFormFile file, string imgFolderName)
+    public async Task<string> UploadImageAsync(string name, IFormFile file, string imgFolderName, CancellationToken cancellationToken)
     {
         if (file == null || file.Length == 0)
             throw new ArgumentException("File is null or empty.");
@@ -64,7 +59,7 @@ public class FirebaseStorageRepository : IFirebaseStorageRepository
         var fileName = $"{imgFolderName}/{name}{fileExtension}";
 
         using var stream = new MemoryStream();
-        await file.CopyToAsync(stream);
+        await file.CopyToAsync(stream, cancellationToken);
         stream.Position = 0;
 
         // Create a token for public access
@@ -83,10 +78,11 @@ public class FirebaseStorageRepository : IFirebaseStorageRepository
         };
 
         // Upload file with PublicRead permission
-        await _storageClient.UploadObjectAsync(metadata, stream, new UploadObjectOptions
-        {
-            PredefinedAcl = PredefinedObjectAcl.PublicRead
-        });
+        await _storageClient.UploadObjectAsync(
+            metadata, 
+            stream, 
+            new UploadObjectOptions { PredefinedAcl = PredefinedObjectAcl.PublicRead },
+            cancellationToken);
 
         // Generate public URL
         return GetFirebaseMediaUrl(fileName, token);
@@ -103,7 +99,7 @@ public class FirebaseStorageRepository : IFirebaseStorageRepository
     /// <summary>
     /// Deletes a file from Firebase Storage by its public URL.
     /// </summary>
-    public async Task<bool> DeleteImageByUrlAsync(string fileUrl)
+    public async Task<bool> DeleteImageByUrlAsync(string fileUrl, CancellationToken cancellationToken)
     {
         try
         {
@@ -116,7 +112,7 @@ public class FirebaseStorageRepository : IFirebaseStorageRepository
                 return false;
 
             // Delete the object from Firebase Storage
-            await _storageClient.DeleteObjectAsync(BucketName, objectName);
+            await _storageClient.DeleteObjectAsync(BucketName, objectName, cancellationToken: cancellationToken);
             return true;
         }
         catch (Google.GoogleApiException e) when (e.Error.Code == 404)
