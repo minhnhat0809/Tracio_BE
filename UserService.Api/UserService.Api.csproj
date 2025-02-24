@@ -32,6 +32,7 @@
       <Content Include="..\.dockerignore">
         <Link>.dockerignore</Link>
       </Content>
+      <Content Remove="tracio-firebase-adminsdk.json" />
     </ItemGroup>
 
     <ItemGroup>
