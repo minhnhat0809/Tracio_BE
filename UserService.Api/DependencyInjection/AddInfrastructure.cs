@@ -17,6 +17,7 @@ public static class AddInfrastructure
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IFirebaseStorageRepository, FirebaseStorageRepository>();
         services.AddScoped<IFirebaseAuthenticationRepository, FirebaseAuthenticationRepository>();
+        services.AddScoped<IFollowerRepo, FollowerRepo>();
       
         // mediatr
         services.AddMediatR(cfg =>
