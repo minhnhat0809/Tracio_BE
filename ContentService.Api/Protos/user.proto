@@ -35,4 +35,3 @@ message UserFollowerResponse {
   bool is_existed = 1;
   bool is_follower = 2;
 }
-

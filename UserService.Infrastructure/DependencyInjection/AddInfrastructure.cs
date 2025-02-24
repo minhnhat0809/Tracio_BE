@@ -19,8 +19,6 @@ public static class AddInfrastructure
         services.AddScoped<IFirebaseStorageRepository, FirebaseStorageRepository>();
         services.AddScoped<IFollowerRepo, FollowerRepo>();
         
-        
-        
 
         return services;
     }
