@@ -3,7 +3,4 @@ using Shared.Dtos;
 
 namespace ContentService.Application.Commands;
 
-public class DeleteBookmarkCommand(int bookmarkId) : IRequest<ResponseDto>
-{
-    public int BookmarkId { get; set; } = bookmarkId;
-}
+public record DeleteBookmarkCommand(int BlogId, int UserRequestId) : IRequest<ResponseDto>;

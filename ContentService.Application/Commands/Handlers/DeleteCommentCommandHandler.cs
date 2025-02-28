@@ -5,11 +5,9 @@ using Shared.Dtos;
 
 namespace ContentService.Application.Commands.Handlers;
 
-public class DeleteCommentCommandHandler(ICommentRepo commentRepo, IBlogRepo blogRepo, IRabbitMqProducer rabbitMqProducer) :  IRequestHandler<DeleteCommentCommand, ResponseDto>
+public class DeleteCommentCommandHandler(ICommentRepo commentRepo, IRabbitMqProducer rabbitMqProducer) :  IRequestHandler<DeleteCommentCommand, ResponseDto>
 {
     private readonly ICommentRepo _commentRepo = commentRepo;
-    
-    private readonly IBlogRepo _blogRepo = blogRepo;
     
     private readonly IRabbitMqProducer _rabbitMqProducer = rabbitMqProducer;
     
@@ -28,7 +26,7 @@ public class DeleteCommentCommandHandler(ICommentRepo commentRepo, IBlogRepo blo
             if (!isSucceed) ResponseDto.InternalError("Failed to delete comment");
 
             // publish comment delete event
-            await _rabbitMqProducer.PublishAsync(new CommentDeleteEvent(blogIdOfComment), "content_deleted", cancellationToken);
+            await _rabbitMqProducer.PublishAsync(new CommentDeleteEvent(blogIdOfComment), "content.deleted", cancellationToken);
             
             return ResponseDto.DeleteSuccess("Comment deleted successfully!");
         }

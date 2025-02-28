@@ -7,7 +7,7 @@ namespace ContentService.Application.Commands;
 
 public class CreateReplyCommand(int creatorId, ReplyCreateDto replyCreateDto, List<IFormFile> files) : IRequest<ResponseDto>
 {
-    public int CreatorId { get; set; } = creatorId;
+    public int CyclistId { get; set; } = creatorId;
     
     public int CommentId { get; set; } = replyCreateDto.CommentId;
     

@@ -6,6 +6,7 @@ service UserService {
   rpc ValidateUser (UserRequest) returns (UserResponse);
   rpc GetFollowerIds (GetFollowersRequest) returns (GetFollowersResponse);
   rpc CheckUserAndFollower (UserFollowerRequest) returns (UserFollowerResponse);
+  rpc IsUserValid (IsUserValidRequest) returns (IsUserValidResponse);
 }
 
 message UserRequest {
@@ -34,4 +35,12 @@ message UserFollowerRequest {
 message UserFollowerResponse {
   bool is_existed = 1;
   bool is_follower = 2;
+}
+
+message IsUserValidRequest {
+  int32 user_id = 1;
+}
+
+message IsUserValidResponse {
+  bool is_valid = 1;
 }

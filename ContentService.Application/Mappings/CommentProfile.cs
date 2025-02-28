@@ -11,6 +11,7 @@ public class CommentProfile : Profile
     {
         CreateMap<Comment, CommentDto>();
 
-        CreateMap<CreateCommentCommand, Comment>();
+        CreateMap<CreateCommentCommand, Comment>()
+            .ForMember(dest => dest.MediaFiles, opt => opt.Ignore());
     }
 }

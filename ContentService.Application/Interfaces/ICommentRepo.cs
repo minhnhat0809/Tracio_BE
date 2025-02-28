@@ -4,5 +4,5 @@ namespace ContentService.Application.Interfaces;
 
 public interface ICommentRepo : IRepositoryBase<Comment>
 {
-    Task<int> GetCommentIndex(int blogId, int commentId);
+    Task<(int BlogId, int CommentIndex)> GetCommentIndex(int commentId);
 }

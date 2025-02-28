@@ -1,3 +1,4 @@
+using NotificationService.Api.Extensions;
 using NotificationService.Application.Queries;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,11 +10,10 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// mediatR
-builder.Services.AddMediatR(config =>
-{
-    config.RegisterServicesFromAssembly(typeof(GetNotificationByUserQuery).Assembly);
-});
+builder.Services.ConfigureCors();
+builder.Services.ConfigureMediatr();
+builder.Services.ConfigureServices();
+builder.Services.ConfigureSignalR();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

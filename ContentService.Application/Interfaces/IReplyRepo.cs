@@ -4,5 +4,5 @@ namespace ContentService.Application.Interfaces;
 
 public interface IReplyRepo : IRepositoryBase<Reply>
 {
-    Task<bool> DeleteReply(int replyId);
+    Task<(int CommentId, int ReplyIndex)> GetReplyIndex(int replyId);
 }

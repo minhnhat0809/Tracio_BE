@@ -30,7 +30,7 @@ namespace ContentService.Api.Controllers
         {
             var result = await _mediator.Send(new DeleteReplyCommand(replyId));
             
-            return StatusCode(result.StatusCode, result);
+            return StatusCode(result.StatusCode);
         }
     }
 }

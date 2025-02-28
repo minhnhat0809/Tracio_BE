@@ -4,6 +4,8 @@ using ContentService.Application.Services;
 using ContentService.Infrastructure;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
+using MassTransit;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Load Firebase Admin SDK Credentials
@@ -37,6 +39,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+var busControl = app.Services.GetRequiredService<IBusControl>();
+await busControl.StartAsync();
 
 app.UseWebSockets();
 app.UseHttpsRedirection();

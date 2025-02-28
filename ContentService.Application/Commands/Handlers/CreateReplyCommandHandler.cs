@@ -1,8 +1,11 @@
 using AutoMapper;
+using ContentService.Application.DTOs.NotificationDtos.Message;
 using ContentService.Application.DTOs.ReplyDtos.Message;
+using ContentService.Application.Hubs;
 using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
 using MediatR;
+using Microsoft.AspNetCore.SignalR;
 using Shared.Dtos;
 
 namespace ContentService.Application.Commands.Handlers;
@@ -14,7 +17,8 @@ public class CreateReplyCommandHandler(
     IImageService imageService,
     IUserService userService,
     IModerationService moderationService,
-    IRabbitMqProducer rabbitMqProducer
+    IRabbitMqProducer rabbitMqProducer,
+    IHubContext<ContentHub> hubContext
     ) : IRequestHandler<CreateReplyCommand, ResponseDto>
 {
     private readonly ICommentRepo _commentRepo = commentRepo;
@@ -31,6 +35,8 @@ public class CreateReplyCommandHandler(
     
     private readonly IRabbitMqProducer _rabbitMqProducer = rabbitMqProducer;
     
+    private readonly IHubContext<ContentHub> _hubContext = hubContext;
+    
     private const string BucketName = "blogtracio";
     
     public async Task<ResponseDto> Handle(CreateReplyCommand request, CancellationToken cancellationToken)
@@ -38,16 +44,21 @@ public class CreateReplyCommandHandler(
         try
         {
             // check comment in db
-            var isCommentExisted = await _commentRepo.ExistsAsync(c => c.CommentId == request.CommentId);
-            if (!isCommentExisted) return ResponseDto.NotFound("Comment not found");
+            var blogAndCommentAndCyclistId = await _commentRepo.GetByIdAsync(c => c.CommentId == request.CommentId, c => new
+            {
+                c.CommentId,
+                c.CyclistId,
+                c.BlogId
+            });
+            if (blogAndCommentAndCyclistId == null) return ResponseDto.NotFound("Comment not found");
             
             // check userId and get user's name
-            var userDto = await _userService.ValidateUser(request.CreatorId);
+            var userDto = await _userService.ValidateUser(request.CyclistId);
             if (!userDto.IsUserValid) return ResponseDto.NotFound("User does not exist");
             
             // moderate content
-            var moderationResult = await _moderationService.ProcessModerationResult(request.Content);
-            if(!moderationResult.IsSafe) return ResponseDto.BadRequest("Content contains harmful or offensive language.");
+            /*var moderationResult = await _moderationService.ProcessModerationResult(request.Content);
+            if(!moderationResult.IsSafe) return ResponseDto.BadRequest("Content contains harmful or offensive language.");*/
             
             // upload file to aws s3 and get url
             var mediaFileUrl = new List<string>();
@@ -70,7 +81,34 @@ public class CreateReplyCommandHandler(
             if (!replyCreateResult) return ResponseDto.InternalError("Failed to create reply");
             
             // publish reply create event
-            await _rabbitMqProducer.PublishAsync(new ReplyCreateEvent(request.CommentId), "reply_created", cancellationToken);
+            await _rabbitMqProducer.PublishAsync(new ReplyCreateEvent(request.CommentId), "content.created", cancellationToken);
+            
+            // publish notification event
+            await _rabbitMqProducer.PublishAsync(new NotificationEvent(
+                blogAndCommentAndCyclistId.CyclistId,
+                request.CyclistId,
+                userDto.Username,
+                userDto.Avatar,
+                request.Content,
+                reply.ReplyId,
+                "reply",
+                reply.CreatedAt!.Value
+                ), "content.created", cancellationToken);
+            
+            // publish realtime
+            await _hubContext.Clients.Group($"Blog-{blogAndCommentAndCyclistId.BlogId}").SendAsync(
+                "ReceiveNewReply", new
+                {
+                    blogAndCommentAndCyclistId.BlogId,
+                    blogAndCommentAndCyclistId.CommentId
+                }, cancellationToken: cancellationToken);
+            
+            
+            await _hubContext.Clients.Group($"Comment-{blogAndCommentAndCyclistId.CommentId}").SendAsync(
+                "ReceiveNewReply", new
+                {
+                    blogAndCommentAndCyclistId.CommentId
+                }, cancellationToken: cancellationToken);
             
             return ResponseDto.CreateSuccess(null, "Reply created successfully!");
         }

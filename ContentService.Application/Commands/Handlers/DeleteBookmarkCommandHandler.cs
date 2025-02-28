@@ -12,10 +12,11 @@ public class DeleteBookmarkCommandHandler(IBookmarkRepo bookmarkRepo) : IRequest
     {
         try
         {
-            var isBookmarkExisted = await _bookmarkRepo.ExistsAsync(bm => bm.BookmarkId == request.BookmarkId);
-            if(!isBookmarkExisted) return ResponseDto.NotFound("Bookmark not found");
+            var bookmarkId = await _bookmarkRepo.GetByIdAsync(bm => bm.BookmarkId == request.BlogId && bm.OwnerId == request.UserRequestId, 
+                bm => bm.BookmarkId);
+            if(bookmarkId <= 0) return ResponseDto.NotFound("Bookmark not found");
             
-            var result = await _bookmarkRepo.DeleteAsync(request.BookmarkId);
+            var result = await _bookmarkRepo.DeleteAsync(bookmarkId);
             
             return result ? ResponseDto.DeleteSuccess("Bookmark deleted successfully!"):
                     ResponseDto.InternalError("Failed to delete bookmark");

@@ -138,7 +138,7 @@ public class GetBlogsQueryHandler(
                 {
                     UserId = request.UserRequestId,
                     BlogIds = followerOnlyBlogs.Select(b => b.BlogId).ToList()
-                }, "mark-blogs-as-read");
+                }, "blog.mark.read");
             }
 
             return ResponseDto.GetSuccess(new
@@ -199,7 +199,7 @@ public class GetBlogsQueryHandler(
             LikesCount = b.ReactionsCount,
             CommentsCount = b.CommentsCount,
             IsReacted = b.Reactions.Any(r => r.CyclistId == userRequestId),
-            ReactionId = b.Reactions.Where(r => r.CyclistId == userRequestId).Select(r => r.ReactionId).FirstOrDefault()
+            IsBookmarked = b.BlogBookmarks.Any(bm => bm.OwnerId == userRequestId)
         };
     }
 
@@ -219,7 +219,7 @@ public class GetBlogsQueryHandler(
             LikesCount = b.Blog.ReactionsCount,
             CommentsCount = b.Blog.CommentsCount,
             IsReacted = b.Blog.Reactions.Any(r => r.CyclistId == userRequestId),
-            ReactionId = b.Blog.Reactions.Where(r => r.CyclistId == userRequestId).Select(r => r.ReactionId).FirstOrDefault()
+            IsBookmarked = b.Blog.BlogBookmarks.Any(bm => bm.OwnerId == userRequestId)
         };
     }
 }

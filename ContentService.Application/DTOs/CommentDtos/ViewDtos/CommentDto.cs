@@ -1,4 +1,6 @@
 ﻿
+using ContentService.Application.DTOs.MediaFileDTOs.ViewDtos;
+
 namespace ContentService.Application.DTOs.CommentDtos.ViewDtos;
 
 public class CommentDto
@@ -12,6 +14,10 @@ public class CommentDto
     public string Avatar { get; set; } = null!;
     
     public string Content { get; set; } = null!;
+    
+    public bool IsReacted { get; set; }
+    
+    public List<MediaFileDto> MediaFiles { get; set; } = [];
     
     public DateTime? CreatedAt { get; set; }
     
