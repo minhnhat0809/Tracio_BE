@@ -27,7 +27,7 @@ namespace ContentService.Api.Controllers
             
             var result = await _mediator.Send(new GetRepliesByCommentQuery(userBrowsingId, replyId, commentId, pageNumber, pageSize));
             
-            return StatusCode(result.StatusCode);
+            return StatusCode(result.StatusCode, result);
         }
 
         [HttpPost]

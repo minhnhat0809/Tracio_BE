@@ -1,9 +1,11 @@
 using MassTransit;
 using Microsoft.AspNetCore.SignalR;
 using NotificationService.Application.Dtos.NotificationDtos.Message;
+using NotificationService.Application.Interfaces;
 using NotificationService.Application.Queries;
 using NotificationService.Application.SignalR;
 using NotificationService.Infrastructure.MessageBroker.NotificationConsumers;
+using NotificationService.Infrastructure.Repositories;
 using RabbitMQ.Client;
 
 namespace NotificationService.Api.Extensions;
@@ -14,8 +16,9 @@ public static class ServiceExtensions
     public static IServiceCollection ConfigureServices(this IServiceCollection services)
     {
         services.AddSingleton<IUserIdProvider, CustomerUserIdProvider>();
-        //services.AddScoped<INotificationRepo, NotificationRepo>();
-        
+        services.AddScoped<INotificationRepo, NotificationRepo>();
+        services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
         
         return services;
     } 
