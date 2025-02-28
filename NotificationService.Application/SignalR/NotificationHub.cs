@@ -1,26 +1,13 @@
-using System.Collections.Concurrent;
-using FirebaseAdmin;
 using FirebaseAdmin.Auth;
-using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 
 namespace NotificationService.Application.SignalR;
 
-public class NotificationHub(IHttpContextAccessor httpContextAccessor) : Hub
+public class NotificationHub(IHttpContextAccessor httpContextAccessor, ConnectionManager connectionManager) : Hub
 {
-    private static readonly ConcurrentDictionary<int, string> Connections = new();
-    
     private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
-
-    // Initialize Firebase App
-    static NotificationHub()
-    {
-        FirebaseApp.Create(new AppOptions
-        {
-            Credential = GoogleCredential.FromFile("firebase-service-account.json") // Path to Firebase credentials
-        });
-    }
+    private readonly ConnectionManager _connectionManager = connectionManager;
 
     public override async Task OnConnectedAsync()
     {
@@ -49,8 +36,8 @@ public class NotificationHub(IHttpContextAccessor httpContextAccessor) : Hub
                 return;
             }
 
-            // Store user connection
-            Connections[userId] = Context.ConnectionId;
+            // Store user connection in ConnectionManager
+            _connectionManager.AddConnection(userId, Context.ConnectionId);
             Console.WriteLine($"✅ Firebase user {userId} connected (Connection ID: {Context.ConnectionId})");
 
             await base.OnConnectedAsync();
@@ -64,20 +51,14 @@ public class NotificationHub(IHttpContextAccessor httpContextAccessor) : Hub
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        var userId = Connections.FirstOrDefault(x => x.Value == Context.ConnectionId).Key;
+        var userId = _connectionManager.GetUserIdByConnectionId(Context.ConnectionId);
 
-        if (userId != 0)
+        if (userId != null)
         {
-            Connections.TryRemove(userId, out _);
+            _connectionManager.RemoveConnection(userId.Value);
             Console.WriteLine($"❌ Firebase user {userId} disconnected.");
         }
 
         await base.OnDisconnectedAsync(exception);
-    }
-
-    // Check if user is online
-    public bool IsUserOnline(int userId)
-    {
-        return Connections.ContainsKey(userId);
     }
 }
