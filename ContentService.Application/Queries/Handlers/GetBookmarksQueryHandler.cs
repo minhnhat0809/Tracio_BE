@@ -28,8 +28,7 @@ public class GetBookmarksQueryHandler(IBookmarkRepo bookmarkRepo) : IRequestHand
                     UpdatedAt = bm.Blog.UpdatedAt,
                     LikesCount = bm.Blog.ReactionsCount,
                     CommentsCount = bm.Blog.CommentsCount,
-                    IsReacted = bm.Blog.Reactions.Any(r => r.CyclistId == request.OwnerId),
-                    ReactionId = bm.Blog.Reactions.Where(r => r.CyclistId == request.OwnerId).Select(r => r.CyclistId).FirstOrDefault()
+                    IsReacted = bm.Blog.Reactions.Any(r => r.CyclistId == request.OwnerId)
                 },request.PageNumber, request.PageSize,
                 includes:
                 [
