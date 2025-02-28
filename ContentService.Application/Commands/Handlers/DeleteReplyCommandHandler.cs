@@ -5,11 +5,9 @@ using Shared.Dtos;
 
 namespace ContentService.Application.Commands.Handlers;
 
-public class DeleteReplyCommandHandler(IReplyRepo replyRepo, ICommentRepo commentRepo, IRabbitMqProducer rabbitMqProducer) : IRequestHandler<DeleteReplyCommand, ResponseDto>
+public class DeleteReplyCommandHandler(IReplyRepo replyRepo, IRabbitMqProducer rabbitMqProducer) : IRequestHandler<DeleteReplyCommand, ResponseDto>
 {
     private readonly IReplyRepo _replyRepo = replyRepo;
-    
-    private readonly ICommentRepo _commentRepo = commentRepo;
     
     private readonly IRabbitMqProducer _rabbitMqProducer = rabbitMqProducer;
     
@@ -21,13 +19,14 @@ public class DeleteReplyCommandHandler(IReplyRepo replyRepo, ICommentRepo commen
             var commentIdOfReply = await _replyRepo.GetByIdAsync(r => r.ReplyId == request.ReplyId, r => r.CommentId);
             if (commentIdOfReply <= 0) return ResponseDto.NotFound("Reply not found");
 
-            // delete comment
-            var isSucceed = await _replyRepo.DeleteReply(request.ReplyId);
+            // delete reply
+            var isSucceed = await _replyRepo.UpdateFieldsAsync(r => r.ReplyId == request.ReplyId,
+                r => r.SetProperty(rr => rr.IsDeleted, true));
 
             if (!isSucceed) ResponseDto.InternalError("Failed to delete reply");
             
             // decrease the replies of comment
-            await _rabbitMqProducer.PublishAsync(new ReplyDeleteEvent(commentIdOfReply), "content_deleted", cancellationToken);
+            await _rabbitMqProducer.PublishAsync(new ReplyDeleteEvent(commentIdOfReply), "content.deleted", cancellationToken);
             
             return ResponseDto.DeleteSuccess("Reply deleted successfully!");
         }

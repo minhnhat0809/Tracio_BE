@@ -7,24 +7,27 @@ namespace ContentService.Infrastructure.MessageBroker;
 public class RabbitMqProducer(IPublishEndpoint publishEndpoint) : IRabbitMqProducer
 {
     private readonly IPublishEndpoint _publishEndpoint = publishEndpoint;
-    
-    public async Task PublishAsync<T>(T message, string queueName, CancellationToken cancellationToken = default)
+
+    public async Task PublishAsync<T>(T message, string routingKey, CancellationToken cancellationToken = default)
     {
         if (message == null)
         {
-            Console.WriteLine($"[MassTransit] Warning: Attempted to publish a null message to {queueName}. Ignoring.");
-            return; 
+            Console.WriteLine($"[MassTransit] Warning: Attempted to publish a null message with routing key '{routingKey}'. Ignoring.");
+            return;
         }
-        
+
         try
         {
-            Console.WriteLine($"[MassTransit] Publishing message to {queueName}: {JsonSerializer.Serialize(message)}");
+            Console.WriteLine($"[MassTransit] Publishing message to exchange with routing key '{routingKey}': {JsonSerializer.Serialize(message)}");
 
-            await _publishEndpoint.Publish(message, cancellationToken);
+            await _publishEndpoint.Publish(message, context =>
+            {
+                context.SetRoutingKey(routingKey);
+            }, cancellationToken);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[MassTransit] ERROR publishing message to {queueName}: {ex.Message}");
+            Console.WriteLine($"[MassTransit] ERROR publishing message with routing key '{routingKey}': {ex.Message}");
             throw;
         }
     }

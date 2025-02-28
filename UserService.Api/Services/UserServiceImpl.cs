@@ -67,4 +67,20 @@ public class UserServiceImpl(IMediator mediator) : Userservice.UserService.UserS
             throw new RpcException(new Status(StatusCode.Internal, $"Internal Error: {ex.Message}"));
         }
     }
+
+    public override async Task<IsUserValidResponse> IsUserValid(IsUserValidRequest request, ServerCallContext context)
+    {
+        try
+        {
+            var result = await _mediator.Send(new CheckUserValidQuery(request.UserId));
+
+            var response = new IsUserValidResponse { IsValid = result};
+            
+            return response;
+        }
+        catch (Exception ex)
+        {
+            throw new RpcException(new Status(StatusCode.Internal, $"Internal Error: {ex.Message}"));
+        }
+    }
 }

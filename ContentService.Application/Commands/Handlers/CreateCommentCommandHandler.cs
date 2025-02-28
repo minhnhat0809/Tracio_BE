@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using ContentService.Application.DTOs.CommentDtos.Message;
+using ContentService.Application.DTOs.NotificationDtos.Message;
 using ContentService.Application.Hubs;
 using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
@@ -43,8 +44,8 @@ public class CreateCommentCommandHandler(
         try
         {
             // check blog in db
-            var isBLogExisted = await _blogRepo.ExistsAsync(b => b.BlogId == request.BlogId);
-            if (!isBLogExisted) return ResponseDto.NotFound("Blog not found");
+            var blogAndCyclist = await _blogRepo.GetByIdAsync(b => b.BlogId == request.BlogId, b => new {b.BlogId, CyclistId = b.CreatorId});
+            if (blogAndCyclist == null) return ResponseDto.NotFound("Blog not found");
             
             // check userId and get user's name
             var userDto = await _userService.ValidateUser(request.CreatorId);
@@ -75,25 +76,26 @@ public class CreateCommentCommandHandler(
             if(!commentCreateResult) return ResponseDto.InternalError("Failed to create comment");
             
             // publish comment create event
-            await _rabbitMqProducer.PublishAsync(new CommentCreateEvent(request.BlogId), "comment_created", cancellationToken);
+            await _rabbitMqProducer.PublishAsync(new CommentCreateEvent(request.BlogId), "content.created", cancellationToken);
             
             // publish new comment into signalR
-            await _hubContext.Clients.Group("BlogUpdates")
+            await _hubContext.Clients.Groups("BlogUpdates", $"Blog-{blogAndCyclist.BlogId}")
                 .SendAsync("ReceiveNewComment", new
                 {
                     request.BlogId
                 }, cancellationToken: cancellationToken);
-
-            await _hubContext.Clients.Group($"Blog-{request.BlogId}")
-                .SendAsync("ReceiveNewComment", new
-                {
-                    request.BlogId,
-                    CyclistId = request.CreatorId,
-                    CyclistName = userDto.Username,
-                    CyclistAvatar = userDto.Avatar,
-                    request.Content,
-                    MediaFiles = mediaFiles
-                }, cancellationToken: cancellationToken);
+            
+            // publish notification
+            await _rabbitMqProducer.PublishAsync(new NotificationEvent(
+                recipientId: blogAndCyclist.CyclistId,
+                senderId: request.CreatorId,
+                userDto.Username,
+                userDto.Avatar,
+                request.Content,
+                comment.CommentId,
+                "comment",
+                comment.CreatedAt
+            ), "notification_content", cancellationToken: cancellationToken);
 
             return ResponseDto.CreateSuccess(null, "Comment created successfully!");
         }

@@ -2,6 +2,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using Amazon.S3;
 using ContentService.Application.DTOs;
+using ContentService.Application.DTOs.BlogDtos.Message;
+using ContentService.Application.DTOs.CommentDtos.Message;
+using ContentService.Application.DTOs.NotificationDtos.Message;
 using Microsoft.AspNetCore.Http.Features;
 using ContentService.Application.Interfaces;
 using ContentService.Application.Mappings;
@@ -14,6 +17,7 @@ using ContentService.Infrastructure.MessageBroker.CommentConsumers;
 using ContentService.Infrastructure.MessageBroker.ReactionConsumers;
 using ContentService.Infrastructure.MessageBroker.ReplyConsumers;
 using MassTransit;
+using RabbitMQ.Client;
 using Userservice;
 
 namespace ContentService.Api.Extensions;
@@ -133,40 +137,85 @@ public static class ServiceExtensions
         services.AddScoped<IRabbitMqProducer, RabbitMqProducer>();
         
         services.AddMassTransit(x =>
+    {
+    // ✅ Auto-register all consumers in the assembly
+    x.AddConsumers(typeof(BlogPrivacyUpdatedConsumer).Assembly);
+
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host("rabbitmq://localhost"); // Change to your RabbitMQ settings
+
+        // ✅ Define custom direct exchanges
+        cfg.Message<BlogPrivacyUpdateEvent>(xx => xx.SetEntityName("blog_privacy_updated_exchange"));
+        cfg.Publish<BlogPrivacyUpdateEvent>(xx => xx.ExchangeType = ExchangeType.Direct);
+
+        cfg.Message<MarkBlogsAsReadEvent>(xx => xx.SetEntityName("mark_blogs_as_read_exchange"));
+        cfg.Publish<MarkBlogsAsReadEvent>(xx => xx.ExchangeType = ExchangeType.Direct);
+
+        cfg.Message<CommentCreateEvent>(xx => xx.SetEntityName("content_created_exchange"));
+        cfg.Publish<CommentCreateEvent>(xx => xx.ExchangeType = ExchangeType.Direct);
+
+        cfg.Message<CommentDeleteEvent>(xx => xx.SetEntityName("content_deleted_exchange"));
+        cfg.Publish<CommentDeleteEvent>(xx => xx.ExchangeType = ExchangeType.Direct);
+        
+        cfg.Message<NotificationEvent>(xx => xx.SetEntityName("notification_content_exchange"));
+        cfg.Publish<NotificationEvent>(xx => xx.ExchangeType = ExchangeType.Direct);
+
+        // ✅ Blog Consumers - Bind queues to Direct Exchange with Routing Key
+        cfg.ReceiveEndpoint("blog_privacy_updated_queue", e =>
         {
-            // ✅ Auto-register all consumers in the assembly
-            x.AddConsumers(typeof(BlogPrivacyUpdatedConsumer).Assembly);
-
-            x.UsingRabbitMq((context, cfg) =>
+            e.ConfigureConsumer<BlogPrivacyUpdatedConsumer>(context);
+            e.Bind("blog_privacy_updated_exchange", xx =>
             {
-                cfg.Host("rabbitmq://localhost"); // Change to your RabbitMQ settings
-
-                // ✅ Blog Consumers
-                cfg.ReceiveEndpoint("blog_privacy_updated", e => e.ConfigureConsumer<BlogPrivacyUpdatedConsumer>(context));
-                cfg.ReceiveEndpoint("mark_blogs_as_read", e => e.ConfigureConsumer<MarkBlogsAsReadConsumer>(context));
-
-                // ✅ Comment Consumers
-                cfg.ReceiveEndpoint("comment_created", e => e.ConfigureConsumer<CommentCreatedConsumer>(context));
-                // ✅ Reaction Consumers
-                cfg.ReceiveEndpoint("reaction_created", e => e.ConfigureConsumer<ReactionCreatedConsumer>(context));
-                // ✅ Reply Consumers
-                cfg.ReceiveEndpoint("reply_created", e => e.ConfigureConsumer<ReplyCreatedConsumer>(context));
-                
-                // ✅ Reply, Comment, Reaction Consumers
-                cfg.ReceiveEndpoint("content_deleted", e =>
-                {
-                    e.ConfigureConsumer<CommentDeletedConsumer>(context);
-                    e.ConfigureConsumer<ReplyDeletedConsumer>(context);
-                    e.ConfigureConsumer<ReactionDeletedConsumer>(context);
-                });
-
-                // ✅ Add Retry Policy (Exponential Backoff)
-                cfg.UseMessageRetry(r => r.Exponential(3, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(30)));
-
-                // ✅ Enable Dead-Letter Queue (DLQ)
-                cfg.UseDelayedRedelivery(r => r.Intervals(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(1)));
+                xx.ExchangeType = ExchangeType.Direct;
+                xx.RoutingKey = "blog.privacy.updated";
             });
         });
+
+        cfg.ReceiveEndpoint("mark_blogs_as_read_queue", e =>
+        {
+            e.ConfigureConsumer<MarkBlogsAsReadConsumer>(context);
+            e.Bind("mark_blogs_as_read_exchange", xx =>
+            {
+                xx.ExchangeType = ExchangeType.Direct;
+                xx.RoutingKey = "blog.mark.read";
+            });
+        });
+
+        // ✅ Content Created (Comments, Reactions, Replies)
+        cfg.ReceiveEndpoint("content_created_queue", e =>
+        {
+            e.ConfigureConsumer<CommentCreatedConsumer>(context);
+            e.ConfigureConsumer<ReactionCreatedConsumer>(context);
+            e.ConfigureConsumer<ReplyCreatedConsumer>(context);
+            e.Bind("content_created_exchange", xx =>
+            {
+                xx.ExchangeType = ExchangeType.Direct;
+                xx.RoutingKey = "content.created";
+            });
+        });
+
+        // ✅ Content Deleted (Comments, Reactions, Replies)
+        cfg.ReceiveEndpoint("content_deleted_queue", e =>
+        {
+            e.ConfigureConsumer<CommentDeletedConsumer>(context);
+            e.ConfigureConsumer<ReplyDeletedConsumer>(context);
+            e.ConfigureConsumer<ReactionDeletedConsumer>(context);
+            e.Bind("content_deleted_exchange", xx =>
+            {
+                xx.ExchangeType = ExchangeType.Direct;
+                xx.RoutingKey = "content.deleted";
+            });
+        });
+
+        // ✅ Add Retry Policy (Exponential Backoff)
+        cfg.UseMessageRetry(r => r.Exponential(3, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(30)));
+
+        // ✅ Enable Dead-Letter Queue (DLQ)
+        cfg.UseDelayedRedelivery(r => r.Intervals(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(1)));
+    });
+});
+
 
         return services;
     }

@@ -1,6 +1,6 @@
 namespace ContentService.Application.DTOs.CommentDtos.Message;
 
-public class CommentCreateNotificationEvent (int blogId, int commentId, string content, string cyclistName, string cyclistAvatar, DateTime createdAt)
+public class CommentCreateNotificationEvent (int recipientId, int blogId, int commentId, string content, string cyclistName, string cyclistAvatar, DateTime createdAt)
 {
     public int BlogId { get; set; } = blogId;
     

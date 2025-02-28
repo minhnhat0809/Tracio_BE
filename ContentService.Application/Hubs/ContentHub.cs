@@ -54,17 +54,6 @@ public class ContentHub : Hub
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"Blog-{blogId}");
     }
 
-    // Join a specific comment thread
-    public async Task JoinComment(string commentId)
-    {
-        await Groups.AddToGroupAsync(Context.ConnectionId, $"Comment-{commentId}");
-    }
-
-    public async Task LeaveComment(string commentId)
-    {
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"Comment-{commentId}");
-    }
-
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         foreach (var group in UserGroups.GetValueOrDefault(Context.ConnectionId, new HashSet<string>()))

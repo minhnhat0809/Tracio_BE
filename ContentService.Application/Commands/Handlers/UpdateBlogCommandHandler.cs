@@ -1,7 +1,5 @@
-﻿using AutoMapper;
-using ContentService.Application.DTOs.BlogDtos.Message;
+﻿using ContentService.Application.DTOs.BlogDtos.Message;
 using ContentService.Application.Interfaces;
-using ContentService.Domain.Entities;
 using ContentService.Domain.Enums;
 using MediatR;
 using Shared.Dtos;
@@ -11,8 +9,7 @@ namespace ContentService.Application.Commands.Handlers;
 public class UpdateBlogCommandHandler(
     IBlogRepo blogRepo, 
     IModerationService moderationService, 
-    IRabbitMqProducer rabbitMqProducer,
-    IUserService userService) : IRequestHandler<UpdateBlogCommand, ResponseDto>
+    IRabbitMqProducer rabbitMqProducer) : IRequestHandler<UpdateBlogCommand, ResponseDto>
 {
     
     private readonly IBlogRepo _blogRepo = blogRepo;
@@ -20,8 +17,6 @@ public class UpdateBlogCommandHandler(
     private readonly IModerationService _moderationService = moderationService;
     
     private readonly IRabbitMqProducer _rabbitMqProducer = rabbitMqProducer;
-    
-    private readonly IUserService _userService = userService;
     
     public async Task<ResponseDto> Handle(UpdateBlogCommand request, CancellationToken cancellationToken)
     {
@@ -39,13 +34,14 @@ public class UpdateBlogCommandHandler(
                     b => b.SetProperty(bb => bb.Content, request.Content));
             }
 
-            if (request.PrivacySetting.HasValue)
+            if (!request.PrivacySetting.HasValue) return ResponseDto.UpdateSuccess(null, "Blog updated successfully!");
             {
                 // check privacy setting in enum
                 if(!IsValidPrivacySetting(request.PrivacySetting.Value)) return ResponseDto.BadRequest("Privacy setting is invalid!");
                 
                 var privacySetting = await _blogRepo.GetByIdAsync(b => b.BlogId == request.BlogId, b => b.PrivacySetting);
-                if (request.PrivacySetting.Value != privacySetting)
+                if (request.PrivacySetting.Value == privacySetting)
+                    return ResponseDto.UpdateSuccess(null, "Blog updated successfully!");
                 {
                     var userId = await _blogRepo.GetByIdAsync(b => b.BlogId == request.BlogId, b => b.CreatorId);
                     
@@ -56,16 +52,16 @@ public class UpdateBlogCommandHandler(
                     if (request.PrivacySetting == (sbyte)PrivacySetting.FollowerOnly)
                     {
                         // publish an event to add blog in UserFollowerOnlyBlog
-                        await _rabbitMqProducer.PublishAsync(new BlogPrivacyUpdateEvent(userId, request.BlogId,"add"), "blog_privacy_updated",cancellationToken: cancellationToken);
+                        await _rabbitMqProducer.PublishAsync(new BlogPrivacyUpdateEvent(userId, request.BlogId,"add"), "blog.privacy.updated",cancellationToken: cancellationToken);
                     }
                     else
                     {
                         // publish an event to remove blog in UserFollowerOnlyBlog
-                        await _rabbitMqProducer.PublishAsync(new BlogPrivacyUpdateEvent(userId, request.BlogId ,"remove"), "blog_privacy_updated",cancellationToken: cancellationToken);
+                        await _rabbitMqProducer.PublishAsync(new BlogPrivacyUpdateEvent(userId, request.BlogId ,"remove"), "blog.privacy.updated",cancellationToken: cancellationToken);
                     }
                 }
             }
-            
+
             return ResponseDto.UpdateSuccess(null, "Blog updated successfully!");
         }
         catch (Exception e)

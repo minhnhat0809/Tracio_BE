@@ -13,22 +13,26 @@ namespace ContentService.Api.Controllers
         private readonly IMediator _mediator = mediator;
 
         [HttpPost]
-        //[Authorize]
+        [Authorize]
         public async Task<IActionResult> CreateReaction( [FromBody] ReactionCreateDto reactionCreateDto)
         {
-            /*var value = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "custom_id")?.Value;
+            var value = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "custom_id")?.Value;
             if (value == null) return StatusCode(StatusCodes.Status401Unauthorized);
-            var userBrowsingId = int.Parse(value);*/
+            var userBrowsingId = int.Parse(value);
             
-            var result = await _mediator.Send(new CreateReactionCommand(4, reactionCreateDto));
+            var result = await _mediator.Send(new CreateReactionCommand(userBrowsingId, reactionCreateDto));
             
             return StatusCode(result.StatusCode, result);
         }
 
-        [HttpDelete("{reactionId:int}")]
-        public async Task<IActionResult> DeleteReaction(int reactionId)
+        [HttpDelete("{entityId:int}")]
+        public async Task<IActionResult> DeleteReaction([FromRoute] int entityId, [FromQuery] string entityType)
         {
-            var result = await _mediator.Send(new DeleteReactionCommand(reactionId));
+            var value = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "custom_id")?.Value;
+            if (value == null) return StatusCode(StatusCodes.Status401Unauthorized);
+            var userBrowsingId = int.Parse(value);
+            
+            var result = await _mediator.Send(new DeleteReactionCommand(userBrowsingId, entityId, entityType));
             
             return StatusCode(result.StatusCode);
         }
