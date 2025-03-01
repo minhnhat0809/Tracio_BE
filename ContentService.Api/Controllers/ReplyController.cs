@@ -1,5 +1,6 @@
 using ContentService.Application.Commands;
 using ContentService.Application.DTOs.ReplyDtos;
+using ContentService.Application.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,6 +12,14 @@ namespace ContentService.Api.Controllers
     public class ReplyController(IMediator mediator) : ControllerBase
     {
         private readonly IMediator _mediator = mediator;
+
+        [HttpGet("{replyId:int}/reactions")]
+        public async Task<IActionResult> GetReactionsByReply([FromRoute] int replyId)
+        {
+            var result = await _mediator.Send(new GetReactionByReplyQuery(replyId));
+            
+            return StatusCode(result.StatusCode, result);
+        }
 
         [HttpPost]
         [Authorize]

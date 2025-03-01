@@ -20,22 +20,18 @@ public class GetReactionsByCommentQueryHandler(IReactionRepo reactionRepo, IComm
             // check comment in db
             var isCommentExisted = await _commentRepo.ExistsAsync(c => c.CommentId == request.CommentId);
             if(!isCommentExisted) return ResponseDto.NotFound("Comment not found");
-
-            var total = await _reactionRepo.CountAsync(c => c.CommentId == request.CommentId);
             
             var reactionDtos = await _reactionRepo.FindAsync(r => r.CommentId == request.CommentId, 
                 r => new ReactionDto
                 {
                     CyclistId = r.CyclistId,
                     CyclistName = r.CyclistName,
-                    CyclistAvatar = r.CyclistAvatar,
-                    CreatedAt = r.CreatedAt
+                    CyclistAvatar = r.CyclistAvatar
                 });
             
             return ResponseDto.GetSuccess(
             new {
-                reations = reactionDtos,
-                total
+                reations = reactionDtos
             }, "Reactions retrieved successfully!");
         }
         catch (Exception e)

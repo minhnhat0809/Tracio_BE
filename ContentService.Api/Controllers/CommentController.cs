@@ -30,6 +30,14 @@ namespace ContentService.Api.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
+        [HttpGet("{commentId:int}/reactions")]
+        public async Task<IActionResult> GetReactionsByComment([FromRoute] int commentId)
+        {
+            var result = await _mediator.Send(new GetReactionsByCommentQuery(commentId));
+            
+            return StatusCode(result.StatusCode, result);
+        }
+
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> CreateComment([FromForm] CommentCreateDto commentCreateDto, [FromForm] List<IFormFile> files)

@@ -28,27 +28,19 @@ public class GetReactionsByBlogQueryHandler(IReactionRepo reactionRepo, IBlogRep
             
             basePredicate = basePredicate.And(r => r.BlogId == request.BlogId);
             
-            // count reactions
-            var total = await _reactionRepo.CountAsync(basePredicate);
-            
             // fetch reactions
             var reactionsDto = await _reactionRepo.FindAsync(basePredicate,
                 c => new ReactionDto
                 {
                     CyclistId = c.CyclistId,
                     CyclistName = c.CyclistName,
-                    CyclistAvatar = c.CyclistAvatar,
-                    CreatedAt = c.CreatedAt
+                    CyclistAvatar = c.CyclistAvatar
                 });
-
-            // sort by created at
-            reactionsDto = reactionsDto.OrderByDescending(c => c.CreatedAt).ToList();
 
             return ResponseDto.GetSuccess(
                 new
                 {
-                    reactions = reactionsDto,
-                    total
+                    reactions = reactionsDto
                 },
                 "Reactions retrieved successfully!");
         }
