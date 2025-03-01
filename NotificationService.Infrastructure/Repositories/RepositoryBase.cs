@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using MongoDB.Driver;
+using MongoDB.Bson;
 using NotificationService.Application.Interfaces;
 
 namespace NotificationService.Infrastructure.Repositories;
@@ -17,20 +18,20 @@ public class RepositoryBase<T>(IMongoDatabase database, string collectionName) :
         Expression<Func<T, object>>? sortBy = null,
         bool ascending = true)
     {
-        var query = _collection.AsQueryable().Where(filter);
+        var query = _collection.Find(filter);
 
         // Apply sorting if provided
         if (sortBy != null)
         {
-            query = ascending ? query.OrderBy(sortBy) : query.OrderByDescending(sortBy);
+            query = ascending ? query.SortBy(sortBy) : query.SortByDescending(sortBy);
         }
 
         // Apply pagination
-        query = query.Skip((pageIndex - 1) * pageSize).Take(pageSize);
+        query = query.Skip((pageIndex - 1) * pageSize).Limit(pageSize);
 
-        return await Task.FromResult(query.Select(selector).ToList());
+        return await query.Project(selector).ToListAsync();
     }
-    
+
     public async Task<bool> CreateAsync(T entity)
     {
         try
@@ -45,14 +46,13 @@ public class RepositoryBase<T>(IMongoDatabase database, string collectionName) :
         }
     }
 
-    
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(string id) // Use string ID
     {
-        var filter = Builders<T>.Filter.Eq("Id", id); 
+        var filter = Builders<T>.Filter.Eq("_id", new ObjectId(id)); // Ensure ObjectId
         var result = await _collection.DeleteOneAsync(filter);
         return result.DeletedCount > 0;
     }
-    
+
     public async Task<long> CountAsync(Expression<Func<T, bool>> filter)
     {
         return await _collection.CountDocumentsAsync(filter);

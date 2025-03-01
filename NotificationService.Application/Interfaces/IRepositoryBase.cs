@@ -13,8 +13,8 @@ public interface IRepositoryBase<T> where T : class
         bool ascending = true);
     
     Task<bool> CreateAsync(T entity);
-    
-    Task<bool> DeleteAsync(int id);
+
+    Task<bool> DeleteAsync(string id);
     
     Task<long> CountAsync(Expression<Func<T, bool>> filter);
 }

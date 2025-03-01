@@ -43,7 +43,8 @@ public class GetRepliesByCommentQueryHandler(ICommentRepo commentRepo, IReplyRep
                     MediaFiles = c.MediaFiles.Select(mf => new MediaFileDto { MediaId = mf.MediaId, MediaUrl = mf.MediaUrl }).ToList(),
                     IsReacted = c.Reactions.Any(rr => rr.CyclistId == request.UserRequestId),
                     CreatedAt = c.CreatedAt,
-                    LikesCount = c.LikesCount!.Value
+                    LikesCount = c.LikesCount!.Value,
+                    RepliesCount = c.RepliesCount!.Value
                 });
             }
             else

@@ -1,6 +1,8 @@
 using MassTransit;
-using Microsoft.AspNetCore.SignalR;
-using NotificationService.Application.Dtos.NotificationDtos.Message;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using MongoDB.Driver;
+using NotificationService.Api.Services;
+using NotificationService.Application.Dtos;
 using NotificationService.Application.Interfaces;
 using NotificationService.Application.Queries;
 using NotificationService.Application.SignalR;
@@ -13,15 +15,73 @@ namespace NotificationService.Api.Extensions;
 public static class ServiceExtensions
 {
     // 🔹 Configure services
-    public static IServiceCollection ConfigureServices(this IServiceCollection services)
+    public static IServiceCollection ConfigureServices(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddSingleton<IUserIdProvider, CustomerUserIdProvider>();
+        var mongoSettings = new MongoDbSettings();
+        configuration.GetSection("MongoSettings").Bind(mongoSettings);
+        
+        services.AddSingleton<IMongoClient>(_ =>
+            new MongoClient(mongoSettings.ConnectionString));
+        
+        services.AddSingleton<ConnectionManager>();
+
+        services.AddScoped<IMongoDatabase>(sp =>
+        {
+            var client = sp.GetRequiredService<IMongoClient>();
+            return client.GetDatabase(mongoSettings.DatabaseName);
+        });
+        
         services.AddScoped<INotificationRepo, NotificationRepo>();
         services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+        services.AddScoped<IUserService, UserService>();
 
         
         return services;
     } 
+    
+    // 🔹 gRPC Clients
+    public static IServiceCollection ConfigureGrpcClients(this IServiceCollection services)
+    {
+        services.AddGrpcClient<Userservice.UserService.UserServiceClient>(o =>
+        {
+            o.Address = new Uri("http://localhost:5000"); // Replace with UserService URL
+        }).ConfigurePrimaryHttpMessageHandler(() =>
+        {
+            var handler = new HttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            handler.SslProtocols = System.Security.Authentication.SslProtocols.Tls12;
+            return handler;
+        });
+
+        return services;
+    }
+    
+    // 🔹 Authentication (Firebase JWT)
+    public static IServiceCollection ConfigureAuthentication(this IServiceCollection services)
+    {
+        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.Authority = "https://securetoken.google.com/tracio-cbd26";
+                options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = "https://securetoken.google.com/tracio-cbd26",
+                    ValidateAudience = true,
+                    ValidAudience = "tracio-cbd26",
+                    ValidateLifetime = true
+                };
+            });
+
+        return services;
+    }
+
+    // 🔹 Authorization
+    public static IServiceCollection ConfigureAuthorization(this IServiceCollection services)
+    {
+        services.AddAuthorization();
+        return services;
+    }
     
     // 🔹 Configure signalR
     public static IServiceCollection ConfigureSignalR(this IServiceCollection services)
@@ -89,6 +149,13 @@ public static class ServiceExtensions
             
         });
 
+        return services;
+    }
+    
+    // 🔹 SignalR hub
+    public static IServiceCollection ConfigureHub(this IServiceCollection services)
+    {
+        services.AddSignalR();
         return services;
     }
 }

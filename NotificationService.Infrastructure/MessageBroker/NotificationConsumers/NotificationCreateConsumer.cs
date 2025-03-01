@@ -9,14 +9,16 @@ using NotificationService.Domain.Entities;
 
 namespace NotificationService.Infrastructure.MessageBroker.NotificationConsumers;
 
-public class NotificationCreateConsumer(IServiceScopeFactory serviceScopeFactory, IHubContext<NotificationHub> hubContext, IMapper mapper) : IConsumer<NotificationEvent>
+public class NotificationCreateConsumer(IServiceScopeFactory serviceScopeFactory, 
+                                        IHubContext<NotificationHub> hubContext, 
+                                        IMapper mapper, 
+                                        ConnectionManager connectionManager) : IConsumer<NotificationEvent>
 {
     private readonly IServiceScopeFactory _serviceScopeFactory = serviceScopeFactory;
-    
     private readonly IMapper _mapper = mapper;
-    
     private readonly IHubContext<NotificationHub> _hubContext = hubContext;
-    
+    private readonly ConnectionManager _connectionManager = connectionManager;
+
     public async Task Consume(ConsumeContext<NotificationEvent> context)
     {
         using var scope = _serviceScopeFactory.CreateScope();
@@ -26,10 +28,21 @@ public class NotificationCreateConsumer(IServiceScopeFactory serviceScopeFactory
 
         var isSucceed = await notificationRepo.CreateAsync(notification);
 
-        if (isSucceed) throw new Exception("Fail to create notification");
-        
-        await _hubContext.Clients.User($"Notification-{context.Message.RecipientId}").SendAsync("ReceiveNotification", notification);
-        
-        Console.WriteLine($"[RabbitMQ] Processed Notification for User {context.Message.RecipientId}");
+        if (!isSucceed) throw new Exception("Fail to create notification");
+
+        // ✅ Check if the recipient is online
+        if (_connectionManager.IsUserOnline(context.Message.RecipientId))
+        {
+            var connectionId = _connectionManager.GetConnectionId(context.Message.RecipientId);
+            
+            await _hubContext.Clients.Client(connectionId)
+                .SendAsync("ReceiveNotification", notification);
+            
+            Console.WriteLine($"[RabbitMQ] Sent Notification to Online User {context.Message.RecipientId}");
+        }
+        else
+        {
+            Console.WriteLine($"[RabbitMQ] User {context.Message.RecipientId} is offline, storing notification.");
+        }
     }
 }
