@@ -22,4 +22,6 @@ public class CommentDto
     public DateTime? CreatedAt { get; set; }
     
     public int LikesCount { get; set; }
+    
+    public int RepliesCount { get; set; }
 }

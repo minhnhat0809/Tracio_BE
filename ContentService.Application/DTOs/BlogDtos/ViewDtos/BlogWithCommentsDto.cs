@@ -28,6 +28,4 @@ public class BlogWithCommentsDto
     public int LikesCount { get; set; } = 0;
 
     public int CommentsCount { get; set; } = 0;
-    
-    public List<CommentDto> Comments { get; set; } = null!;
 }
