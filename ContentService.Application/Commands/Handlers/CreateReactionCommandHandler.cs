@@ -172,7 +172,7 @@ public class CreateReactionCommandHandler(
             CyclistId = request.CyclistId,
             CyclistName = userDto.Username,
             CyclistAvatar = userDto.Avatar,
-            ReplyId = request.EntityId,
+            CommentId = request.EntityId,
             CreatedAt = DateTime.UtcNow
         };
 
