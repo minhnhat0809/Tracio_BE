@@ -92,7 +92,7 @@ public class CreateReplyCommandHandler(
                 request.Content,
                 reply.ReplyId,
                 "reply",
-                reply.CreatedAt!.Value
+                reply.CreatedAt
                 ), "content.created", cancellationToken);
             
             // publish realtime

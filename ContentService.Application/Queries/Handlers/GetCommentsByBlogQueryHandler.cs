@@ -45,7 +45,7 @@ public class GetCommentsByBlogQueryHandler(IBlogRepo blogRepo, ICommentRepo comm
                     IsBookmarked = b.BlogBookmarks.Any(bm => bm.OwnerId == request.UserRequestId),
                     CreatedAt = b.CreatedAt,
                     CommentsCount = b.Comments.Count,
-                    LikesCount = b.ReactionsCount!.Value,
+                    LikesCount = b.ReactionsCount,
                     CreatorAvatar = b.CreatorAvatar,
                     CreatorId = b.CreatorId,
                     CreatorName = b.CreatorName
@@ -94,8 +94,8 @@ public class GetCommentsByBlogQueryHandler(IBlogRepo blogRepo, ICommentRepo comm
                     MediaFiles = c.MediaFiles.Select(mf => new MediaFileDto { MediaId = mf.MediaId, MediaUrl = mf.MediaUrl }).ToList(),
                     IsReacted = c.Reactions.Any(rr => rr.CyclistId == request.UserRequestId),
                     CreatedAt = c.CreatedAt,
-                    LikesCount = c.LikesCount!.Value,
-                    RepliesCount = c.RepliesCount!.Value
+                    LikesCount = c.LikesCount,
+                    RepliesCount = c.RepliesCount
                 },
                 request.PageNumber, request.PageSize,
                 sortExpression, request.IsAscending

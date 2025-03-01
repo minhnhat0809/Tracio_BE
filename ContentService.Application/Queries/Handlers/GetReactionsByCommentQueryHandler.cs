@@ -15,11 +15,13 @@ public class GetReactionsByCommentQueryHandler(IReactionRepo reactionRepo, IComm
     {
         try
         {
+            if (request.CommentId <= 0) return ResponseDto.BadRequest("Comment Id is required");
+            
             // check comment in db
-            var isCommentExisted = await _commentRepo.GetByIdAsync(c => c.CommentId == request.CommentId, c => c.RepliesCount);
-            if(!isCommentExisted.HasValue) return ResponseDto.NotFound("Comment not found");
+            var isCommentExisted = await _commentRepo.ExistsAsync(c => c.CommentId == request.CommentId);
+            if(!isCommentExisted) return ResponseDto.NotFound("Comment not found");
 
-            var total = isCommentExisted.Value;
+            var total = await _reactionRepo.CountAsync(c => c.CommentId == request.CommentId);
             
             var reactionDtos = await _reactionRepo.FindAsync(r => r.CommentId == request.CommentId, 
                 r => new ReactionDto

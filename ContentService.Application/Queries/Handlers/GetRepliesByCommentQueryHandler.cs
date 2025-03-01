@@ -43,8 +43,8 @@ public class GetRepliesByCommentQueryHandler(ICommentRepo commentRepo, IReplyRep
                     MediaFiles = c.MediaFiles.Select(mf => new MediaFileDto { MediaId = mf.MediaId, MediaUrl = mf.MediaUrl }).ToList(),
                     IsReacted = c.Reactions.Any(rr => rr.CyclistId == request.UserRequestId),
                     CreatedAt = c.CreatedAt,
-                    LikesCount = c.LikesCount!.Value,
-                    RepliesCount = c.RepliesCount!.Value
+                    LikesCount = c.LikesCount,
+                    RepliesCount = c.RepliesCount
                 });
             }
             else
@@ -73,7 +73,6 @@ public class GetRepliesByCommentQueryHandler(ICommentRepo commentRepo, IReplyRep
                     MediaFiles = r.MediaFiles.Select(mf => new MediaFileDto { MediaId = mf.MediaId, MediaUrl = mf.MediaUrl }).ToList(),
                     IsReacted = r.Reactions.Any(rr => rr.CyclistId == request.UserRequestId),
                     CreatedAt = r.CreatedAt,
-                    UpdatedAt = r.UpdatedAt,
                     LikesCount = r.LikesCount
                 }, request.PageNumber, request.PageSize,
                 sortExpression, false);

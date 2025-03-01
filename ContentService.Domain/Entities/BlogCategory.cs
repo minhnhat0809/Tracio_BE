@@ -9,7 +9,7 @@ public partial class BlogCategory
 
     public string CategoryName { get; set; } = null!;
 
-    public bool? IsDeleted { get; set; }
+    public bool IsDeleted { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
