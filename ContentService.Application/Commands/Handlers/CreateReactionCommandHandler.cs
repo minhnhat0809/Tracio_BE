@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using ContentService.Application.DTOs.NotificationDtos.Message;
 using ContentService.Application.DTOs.ReactionDtos.Message;
 using ContentService.Application.DTOs.ReactionDtos.ViewDtos;
 using ContentService.Application.DTOs.UserDtos.View;
@@ -9,6 +8,7 @@ using ContentService.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.SignalR;
 using Shared.Dtos;
+using Shared.Dtos.Messages;
 
 namespace ContentService.Application.Commands.Handlers;
 
@@ -101,7 +101,7 @@ public class CreateReactionCommandHandler(
             }, cancellationToken);
         
         // publish reaction create event
-        await _rabbitMqProducer.PublishAsync(new ReactionCreateEvent(request.EntityId, request.EntityType), "content.created", cancellationToken);
+        await _rabbitMqProducer.SendAsync(new ReactionCreateEvent(request.EntityId, request.EntityType), "content.reaction.created", cancellationToken);
         
         // publish notification event
         await _rabbitMqProducer.PublishAsync(new NotificationEvent(
@@ -109,11 +109,11 @@ public class CreateReactionCommandHandler(
             senderId: request.CyclistId,
             userDto.Username,
             userDto.Avatar,
-            "",
+            $"{userDto.Username} likes your reply",
             request.EntityId,
-            "reply",
+            "Reply",
             reaction.CreatedAt
-        ), "content.created", cancellationToken: cancellationToken);
+        ), cancellationToken: cancellationToken);
 
         return ResponseDto.CreateSuccess(reactionDto, "Reaction created successfully!");
     }
@@ -145,7 +145,7 @@ public class CreateReactionCommandHandler(
             }, cancellationToken: cancellationToken);
         
         // publish reaction create event
-        await _rabbitMqProducer.PublishAsync(new ReactionCreateEvent(request.EntityId, request.EntityType), "content.created", cancellationToken);
+        await _rabbitMqProducer.SendAsync(new ReactionCreateEvent(request.EntityId, request.EntityType), "content.reaction.created", cancellationToken);
         
         // publish notification
         await _rabbitMqProducer.PublishAsync(new NotificationEvent(
@@ -153,11 +153,11 @@ public class CreateReactionCommandHandler(
             senderId: request.CyclistId,
             userDto.Username,
             userDto.Avatar,
-            "",
+            $"{userDto.Username} likes your blog",
             request.EntityId,
-            "blog",
+            "Blog",
             reaction.CreatedAt
-        ), "content.created", cancellationToken: cancellationToken);
+        ), cancellationToken: cancellationToken);
 
         return ResponseDto.CreateSuccess(reactionDto, "Reaction created successfully!");
     }
@@ -196,7 +196,7 @@ public class CreateReactionCommandHandler(
             }, cancellationToken: cancellationToken);
         
         // publish reaction create event
-        await _rabbitMqProducer.PublishAsync(new ReactionCreateEvent(request.EntityId, request.EntityType), "content.created", cancellationToken);
+        await _rabbitMqProducer.SendAsync(new ReactionCreateEvent(request.EntityId, request.EntityType), "content.reaction.created", cancellationToken);
         
         // publish notification
         await _rabbitMqProducer.PublishAsync(new NotificationEvent(
@@ -204,11 +204,11 @@ public class CreateReactionCommandHandler(
             senderId: request.CyclistId,
             userDto.Username,
             userDto.Avatar,
-            "",
+            $"{userDto.Username} likes your comment",
             request.EntityId,
-            "comment",
+            "Comment",
             reaction.CreatedAt
-        ), "content.created", cancellationToken: cancellationToken);
+        ), cancellationToken: cancellationToken);
 
         return ResponseDto.CreateSuccess(reactionDto, "Reaction created successfully!");
     }

@@ -65,8 +65,8 @@ public class GetBlogsQueryHandler(
 
             // count blogs
             var totalBlogs = await _blogRepo.CountAsync(basePredicate);
-            
-            var totalPages = (request.PageSize / totalBlogs) +1;
+
+            var totalPages = (int)Math.Ceiling((double)totalBlogs / request.PageSize);
 
             return ResponseDto.GetSuccess(new
             {
@@ -128,7 +128,7 @@ public class GetBlogsQueryHandler(
             
             var totalBlogs = totalPublicBlogs + totalFollowerOnlyBlogs;
             
-            var totalPages = (request.PageSize / totalBlogs) +1;
+            var totalPages = (int)Math.Ceiling((double)totalBlogs / request.PageSize);
 
             var finalBlogs = InterleaveLists(followerOnlyBlogs, publicBlogs).Take(request.PageSize).ToList();
 
@@ -138,7 +138,7 @@ public class GetBlogsQueryHandler(
                 {
                     UserId = request.UserRequestId,
                     BlogIds = followerOnlyBlogs.Select(b => b.BlogId).ToList()
-                }, "blog.mark.read");
+                });
             }
 
             return ResponseDto.GetSuccess(new

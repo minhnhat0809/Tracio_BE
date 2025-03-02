@@ -82,13 +82,12 @@ namespace ContentService.Api.Controllers
         
         [HttpGet("{blogId:int}/reactions")]
         public async Task<IActionResult> GetReactionsByBlogId(
-            [FromRoute] int blogId
+            [FromRoute] int blogId,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 20
         )
         {
-            var query = new GetReactionsByBlogQuery()
-            {
-                BlogId = blogId
-            };
+            var query = new GetReactionsByBlogQuery(blogId, pageNumber, pageSize);
             
             var result = await _mediator.Send(query);
             

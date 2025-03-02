@@ -1,12 +1,9 @@
 namespace NotificationService.Application.Dtos.NotificationDtos.ViewDtos;
 
-public class NotificationDto
+public class 
+    NotificationDto
 {
     public string NotificationId { get; set; } = null!;
-
-    public int RecipientId { get; set; }
-    
-    public int SenderId { get; set; }
     
     public string SenderName { get; set; } = null!;
 

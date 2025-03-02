@@ -25,6 +25,9 @@ builder.Services.ConfigureGrpcClients();
 builder.Services.ConfigureAuthentication();
 builder.Services.ConfigureAuthorization();
 builder.Services.ConfigureSignalR();
+builder.Services.ConfigureMapper();
+builder.Services.ConfigureRabbitMq();
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
@@ -35,6 +38,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.MapControllers();
 app.UseWebSockets();
 app.UseHttpsRedirection();
 app.UseAuthentication();

@@ -1,12 +1,12 @@
 ﻿using AutoMapper;
 using ContentService.Application.DTOs.CommentDtos.Message;
-using ContentService.Application.DTOs.NotificationDtos.Message;
 using ContentService.Application.Hubs;
 using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.SignalR;
 using Shared.Dtos;
+using Shared.Dtos.Messages;
 
 namespace ContentService.Application.Commands.Handlers;
 
@@ -76,7 +76,7 @@ public class CreateCommentCommandHandler(
             if(!commentCreateResult) return ResponseDto.InternalError("Failed to create comment");
             
             // publish comment create event
-            await _rabbitMqProducer.PublishAsync(new CommentCreateEvent(request.BlogId), "content.created", cancellationToken);
+            await _rabbitMqProducer.SendAsync(new CommentCreateEvent(request.BlogId), "content.comment.created", cancellationToken);
             
             // publish new comment into signalR
             await _hubContext.Clients.Groups("BlogUpdates", $"Blog-{blogAndCyclist.BlogId}")
@@ -91,11 +91,11 @@ public class CreateCommentCommandHandler(
                 senderId: request.CreatorId,
                 userDto.Username,
                 userDto.Avatar,
-                request.Content,
+                $"{userDto.Username} comments on your blog: {request.Content}",
                 comment.CommentId,
-                "comment",
+                "Comment",
                 comment.CreatedAt
-            ), "notification_content", cancellationToken: cancellationToken);
+            ), cancellationToken: cancellationToken);
 
             return ResponseDto.CreateSuccess(null, "Comment created successfully!");
         }

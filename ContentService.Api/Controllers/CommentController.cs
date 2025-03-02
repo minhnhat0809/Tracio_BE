@@ -31,9 +31,12 @@ namespace ContentService.Api.Controllers
         }
 
         [HttpGet("{commentId:int}/reactions")]
-        public async Task<IActionResult> GetReactionsByComment([FromRoute] int commentId)
+        public async Task<IActionResult> GetReactionsByComment(
+            [FromRoute] int commentId,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 20)
         {
-            var result = await _mediator.Send(new GetReactionsByCommentQuery(commentId));
+            var result = await _mediator.Send(new GetReactionsByCommentQuery(commentId, pageNumber, pageSize));
             
             return StatusCode(result.StatusCode, result);
         }

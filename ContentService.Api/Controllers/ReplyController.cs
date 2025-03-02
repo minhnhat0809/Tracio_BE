@@ -14,9 +14,13 @@ namespace ContentService.Api.Controllers
         private readonly IMediator _mediator = mediator;
 
         [HttpGet("{replyId:int}/reactions")]
-        public async Task<IActionResult> GetReactionsByReply([FromRoute] int replyId)
+        public async Task<IActionResult> GetReactionsByReply(
+            [FromRoute] int replyId,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 20
+            )
         {
-            var result = await _mediator.Send(new GetReactionByReplyQuery(replyId));
+            var result = await _mediator.Send(new GetReactionByReplyQuery(replyId, pageNumber, pageSize));
             
             return StatusCode(result.StatusCode, result);
         }

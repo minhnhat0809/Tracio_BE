@@ -52,12 +52,12 @@ public class UpdateBlogCommandHandler(
                     if (request.PrivacySetting == (sbyte)PrivacySetting.FollowerOnly)
                     {
                         // publish an event to add blog in UserFollowerOnlyBlog
-                        await _rabbitMqProducer.PublishAsync(new BlogPrivacyUpdateEvent(userId, request.BlogId,"add"), "blog.privacy.updated",cancellationToken: cancellationToken);
+                        await _rabbitMqProducer.PublishAsync(new BlogPrivacyUpdateEvent(userId, request.BlogId,"add"), cancellationToken: cancellationToken);
                     }
                     else
                     {
                         // publish an event to remove blog in UserFollowerOnlyBlog
-                        await _rabbitMqProducer.PublishAsync(new BlogPrivacyUpdateEvent(userId, request.BlogId ,"remove"), "blog.privacy.updated",cancellationToken: cancellationToken);
+                        await _rabbitMqProducer.PublishAsync(new BlogPrivacyUpdateEvent(userId, request.BlogId ,"remove"), cancellationToken: cancellationToken);
                     }
                 }
             }

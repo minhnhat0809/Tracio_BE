@@ -26,7 +26,7 @@ public class DeleteReplyCommandHandler(IReplyRepo replyRepo, IRabbitMqProducer r
             if (!isSucceed) ResponseDto.InternalError("Failed to delete reply");
             
             // decrease the replies of comment
-            await _rabbitMqProducer.PublishAsync(new ReplyDeleteEvent(commentIdOfReply), "content.deleted", cancellationToken);
+            await _rabbitMqProducer.SendAsync(new ReplyDeleteEvent(commentIdOfReply), "content.reply.deleted", cancellationToken);
             
             return ResponseDto.DeleteSuccess("Reply deleted successfully!");
         }

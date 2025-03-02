@@ -26,7 +26,7 @@ public class DeleteCommentCommandHandler(ICommentRepo commentRepo, IRabbitMqProd
             if (!isSucceed) ResponseDto.InternalError("Failed to delete comment");
 
             // publish comment delete event
-            await _rabbitMqProducer.PublishAsync(new CommentDeleteEvent(blogIdOfComment), "content.deleted", cancellationToken);
+            await _rabbitMqProducer.SendAsync(new CommentDeleteEvent(blogIdOfComment), "content.comment.deleted", cancellationToken);
             
             return ResponseDto.DeleteSuccess("Comment deleted successfully!");
         }

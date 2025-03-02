@@ -20,17 +20,28 @@ public class GetReactionByReplyQueryHandler(IReplyRepo replyRepo, IReactionRepo 
             var isReplyExisted = await _replyRepo.ExistsAsync(r => r.ReplyId == request.ReplyId);
             if (!isReplyExisted) return ResponseDto.NotFound("Reply not found");
             
-            var reactionDtos = await _reactionRepo.FindAsync(r => r.ReplyId == request.ReplyId, 
+            var totalReactions = await _reactionRepo.CountAsync(r => r.ReplyId == request.ReplyId);
+
+            var totalPages = (int)Math.Ceiling((double)totalReactions / request.PageSize);
+            
+            var reactionDtos = await _reactionRepo.FindAsyncWithPagingAndSorting(r => r.ReplyId == request.ReplyId, 
                 r => new ReactionDto
                 {
                     CyclistId = r.CyclistId,
                     CyclistName = r.CyclistName,
                     CyclistAvatar = r.CyclistAvatar
-                }); 
+                },
+                request.PageNumber, request.PageSize); 
             
             return ResponseDto.GetSuccess(new
             {
-                reactions = reactionDtos
+                reactions = reactionDtos,
+                request.PageNumber,
+                request.PageSize,
+                totalReactions,
+                totalPages,
+                hasNextPage = request.PageNumber < totalPages,
+                hasPreviousPage = request.PageNumber > 1,
             }, "Reactions retrieved successfully!");
             
         }

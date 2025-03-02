@@ -1,4 +1,4 @@
-namespace ContentService.Application.DTOs.NotificationDtos.Message;
+namespace Shared.Dtos.Messages;
 
 public class NotificationEvent(int recipientId, int senderId, string senderName, string senderAvatar, string message, int entityId, string entityType, DateTime createdAt)
 {

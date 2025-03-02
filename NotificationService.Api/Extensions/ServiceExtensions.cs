@@ -4,7 +4,9 @@ using MongoDB.Driver;
 using NotificationService.Api.Services;
 using NotificationService.Application.Dtos;
 using NotificationService.Application.Interfaces;
+using NotificationService.Application.Mappings;
 using NotificationService.Application.Queries;
+using NotificationService.Application.Services;
 using NotificationService.Application.SignalR;
 using NotificationService.Infrastructure.MessageBroker.NotificationConsumers;
 using NotificationService.Infrastructure.Repositories;
@@ -30,8 +32,10 @@ public static class ServiceExtensions
             var client = sp.GetRequiredService<IMongoClient>();
             return client.GetDatabase(mongoSettings.DatabaseName);
         });
-        
+
+        services.AddScoped<IFirebaseNotificationService, FirebaseNotificationServiceService>();
         services.AddScoped<INotificationRepo, NotificationRepo>();
+        services.AddScoped<IDeviceFcmRepo, DeviceFcmRepo>();
         services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
         services.AddScoped<IUserService, UserService>();
 
@@ -133,11 +137,13 @@ public static class ServiceExtensions
                 cfg.ReceiveEndpoint("notification_content_queue", e =>
                 {
                     e.ConfigureConsumer<NotificationCreateConsumer>(context);
+                
                     e.Bind("notification_content_exchange", xx =>
                     {
-                        xx.ExchangeType = ExchangeType.Direct;
-                        xx.RoutingKey = "content.created";
+                        xx.ExchangeType = ExchangeType.Fanout; 
                     });
+
+                    e.ConfigureConsumeTopology = false; // ✅ Prevent MassTransit from auto-creating an extra exchange
                 });
                 
                 // ✅ Add Retry Policy (Exponential Backoff)
@@ -145,6 +151,7 @@ public static class ServiceExtensions
 
                 // ✅ Enable Dead-Letter Queue (DLQ)
                 cfg.UseDelayedRedelivery(r => r.Intervals(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(1)));
+                
             });
             
         });
@@ -156,6 +163,13 @@ public static class ServiceExtensions
     public static IServiceCollection ConfigureHub(this IServiceCollection services)
     {
         services.AddSignalR();
+        return services;
+    }
+    
+    // 🔹 Mapper
+    public static IServiceCollection ConfigureMapper(this IServiceCollection services)
+    {
+        services.AddAutoMapper(typeof(DeviceFcmProfile).Assembly);
         return services;
     }
 }

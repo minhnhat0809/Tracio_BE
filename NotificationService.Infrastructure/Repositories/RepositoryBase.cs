@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using MongoDB.Driver;
 using MongoDB.Bson;
+using MongoDB.Driver.Linq;
 using NotificationService.Application.Interfaces;
 
 namespace NotificationService.Infrastructure.Repositories;
@@ -56,5 +57,45 @@ public class RepositoryBase<T>(IMongoDatabase database, string collectionName) :
     public async Task<long> CountAsync(Expression<Func<T, bool>> filter)
     {
         return await _collection.CountDocumentsAsync(filter);
+    }
+    
+    public async Task<bool> ExistsAsync(Expression<Func<T, bool>> filter)
+    {
+        return await _collection.Find(filter).AnyAsync();
+    }
+    
+    public async Task<bool> UpdateFieldsAsync(
+        Expression<Func<T, bool>> filter,
+        params (Expression<Func<T, object>> field, object value)[] updates)
+    {
+        var updateDef = new List<UpdateDefinition<T>>();
+        foreach (var (field, value) in updates)
+        {
+            updateDef.Add(Builders<T>.Update.Set(field, value));
+        }
+
+        var update = Builders<T>.Update.Combine(updateDef);
+        var result = await _collection.UpdateOneAsync(filter, update);
+        return result.ModifiedCount > 0;
+    }
+    
+    public async Task<TResult?> GetByIdAsync<TResult>(
+        Expression<Func<T, bool>> expression,
+        Expression<Func<T, TResult>> selector)
+    {
+        ArgumentNullException.ThrowIfNull(expression);
+        ArgumentNullException.ThrowIfNull(selector);
+
+        return await _collection.AsQueryable()
+            .Where(expression)
+            .Select(selector)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<List<TResult>> FindAsync<TResult>(Expression<Func<T, bool>> filter, Expression<Func<T, TResult>> selector)
+    {
+        var query = _collection.Find(filter);
+
+        return await query.Project(selector).ToListAsync();
     }
 }

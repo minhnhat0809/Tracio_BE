@@ -26,7 +26,7 @@ public class DeleteReactionCommandHandler(
             if (!isSucceed) return ResponseDto.InternalError("Failed to delete reaction.");
 
             // Publish event
-            await _rabbitMqProducer.PublishAsync(new ReactionDeleteEvent(entityId!.Value, entityType), "content.deleted", cancellationToken);
+            await _rabbitMqProducer.SendAsync(new ReactionDeleteEvent(entityId!.Value, entityType), "content.reaction.deleted", cancellationToken);
 
             return ResponseDto.DeleteSuccess("Reaction deleted successfully!");
         }

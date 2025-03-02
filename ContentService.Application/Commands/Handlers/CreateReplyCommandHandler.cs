@@ -1,5 +1,4 @@
 using AutoMapper;
-using ContentService.Application.DTOs.NotificationDtos.Message;
 using ContentService.Application.DTOs.ReplyDtos.Message;
 using ContentService.Application.Hubs;
 using ContentService.Application.Interfaces;
@@ -7,6 +6,7 @@ using ContentService.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.SignalR;
 using Shared.Dtos;
+using Shared.Dtos.Messages;
 
 namespace ContentService.Application.Commands.Handlers;
 
@@ -81,7 +81,7 @@ public class CreateReplyCommandHandler(
             if (!replyCreateResult) return ResponseDto.InternalError("Failed to create reply");
             
             // publish reply create event
-            await _rabbitMqProducer.PublishAsync(new ReplyCreateEvent(request.CommentId), "content.created", cancellationToken);
+            await _rabbitMqProducer.SendAsync(new ReplyCreateEvent(request.CommentId), "content.reply.created", cancellationToken);
             
             // publish notification event
             await _rabbitMqProducer.PublishAsync(new NotificationEvent(
@@ -89,11 +89,11 @@ public class CreateReplyCommandHandler(
                 request.CyclistId,
                 userDto.Username,
                 userDto.Avatar,
-                request.Content,
+                $"{userDto.Username} replies to your comment: {request.Content}",
                 reply.ReplyId,
                 "reply",
                 reply.CreatedAt
-                ), "content.created", cancellationToken);
+                ), cancellationToken);
             
             // publish realtime
             await _hubContext.Clients.Group($"Blog-{blogAndCommentAndCyclistId.BlogId}").SendAsync(

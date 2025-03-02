@@ -3,7 +3,4 @@ using Shared.Dtos;
 
 namespace ContentService.Application.Queries;
 
-public class GetReactionsByCommentQuery(int commentId) : IRequest<ResponseDto>
-{
-    public int CommentId { get; set; } = commentId;
-}
+public record GetReactionsByCommentQuery(int CommentId, int PageNumber, int PageSize) : IRequest<ResponseDto>;

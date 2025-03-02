@@ -30,7 +30,6 @@ public class GetNotificationByUserQueryHandler(INotificationRepo notificationRep
                     EntityType = n.EntityType,
                     IsRead = n.IsRead,
                     Message = n.Message,
-                    SenderId = n.SenderId,
                     SenderName = n.SenderName,
                     SenderAvatar = n.SenderAvatar
                 }, 
