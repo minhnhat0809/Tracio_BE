@@ -14,30 +14,43 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : class
         _context = context;
         _dbSet = context.Set<T>();
     }
-
-    public async Task<IEnumerable<T>> GetAllAsync(
-        Func<IQueryable<T>, IQueryable<T>>? filter = null,
-        int pageIndex = 0,
-        int pageSize = 0,
-        string? sortBy = null,
-        bool sortDesc = false,
+    
+    public async Task<(IEnumerable<T> Items, int TotalCount)> GetAllAsync(
+        int pageIndex, int pageSize, 
+        string? sortBy, bool sortDesc, 
+        Dictionary<string, string>? filters = null, 
         string includeProperties = "")
     {
         IQueryable<T> query = _dbSet;
-
-        // Apply filtering
-        if (filter != null)
-        {
-            query = filter(query);
-        }
-
-        // Include navigation properties
+        
+        // Apply to Include for Related Tables
         foreach (var includeProperty in includeProperties.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
         {
             query = query.Include(includeProperty);
         }
 
-        // Apply sorting
+        // Apply filtering if provided
+        if (filters != null && filters.Any())
+        {
+            foreach (var filter in filters)
+            {
+                var propertyType = typeof(T).GetProperty(filter.Key)?.PropertyType;
+
+                if (propertyType == typeof(string))
+                {
+                    query = query.Where(e => EF.Property<string>(e, filter.Key).Contains(filter.Value));
+                }
+                else
+                {
+                    query = query.Where(e => EF.Property<object>(e, filter.Key).ToString() == filter.Value);
+                }
+            }
+        }
+
+        // Get total count after filtering
+        int totalCount = await query.CountAsync();
+
+        // Apply sorting if provided
         if (!string.IsNullOrEmpty(sortBy))
         {
             query = sortDesc
@@ -45,13 +58,10 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : class
                 : query.OrderBy(e => EF.Property<object>(e, sortBy));
         }
 
-        // Apply paging
-        if (pageIndex > 0 && pageSize > 0)
-        {
-            query = query.Skip((pageIndex - 1) * pageSize).Take(pageSize);
-        }
+        // Apply pagination
+        query = query.Skip((pageIndex - 1) * pageSize).Take(pageSize);
 
-        return await query.ToListAsync();
+        return (await query.ToListAsync(), totalCount);
     }
 
     public async Task<T?> GetByIdAsync(object id, string includeProperties = "")
@@ -88,6 +98,38 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : class
 
         return entity;
     }
+    
+    public async Task<T?> GetByFilterAsync(Dictionary<string, string>? filters, string includeProperties = "")
+    {
+        IQueryable<T> query = _dbSet;
+
+        // Include related tables
+        foreach (var includeProperty in includeProperties.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            query = query.Include(includeProperty);
+        }
+
+        // Apply filtering if provided
+        if (filters != null && filters.Any())
+        {
+            foreach (var filter in filters)
+            {
+                var propertyType = typeof(T).GetProperty(filter.Key)?.PropertyType;
+
+                if (propertyType == typeof(string))
+                {
+                    query = query.Where(e => EF.Property<string>(e, filter.Key).Contains(filter.Value));
+                }
+                else
+                {
+                    query = query.Where(e => EF.Property<object>(e, filter.Key).ToString() == filter.Value);
+                }
+            }
+        }
+
+        return await query.FirstOrDefaultAsync();
+    }
+
 
     public async Task<TResult?> GetById<TResult>(
         Expression<Func<T, bool>> expression,
@@ -146,5 +188,20 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : class
                 throw new InvalidOperationException("Entity does not support soft delete.");
             }
         }
+    }
+    
+    public async Task<bool> ExistsAsync(int id)
+    {
+        var primaryKeyName = _context.Model
+            .FindEntityType(typeof(T))
+            ?.FindPrimaryKey()
+            ?.Properties
+            .FirstOrDefault()
+            ?.Name;
+
+        if (string.IsNullOrEmpty(primaryKeyName))
+            throw new InvalidOperationException($"No primary key defined for {typeof(T).Name}");
+
+        return await _dbSet.AnyAsync(e => EF.Property<int>(e, primaryKeyName) == id);
     }
 }

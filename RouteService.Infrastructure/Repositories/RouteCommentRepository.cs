@@ -5,7 +5,7 @@ using RouteService.Infrastructure.Contexts;
 
 namespace RouteService.Infrastructure.Repositories;
 
-public class RouteRepository(TracioRouteDbContext context) : RepositoryBase<Route>(context), IRouteRepository
+public class RouteCommentRepository(TracioRouteDbContext context) : RepositoryBase<RouteComment>(context), IRouteCommentRepository
 {
     
 }

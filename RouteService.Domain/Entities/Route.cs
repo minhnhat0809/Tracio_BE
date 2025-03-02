@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using NetTopologySuite.Geometries;
-
 namespace RouteService.Domain.Entities;
 
 public partial class Route
@@ -10,11 +9,11 @@ public partial class Route
 
     public int CyclistId { get; set; }
 
-    public string CyclistName { get; set; } = null!;
-
-    public string CyclistAvatar { get; set; } = null!;
-
     public string RouteName { get; set; } = null!;
+
+    public string? Description { get; set; }
+
+    public string? City { get; set; }
 
     public Point StartLocation { get; set; } = null!;
 
@@ -22,11 +21,9 @@ public partial class Route
 
     public LineString RoutePath { get; set; } = null!;
 
-    public LineString? Waypoints { get; set; }
+    public LineString Waypoints { get; set; } = null!;
 
-    public sbyte Weighting { get; set; }
-
-    public Point? Avoid { get; set; }
+    public string PolylineOverview { get; set; } = null!;
 
     public string? AvoidsRoads { get; set; }
 
@@ -36,19 +33,27 @@ public partial class Route
 
     public float ElevationGain { get; set; }
 
-    public float MovingTime { get; set; }
+    public int MovingTime { get; set; }
+
+    public int DurationTime { get; set; }
+
+    public int StoppedTime { get; set; }
 
     public float AvgSpeed { get; set; }
 
-    public float Calories { get; set; }
+    public float MaxSpeed { get; set; }
+
+    public decimal Calories { get; set; }
 
     public sbyte? Mood { get; set; }
 
-    public int? ReactionCounts { get; set; }
+    public int ReactionCounts { get; set; }
+
+    public int CommentCounts { get; set; }
 
     public sbyte Difficulty { get; set; }
 
-    public bool? IsPublic { get; set; }
+    public sbyte PrivacyLevel { get; set; }
 
     public bool? IsGroup { get; set; }
 
@@ -56,11 +61,9 @@ public partial class Route
 
     public DateTime CreatedAt { get; set; }
 
-    public virtual ICollection<RouteBookmark> RouteBookmarks { get; set; } = new List<RouteBookmark>();
+    public DateTime UpdatedAt { get; set; }
+
+    public virtual ICollection<RouteComment> RouteComments { get; set; } = new List<RouteComment>();
 
     public virtual ICollection<RouteMediaFile> RouteMediaFiles { get; set; } = new List<RouteMediaFile>();
-
-    public virtual ICollection<RouteReaction> RouteReactions { get; set; } = new List<RouteReaction>();
-
-    public virtual ICollection<RouteReview> RouteReviews { get; set; } = new List<RouteReview>();
 }

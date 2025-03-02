@@ -3,59 +3,44 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using RestSharp;
 using RouteService.Application.DTOs.Routes;
+using RouteService.Application.Interfaces.Services;
 
 namespace RouteService.Api.Controllers
+{
+    namespace RouteService.Api.Controllers
 {
     [Route("api/route")]
     [ApiController]
     public class RouteController : ControllerBase
     {
-        private readonly Application.Interfaces.Services.IRouteService _routeService;
-        
-        public RouteController(Application.Interfaces.Services.IRouteService routeService)
+        private readonly IRouteService _routeService;
+
+        public RouteController(IRouteService routeService)
         {
             _routeService = routeService;
         }
-        /// <summary>
-        /// Lấy danh sách tất cả các tuyến đường có phân trang
-        /// </summary>
+
         [HttpGet]
-        public async Task<IActionResult> GetAllRoutes([FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetAllRoutes(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int rowsPerPage = 10,
+            [FromQuery] Dictionary<string, string>? filters = null,
+            [FromQuery] string? sortField = null,
+            [FromQuery] bool sortDesc = false)
         {
-            var response = await _routeService.GetAllRoutesAsync(pageIndex, pageSize);
+            var response = await _routeService.GetAllRoutesAsync(pageNumber, rowsPerPage, filters, sortField, sortDesc);
             return StatusCode(response.StatusCode, response);
         }
 
-        /// <summary>
-        /// Lấy thông tin tuyến đường theo ID
-        /// </summary>
-        [HttpGet("{id}/map-4d")]
-        public async Task<IActionResult> GetRouteMap4DById(int id)
+        [HttpGet("{routeId}")]
+        public async Task<IActionResult> GetRouteById([FromRoute] int routeId)
         {
-            var response = await _routeService.GetRouteMap4DByIdAsync(id);
-            if (response == null)
-                return NotFound(new { message = $"Route with ID {id} not found." });
-
-            return StatusCode(response.StatusCode, response);
-        }
-        /// <summary>
-        /// Lấy thông tin tuyến đường theo ID
-        /// </summary>
-        [HttpGet("{id}/detail")]
-        public async Task<IActionResult> GetRouteDetailById(int id)
-        {
-            var response = await _routeService.GetRouteDetailByIdAsync(id);
-            if (response == null)
-                return NotFound(new { message = $"Route with ID {id} not found." });
-
+            var response = await _routeService.GetRouteByIdAsync(routeId);
             return StatusCode(response.StatusCode, response);
         }
 
-        /// <summary>
-        /// Tạo mới một tuyến đường
-        /// </summary>
         [HttpPost]
-        public async Task<IActionResult> CreateRoute([FromBody] RouteRequest request)
+        public async Task<IActionResult> CreateRoute([FromBody] RouteCreateRequestModel request)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -64,35 +49,47 @@ namespace RouteService.Api.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
-        [HttpPost("start")] 
-        public IActionResult StartRoute([FromQuery] int routeId)
+        [HttpPut("{routeId}")]
+        public async Task<IActionResult> UpdateRoute([FromRoute] int routeId, [FromBody] RouteUpdateRequestModel request)
         {
-            return Ok("Route started.");
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var response = await _routeService.UpdateRouteAsync(routeId, request);
+            return StatusCode(response.StatusCode, response);
         }
 
-        [HttpPost("record")] 
-        public IActionResult RecordRoute([FromBody] object locationData)
+        [HttpDelete("{routeId}")]
+        public async Task<IActionResult> SoftDeleteRoute([FromRoute] int routeId)
         {
-            return Ok("Route recording in progress.");
+            var response = await _routeService.SoftDeleteRouteAsync(routeId);
+            return StatusCode(response.StatusCode, response);
         }
 
-        [HttpPost("update-route")] 
-        public IActionResult UpdateRoute([FromBody] object updateData)
+        [HttpPost("{routeId}/start")]
+        public async Task<IActionResult> StartTrackingRoute([FromRoute] int routeId)
         {
-            return Ok("Route updated successfully.");
+            var response = await _routeService.StartTrackingAsync(routeId);
+            return StatusCode(response.StatusCode, response);
         }
 
-        [HttpPost("capture-moment")] 
-        public IActionResult CaptureMoment([FromBody] object momentData)
+        [HttpPost("{routeId}/tracking")]
+        public async Task<IActionResult> TrackingInRoute([FromRoute] int routeId, [FromBody] TrackingRequestModel request)
         {
-            return Ok("Moment captured successfully.");
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var response = await _routeService.TrackingInRouteAsync(routeId, request);
+            return StatusCode(response.StatusCode, response);
         }
 
-        [HttpPost("finish")] 
-        public IActionResult EndRoute([FromQuery] int routeId)
+        [HttpPost("{routeId}/finish")]
+        public async Task<IActionResult> FinishTrackingRoute([FromRoute] int routeId)
         {
-            return Ok("Route ended successfully.");
+            var response = await _routeService.FinishTrackingAsync(routeId);
+            return StatusCode(response.StatusCode, response);
         }
-
     }
+}
+
 }

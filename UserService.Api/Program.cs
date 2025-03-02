@@ -63,6 +63,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     context.Fail("Invalid token.");
                     return Task.CompletedTask;
                 }
+                
 
                 // 🔹 Extract "role" claim from Firebase token
                 var roleClaim = context.Principal?.FindFirst("role");

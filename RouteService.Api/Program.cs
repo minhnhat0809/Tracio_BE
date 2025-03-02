@@ -1,11 +1,6 @@
-//using UserService.Api.Services;
-
 
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
-using RouteService.Application.Interfaces.Services;
-using RouteService.Application.Mappings;
-using RouteService.Infrastructure.DIs;
+using RouteService.Api.DIs;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,7 +19,7 @@ builder.Services.AddControllers()
     });
 
 // services
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddService(builder.Configuration);
 
 // cors
 builder.Services.AddCors(opts =>

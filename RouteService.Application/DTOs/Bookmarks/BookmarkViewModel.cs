@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-namespace RouteService.Domain.Entities;
+﻿namespace RouteService.Application.DTOs.Bookmarks;
 
-public partial class RouteBookmark
+public class BookmarkViewModel
 {
     public int BookmarkId { get; set; }
 
