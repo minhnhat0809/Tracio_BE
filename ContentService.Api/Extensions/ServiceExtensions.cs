@@ -19,6 +19,8 @@ using ContentService.Infrastructure.MessageBroker.ReactionConsumers;
 using ContentService.Infrastructure.MessageBroker.ReplyConsumers;
 using MassTransit;
 using RabbitMQ.Client;
+using Serilog;
+using Serilog.Sinks.Elasticsearch;
 using Shared.Dtos.Messages;
 using Userservice;
 
@@ -299,6 +301,26 @@ public static class ServiceExtensions
     public static IServiceCollection ConfigureHub(this IServiceCollection services)
     {
         services.AddSignalR();
+        return services;
+    }
+    
+    // 🔹 Configure Logging
+    public static IServiceCollection ConfigureLog(this IServiceCollection services)
+    {
+        Log.Logger = new LoggerConfiguration()
+            .Enrich.FromLogContext()
+            .Enrich.WithMachineName()
+            .Enrich.WithThreadId()
+            .WriteTo.Console()
+            .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri("http://localhost:9200"))
+            {
+                AutoRegisterTemplate = true,
+                IndexFormat = $"dotnet-logs-{DateTime.UtcNow:yyyy.MM.dd}"
+            })
+            .CreateLogger();
+        
+        services.AddSingleton(Log.Logger);
+            
         return services;
     }
 }

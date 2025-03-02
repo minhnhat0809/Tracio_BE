@@ -1,10 +1,12 @@
 using AutoMapper;
 using ContentService.Application.DTOs.ReplyDtos.Message;
+using ContentService.Application.DTOs.ReplyDtos.View;
 using ContentService.Application.Hubs;
 using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Logging;
 using Shared.Dtos;
 using Shared.Dtos.Messages;
 
@@ -18,72 +20,74 @@ public class CreateReplyCommandHandler(
     IUserService userService,
     IModerationService moderationService,
     IRabbitMqProducer rabbitMqProducer,
-    IHubContext<ContentHub> hubContext
-    ) : IRequestHandler<CreateReplyCommand, ResponseDto>
+    IHubContext<ContentHub> hubContext,
+    ILogger<CreateReplyCommandHandler> logger
+) : IRequestHandler<CreateReplyCommand, ResponseDto>
 {
     private readonly ICommentRepo _commentRepo = commentRepo;
-    
     private readonly IMapper _mapper = mapper;
-    
     private readonly IReplyRepo _replyRepo = replyRepo;
-    
     private readonly IImageService _imageService = imageService;
-    
     private readonly IUserService _userService = userService;
-    
     private readonly IModerationService _moderationService = moderationService;
-    
     private readonly IRabbitMqProducer _rabbitMqProducer = rabbitMqProducer;
-    
     private readonly IHubContext<ContentHub> _hubContext = hubContext;
+    private readonly ILogger<CreateReplyCommandHandler> _logger = logger;
     
     private const string BucketName = "blogtracio";
-    
+
     public async Task<ResponseDto> Handle(CreateReplyCommand request, CancellationToken cancellationToken)
     {
         try
         {
-            // check comment in db
+            _logger.LogInformation("📌 CreateReplyCommand started. UserId: {UserId}, CommentId: {CommentId}", request.CyclistId, request.CommentId);
+
             var blogAndCommentAndCyclistId = await _commentRepo.GetByIdAsync(c => c.CommentId == request.CommentId, c => new
             {
                 c.CommentId,
                 c.CyclistId,
                 c.BlogId
             });
-            if (blogAndCommentAndCyclistId == null) return ResponseDto.NotFound("Comment not found");
-            
-            // check userId and get user's name
+
+            if (blogAndCommentAndCyclistId == null)
+            {
+                _logger.LogWarning("❌ Comment not found. CommentId: {CommentId}", request.CommentId);
+                return ResponseDto.NotFound("Comment not found");
+            }
+
             var userDto = await _userService.ValidateUser(request.CyclistId);
-            if (!userDto.IsUserValid) return ResponseDto.NotFound("User does not exist");
-            
-            // moderate content
-            /*var moderationResult = await _moderationService.ProcessModerationResult(request.Content);
-            if(!moderationResult.IsSafe) return ResponseDto.BadRequest("Content contains harmful or offensive language.");*/
-            
-            // upload file to aws s3 and get url
+            if (!userDto.IsUserValid)
+            {
+                _logger.LogWarning("❌ User validation failed. UserId: {UserId}", request.CyclistId);
+                return ResponseDto.NotFound("User does not exist");
+            }
+
             var mediaFileUrl = new List<string>();
             if (request.MediaFiles != null)
             {
+                _logger.LogInformation("📂 Uploading {Count} media files for UserId: {UserId}", request.MediaFiles.Count, request.CyclistId);
                 mediaFileUrl = await _imageService.UploadFiles(request.MediaFiles, BucketName, null);
             }
-            
+
             var mediaFiles = mediaFileUrl.Select(file => new MediaFile { MediaUrl = file, UploadedAt = DateTime.Now }).ToList();
-            
+
             var reply = _mapper.Map<Reply>(request);
-            
             reply.MediaFiles = mediaFiles;
             reply.CyclistName = userDto.Username;
             reply.CyclistAvatar = userDto.Avatar;
-            
-            // insert reply into db
-            var replyCreateResult = await _replyRepo.CreateAsync(reply);
 
-            if (!replyCreateResult) return ResponseDto.InternalError("Failed to create reply");
-            
-            // publish reply create event
+            var replyCreateResult = await _replyRepo.CreateAsync(reply);
+            if (!replyCreateResult)
+            {
+                _logger.LogError("❌ Failed to create reply. UserId: {UserId}, CommentId: {CommentId}", request.CyclistId, request.CommentId);
+                return ResponseDto.InternalError("Failed to create reply");
+            }
+
+            _logger.LogInformation("✅ Reply created successfully! ReplyId: {ReplyId}, UserId: {UserId}, CommentId: {CommentId}", 
+                reply.ReplyId, request.CyclistId, request.CommentId);
+
             await _rabbitMqProducer.SendAsync(new ReplyCreateEvent(request.CommentId), "content.reply.created", cancellationToken);
-            
-            // publish notification event
+
             await _rabbitMqProducer.PublishAsync(new NotificationEvent(
                 blogAndCommentAndCyclistId.CyclistId,
                 request.CyclistId,
@@ -93,28 +97,29 @@ public class CreateReplyCommandHandler(
                 reply.ReplyId,
                 "reply",
                 reply.CreatedAt
-                ), cancellationToken);
-            
-            // publish realtime
+            ), cancellationToken);
+
             await _hubContext.Clients.Group($"Blog-{blogAndCommentAndCyclistId.BlogId}").SendAsync(
                 "ReceiveNewReply", new
                 {
                     blogAndCommentAndCyclistId.BlogId,
                     blogAndCommentAndCyclistId.CommentId
                 }, cancellationToken: cancellationToken);
-            
-            
+
             await _hubContext.Clients.Group($"Comment-{blogAndCommentAndCyclistId.CommentId}").SendAsync(
                 "ReceiveNewReply", new
                 {
                     blogAndCommentAndCyclistId.CommentId
                 }, cancellationToken: cancellationToken);
-            
-            return ResponseDto.CreateSuccess(null, "Reply created successfully!");
+
+            var replyDto = _mapper.Map<ReplyDto>(reply);
+
+            return ResponseDto.CreateSuccess(replyDto, "Reply created successfully!");
         }
         catch (Exception e)
         {
-            return ResponseDto.InternalError(e.Message);
+            _logger.LogError(e, "🚨 Exception while creating reply. UserId: {UserId}, CommentId: {CommentId}", request.CyclistId, request.CommentId);
+            return ResponseDto.InternalError("Something went wrong while creating the reply.");
         }
     }
 }

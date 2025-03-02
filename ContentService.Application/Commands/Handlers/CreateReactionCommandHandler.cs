@@ -7,6 +7,7 @@ using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Logging;
 using Shared.Dtos;
 using Shared.Dtos.Messages;
 
@@ -20,7 +21,8 @@ public class CreateReactionCommandHandler(
     IRabbitMqProducer rabbitMqProducer,
     IUserService userService,
     IMapper mapper,
-    IHubContext<ContentHub> hubContext) 
+    IHubContext<ContentHub> hubContext,
+    ILogger<CreateReactionCommandHandler> logger) 
     : IRequestHandler<CreateReactionCommand, ResponseDto>
 {
     private readonly IBlogRepo _blogRepo = blogRepo;
@@ -37,13 +39,22 @@ public class CreateReactionCommandHandler(
 
     private readonly IRabbitMqProducer _rabbitMqProducer = rabbitMqProducer;
     
+    private readonly ILogger<CreateReactionCommandHandler> _logger = logger;
+    
     public async Task<ResponseDto> Handle(CreateReactionCommand request, CancellationToken cancellationToken)
     {
         try
         {
+            _logger.LogInformation("📌 CreateReactionCommand started. UserId: {UserId}, EntityId: {EntityId}, EntityType: {EntityType}", 
+                request.CyclistId, request.EntityId, request.EntityType);
+            
             // check userId and get user's name, avatar
             var userDto = await _userService.ValidateUser(request.CyclistId);
-            if (!userDto.IsUserValid) return ResponseDto.NotFound("User does not exist");
+            if (!userDto.IsUserValid)
+            {
+                _logger.LogWarning("❌ User validation failed. UserId: {UserId}", request.CyclistId);
+                return ResponseDto.NotFound("User does not exist");
+            }
             
             return request.EntityType.ToLower() switch
             {
@@ -55,12 +66,16 @@ public class CreateReactionCommandHandler(
         }
         catch (Exception e)
         {
-            return ResponseDto.InternalError(e.Message);
+            _logger.LogError(e, "🚨 Exception while creating reaction. UserId: {UserId}, EntityId: {EntityId}, EntityType: {EntityType}", 
+                request.CyclistId, request.EntityId, request.EntityType);
+            return ResponseDto.InternalError("Something went wrong while creating the reaction.");
         }
     }
 
     private async Task<ResponseDto> HandleReplyReaction(CreateReactionCommand request, UserDto userDto, CancellationToken cancellationToken)
     {
+        _logger.LogInformation("🔄 Processing reply reaction. UserId: {UserId}, ReplyId: {ReplyId}", request.CyclistId, request.EntityId);
+        
         var blogAndCommentAndCyclistId = await _replyRepo.GetByIdAsync(r => r.ReplyId == request.EntityId, r => 
             new
             {
@@ -68,7 +83,11 @@ public class CreateReactionCommandHandler(
                 r.CyclistId,
                 r.Comment.BlogId
             });
-        if (blogAndCommentAndCyclistId == null) return ResponseDto.NotFound("Reply not found");
+        if (blogAndCommentAndCyclistId == null)
+        {
+            _logger.LogWarning("❌ Reply not found. ReplyId: {ReplyId}", request.EntityId);
+            return ResponseDto.NotFound("Reply not found");
+        }
 
         var reaction = new Reaction
         {
@@ -80,7 +99,11 @@ public class CreateReactionCommandHandler(
         };
 
         var isSucceed = await reactionRepo.CreateAsync(reaction);
-        if (!isSucceed) return ResponseDto.InternalError("Failed to create reaction.");
+        if (!isSucceed)
+        {
+            _logger.LogError("❌ Failed to create reply reaction. ReplyId: {ReplyId}", request.EntityId);
+            return ResponseDto.InternalError("Failed to create reaction.");
+        }
         
         var reactionDto = _mapper.Map<ReactionDto>(reaction);
         
@@ -115,13 +138,20 @@ public class CreateReactionCommandHandler(
             reaction.CreatedAt
         ), cancellationToken: cancellationToken);
 
+        _logger.LogInformation("✅ Reply reaction created successfully! ReplyId: {ReplyId}, UserId: {UserId}", request.EntityId, request.CyclistId);
         return ResponseDto.CreateSuccess(reactionDto, "Reaction created successfully!");
     }
 
     private async Task<ResponseDto> HandleBlogReaction(CreateReactionCommand request, UserDto userDto, CancellationToken cancellationToken)
     {
+        _logger.LogInformation("🔄 Processing blog reaction. UserId: {UserId}, BlogId: {BlogId}", request.CyclistId, request.EntityId);
+        
         var blogAndCyclist = await _blogRepo.GetByIdAsync(b => b.BlogId == request.EntityId, b => new{b.BlogId, CyclistId = b.BlogId});
-        if (blogAndCyclist  == null) return ResponseDto.NotFound("Blog not found");
+        if (blogAndCyclist == null)
+        {
+            _logger.LogWarning("❌ Blog not found. BlogId: {BlogId}", request.EntityId);
+            return ResponseDto.NotFound("Blog not found");
+        }
 
         var reaction = new Reaction
         {
@@ -133,7 +163,11 @@ public class CreateReactionCommandHandler(
         };
 
         var isSucceed = await reactionRepo.CreateAsync(reaction);
-        if (!isSucceed) return ResponseDto.InternalError("Failed to create reaction.");
+        if (!isSucceed)
+        {
+            _logger.LogError("❌ Failed to create blog reaction. BlogId: {BlogId}", request.EntityId);
+            return ResponseDto.InternalError("Failed to create reaction.");
+        }
         
         var reactionDto = _mapper.Map<ReactionDto>(reaction);
         
@@ -158,14 +192,21 @@ public class CreateReactionCommandHandler(
             "Blog",
             reaction.CreatedAt
         ), cancellationToken: cancellationToken);
-
+        
+        _logger.LogInformation("✅ Blog reaction created successfully! BlogId: {BlogId}, UserId: {UserId}", request.EntityId, request.CyclistId);
         return ResponseDto.CreateSuccess(reactionDto, "Reaction created successfully!");
     }
 
     private async Task<ResponseDto> HandleCommentReaction(CreateReactionCommand request, UserDto userDto, CancellationToken cancellationToken)
     {
-        var blogAndCyclist= await _commentRepo.GetByIdAsync(c => c.CommentId == request.EntityId, c => new{c.BlogId, c.CyclistId});
-        if (blogAndCyclist == null) return ResponseDto.NotFound("Comment not found");
+        _logger.LogInformation("🔄 Processing comment reaction. UserId: {UserId}, CommentId: {CommentId}", request.CyclistId, request.EntityId);
+
+        var blogAndCyclist = await _commentRepo.GetByIdAsync(c => c.CommentId == request.EntityId, c => new { c.BlogId, c.CyclistId });
+        if (blogAndCyclist == null)
+        {
+            _logger.LogWarning("❌ Comment not found. CommentId: {CommentId}", request.EntityId);
+            return ResponseDto.NotFound("Comment not found");
+        }
 
         var reaction = new Reaction
         {
@@ -177,7 +218,11 @@ public class CreateReactionCommandHandler(
         };
 
         var isSucceed = await reactionRepo.CreateAsync(reaction);
-        if (!isSucceed) return ResponseDto.InternalError("Failed to create reaction.");
+        if (!isSucceed)
+        {
+            _logger.LogError("❌ Failed to create comment reaction. CommentId: {CommentId}", request.EntityId);
+            return ResponseDto.InternalError("Failed to create reaction.");
+        }
         
         var reactionDto = _mapper.Map<ReactionDto>(reaction);
         
@@ -210,6 +255,7 @@ public class CreateReactionCommandHandler(
             reaction.CreatedAt
         ), cancellationToken: cancellationToken);
 
+        _logger.LogInformation("✅ Comment reaction created successfully! CommentId: {CommentId}, UserId: {UserId}", request.EntityId, request.CyclistId);
         return ResponseDto.CreateSuccess(reactionDto, "Reaction created successfully!");
     }
 }

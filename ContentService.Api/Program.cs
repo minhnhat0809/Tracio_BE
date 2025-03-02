@@ -5,6 +5,7 @@ using ContentService.Infrastructure;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using MassTransit;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +31,8 @@ builder.Services.ConfigureMediatr();
 builder.Services.ConfigureMapper();
 builder.Services.ConfigureAzure(builder.Configuration);
 builder.Services.ConfigureHub();
+builder.Services.ConfigureLog();
+builder.Host.UseSerilog();
 
 var app = builder.Build();
 
