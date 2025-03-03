@@ -32,15 +32,37 @@ builder.Services.ConfigureMapper();
 builder.Services.ConfigureAzure(builder.Configuration);
 builder.Services.ConfigureHub();
 builder.Services.ConfigureLog();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 builder.Host.UseSerilog();
+
+var grpcPort = Environment.GetEnvironmentVariable("GRPC_PORT") ?? "6002";
+var restPort = Environment.GetEnvironmentVariable("REST_PORT") ?? "5002";
+
+// config ports
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(int.Parse(grpcPort), listenOptions =>
+    {
+        listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2; // gRPC
+    });
+
+    options.ListenAnyIP(int.Parse(restPort), listenOptions =>
+    {
+        listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1; // REST API
+    });
+});
 
 var app = builder.Build();
 
-// Middleware pipeline
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "ContentService API V1");
+        c.RoutePrefix = "swagger"; 
+    });
 }
 
 var busControl = app.Services.GetRequiredService<IBusControl>();

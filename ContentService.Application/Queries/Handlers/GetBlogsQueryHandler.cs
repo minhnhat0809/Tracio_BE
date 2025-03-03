@@ -16,68 +16,27 @@ public class GetBlogsQueryHandler(
     IBlogRepo blogRepo, 
     IFollowerOnlyBlogRepo followerOnlyBlogRepo,
     IRabbitMqProducer rabbitMqProducer,
-    IUserService userService) : IRequestHandler<GetBlogsQuery, ResponseDto>
+    IUserService userService,
+    ICacheService cacheService) : IRequestHandler<GetBlogsQuery, ResponseDto>
 {
     private readonly IBlogRepo _blogRepo = blogRepo;
     private readonly IFollowerOnlyBlogRepo _followerOnlyBlogRepo = followerOnlyBlogRepo;
     private readonly IRabbitMqProducer _rabbitMqProducer = rabbitMqProducer;
     private readonly IUserService _userService = userService;
+    private readonly ICacheService _cacheService = cacheService;
 
     public async Task<ResponseDto> Handle(GetBlogsQuery request, CancellationToken cancellationToken)
     {
         try
         {
-            var basePredicate = PredicateBuilder.New<Blog>(true);
-
-            if (request.CategoryId.HasValue)
-                basePredicate = basePredicate.And(b => b.CategoryId == request.CategoryId);
-
             if (request.UserId.HasValue)
             {
-                var result = await _userService.CheckUserFollower(request.UserId.Value, request.UserRequestId);
-                if (!result.IsExisted) return ResponseDto.NotFound("User not found");
-
-                basePredicate = basePredicate.And(b => b.CreatorId == request.UserId);
-
-                if (request.UserRequestId != request.UserId.Value)
-                {
-                    basePredicate = basePredicate.And(b => b.Status == (sbyte)BlogStatus.Published);
-                    basePredicate = result.IsFollower
-                        ? basePredicate.And(b => b.Status != (sbyte)PrivacySetting.Private)
-                        : basePredicate.And(b => b.PrivacySetting == (sbyte)PrivacySetting.Public);
-                }
+                return await GetUserBlogs(request);
             }
             else
             {
-                return await AdvancedFilterBlog(request);
+                return await GetCachedPublicAndFollowerBlogs(request);
             }
-
-            request.SortBy = GetSortByField(request.SortBy);
-            var sortExpression = SortHelper.BuildSortExpression<Blog>(request.SortBy);
-
-            var blogs = await _blogRepo.FindAsyncWithPagingAndSorting(
-                basePredicate,
-                SelectBlogDtos(request.UserRequestId),
-                request.PageNumber, request.PageSize,
-                sortExpression, request.Ascending,
-                b => b.MediaFiles, b => b.Reactions
-            );
-
-            // count blogs
-            var totalBlogs = await _blogRepo.CountAsync(basePredicate);
-
-            var totalPages = (int)Math.Ceiling((double)totalBlogs / request.PageSize);
-
-            return ResponseDto.GetSuccess(new
-            {
-                blogs, 
-                request.PageNumber, 
-                request.PageSize,
-                totalBlogs,
-                totalPages,
-                hasNextPage = request.PageNumber < totalPages,
-                hasPreviousPage = request.PageNumber > 1,
-            }, "Blogs retrieved successfully!");
         }
         catch (Exception e)
         {
@@ -85,78 +44,142 @@ public class GetBlogsQueryHandler(
         }
     }
 
-    private async Task<ResponseDto> AdvancedFilterBlog(GetBlogsQuery request)
+    private async Task<ResponseDto> GetCachedPublicAndFollowerBlogs(GetBlogsQuery request)
     {
         try
         {
-            var estimatedFollowerSize = (int) Math.Ceiling(request.PageSize / 2.0);
+            var publicBlogCacheKey = $"PublicBlogs:Page{request.PageNumber}:Size{request.PageSize}";
+            var followerBlogCacheKey = $"FollowerBlogs:{request.UserRequestId}:Page{request.PageNumber}:Size{request.PageSize}";
 
-            var basePredicate = PredicateBuilder.New<Blog>(true)
-                .And(b => b.PrivacySetting == (sbyte)PrivacySetting.Public && b.Status == (sbyte)BlogStatus.Published);
+            var cachedPublicBlogs = await _cacheService.GetAsync<List<BlogDtos>>(publicBlogCacheKey);
+            var cachedFollowerBlogs = await _cacheService.GetAsync<List<BlogDtos>>(followerBlogCacheKey);
 
-            if (request.CategoryId.HasValue)
-                basePredicate = basePredicate.And(b => b.CategoryId == request.CategoryId);
+            if (cachedPublicBlogs == null)
+            {
+                cachedPublicBlogs = await FetchPublicBlogs(request);
+                await _cacheService.SetAsync(publicBlogCacheKey, cachedPublicBlogs, TimeSpan.FromMinutes(10));
+            }
+
+            if (cachedFollowerBlogs == null)
+            {
+                cachedFollowerBlogs = await FetchFollowerOnlyBlogs(request);
+                await _cacheService.SetAsync(followerBlogCacheKey, cachedFollowerBlogs, TimeSpan.FromMinutes(5));
+            }
             
-            request.SortBy = GetSortByField(request.SortBy);
-            var sortExpressionBlog = SortHelper.BuildSortExpression<Blog>(request.SortBy);
-            var sortExpressionFollowerOnly = SortHelper.BuildSortExpression<UserBlogFollowerOnly>("CreatedAt");
-            
-            // fetch followerOnly blogs
-            var followerOnlyBlogs = await _followerOnlyBlogRepo.FindAsyncWithPagingAndSorting(
-                b => b.UserId == request.UserRequestId && !b.IsRead,
-                SelectFollowerOnlyBlogDtos(request.UserRequestId),
-                request.PageNumber, estimatedFollowerSize,
-                sortExpressionFollowerOnly, false,
-                b => b.Blog, b => b.Blog.MediaFiles, b => b.Blog.Reactions
-            );
-            
-            // count followerOnly blogs
+            // count
             var totalFollowerOnlyBlogs = await _followerOnlyBlogRepo.CountAsync(fb => fb.UserId == request.UserRequestId && !fb.IsRead);
+            var totalPublicBlogs = await _blogRepo.CountAsync(PredicateBuilder.New<Blog>()
+                .And(b => b.PrivacySetting == (sbyte)PrivacySetting.Public && b.Status == (sbyte)BlogStatus.Published));
 
-            var estimatedPublicSize = request.PageSize - followerOnlyBlogs.Count;
+            var finalBlogs = InterleaveLists(cachedFollowerBlogs, cachedPublicBlogs).Take(request.PageSize).ToList();
 
-            var publicBlogs = await _blogRepo.FindAsyncWithPagingAndSorting(
-                basePredicate,
-                SelectBlogDtos(request.UserRequestId),
-                request.PageNumber, estimatedPublicSize,
-                sortExpressionBlog, request.Ascending,
-                b => b.MediaFiles, b => b.Reactions
-            );
-            
-            // count public blogs
-            var totalPublicBlogs = await _blogRepo.CountAsync(basePredicate);
-            
-            var totalBlogs = totalPublicBlogs + totalFollowerOnlyBlogs;
-            
-            var totalPages = (int)Math.Ceiling((double)totalBlogs / request.PageSize);
-
-            var finalBlogs = InterleaveLists(followerOnlyBlogs, publicBlogs).Take(request.PageSize).ToList();
-
-            if (followerOnlyBlogs.Count != 0)
+            // **Trigger RabbitMQ Event for unread follower blogs**
+            if (cachedFollowerBlogs.Count > 0)
             {
                 await _rabbitMqProducer.PublishAsync(new MarkBlogsAsReadEvent
                 {
                     UserId = request.UserRequestId,
-                    BlogIds = followerOnlyBlogs.Select(b => b.BlogId).ToList()
+                    BlogIds = cachedFollowerBlogs.Select(b => b.BlogId).ToList()
                 });
             }
 
-            return ResponseDto.GetSuccess(new
-                {
-                    blogs = finalBlogs, 
-                    request.PageNumber, 
-                    request.PageSize,
-                    totalBlogs,
-                    totalPages,
-                    hasNextPage = request.PageNumber < totalPages,
-                    hasPreviousPage = request.PageNumber > 1
-                },
-                "Blogs retrieved successfully!");
+            var totalBlogs = totalFollowerOnlyBlogs + totalPublicBlogs;
+            var totalPages = (int)Math.Ceiling((double)totalBlogs / request.PageSize);
+
+            var response = new
+            {
+                blogs = finalBlogs,
+                request.PageNumber,
+                request.PageSize,
+                totalBlogs,
+                totalPages,
+                hasNextPage = request.PageNumber < totalPages,
+                hasPreviousPage = request.PageNumber > 1
+            };
+
+            return ResponseDto.GetSuccess(response, "Blogs retrieved successfully!");
         }
         catch (Exception e)
         {
             return ResponseDto.InternalError(e.Message);
         }
+    }
+
+    private async Task<List<BlogDtos>> FetchPublicBlogs(GetBlogsQuery request)
+    {
+        var basePredicate = PredicateBuilder.New<Blog>(true)
+            .And(b => b.PrivacySetting == (sbyte)PrivacySetting.Public && b.Status == (sbyte)BlogStatus.Published);
+
+        if (request.CategoryId.HasValue)
+            basePredicate = basePredicate.And(b => b.CategoryId == request.CategoryId);
+
+        var sortExpression = SortHelper.BuildSortExpression<Blog>(GetSortByField(request.SortBy));
+
+        return await _blogRepo.FindAsyncWithPagingAndSorting(
+            basePredicate,
+            SelectBlogDtos(request.UserRequestId),
+            request.PageNumber, request.PageSize,
+            sortExpression, request.Ascending,
+            b => b.MediaFiles, b => b.Reactions
+        );
+    }
+
+    private async Task<List<BlogDtos>> FetchFollowerOnlyBlogs(GetBlogsQuery request)
+    {
+        var sortExpression = SortHelper.BuildSortExpression<UserBlogFollowerOnly>("CreatedAt");
+
+        return await _followerOnlyBlogRepo.FindAsyncWithPagingAndSorting(
+            b => b.UserId == request.UserRequestId && !b.IsRead,
+            SelectFollowerOnlyBlogDtos(request.UserRequestId),
+            request.PageNumber, request.PageSize,
+            sortExpression, false,
+            b => b.Blog, b => b.Blog.MediaFiles, b => b.Blog.Reactions
+        );
+    }
+
+    private async Task<ResponseDto> GetUserBlogs(GetBlogsQuery request)
+    {
+        var basePredicate = PredicateBuilder.New<Blog>(true);
+        var result = await _userService.CheckUserFollower(request.UserId!.Value, request.UserRequestId);
+        
+        if (!result.IsExisted) return ResponseDto.NotFound("User not found");
+
+        basePredicate = basePredicate.And(b => b.CreatorId == request.UserId);
+
+        if (request.UserRequestId != request.UserId.Value)
+        {
+            basePredicate = basePredicate.And(b => b.Status == (sbyte)BlogStatus.Published);
+            basePredicate = result.IsFollower
+                ? basePredicate.And(b => b.Status != (sbyte)PrivacySetting.Private)
+                : basePredicate.And(b => b.PrivacySetting == (sbyte)PrivacySetting.Public);
+        }
+
+        request.SortBy = GetSortByField(request.SortBy);
+        var sortExpression = SortHelper.BuildSortExpression<Blog>(request.SortBy);
+
+        var blogs = await _blogRepo.FindAsyncWithPagingAndSorting(
+            basePredicate,
+            SelectBlogDtos(request.UserRequestId),
+            request.PageNumber, request.PageSize,
+            sortExpression, request.Ascending,
+            b => b.MediaFiles, b => b.Reactions
+        );
+
+        var totalBlogs = await _blogRepo.CountAsync(basePredicate);
+        var totalPages = (int)Math.Ceiling((double)totalBlogs / request.PageSize);
+
+        var response = new
+        {
+            blogs,
+            request.PageNumber,
+            request.PageSize,
+            totalBlogs,
+            totalPages,
+            hasNextPage = request.PageNumber < totalPages,
+            hasPreviousPage = request.PageNumber > 1,
+        };
+
+        return ResponseDto.GetSuccess(response, "Blogs retrieved successfully!");
     }
 
     private static List<BlogDtos> InterleaveLists(List<BlogDtos> list1, List<BlogDtos> list2)
@@ -202,7 +225,7 @@ public class GetBlogsQueryHandler(
             IsBookmarked = b.BlogBookmarks.Any(bm => bm.OwnerId == userRequestId)
         };
     }
-
+    
     private static Expression<Func<UserBlogFollowerOnly, BlogDtos>> SelectFollowerOnlyBlogDtos(int? userRequestId)
     {
         return b => new BlogDtos

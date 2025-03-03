@@ -21,7 +21,8 @@ public class CreateCommentCommandHandler(
     IModerationService moderationService,
     IRabbitMqProducer rabbitMqProducer,
     IHubContext<ContentHub> hubContext,
-    ILogger<CreateCommentCommandHandler> logger
+    ILogger<CreateCommentCommandHandler> logger,
+    ICacheService cacheService
 ) : IRequestHandler<CreateCommentCommand, ResponseDto>
 {
     private readonly ICommentRepo _commentRepo = commentRepo;
@@ -33,7 +34,7 @@ public class CreateCommentCommandHandler(
     private readonly IRabbitMqProducer _rabbitMqProducer = rabbitMqProducer;
     private readonly IHubContext<ContentHub> _hubContext = hubContext;
     private readonly ILogger<CreateCommentCommandHandler> _logger = logger;
-    
+    private readonly ICacheService _cacheService = cacheService;
     private const string BucketName = "blogtracio";
 
     public async Task<ResponseDto> Handle(CreateCommentCommand request, CancellationToken cancellationToken)
@@ -58,7 +59,7 @@ public class CreateCommentCommandHandler(
             }
 
             var mediaFileUrl = new List<string>();
-            if (request.MediaFiles != null && request.MediaFiles.Any())
+            if (request.MediaFiles != null && request.MediaFiles.Count != 0)
             {
                 _logger.LogInformation("📂 Uploading {Count} media files for UserId: {UserId}", request.MediaFiles.Count, request.CreatorId);
                 mediaFileUrl = await _imageService.UploadFiles(request.MediaFiles, BucketName, null);
@@ -77,6 +78,9 @@ public class CreateCommentCommandHandler(
                 _logger.LogError("❌ Failed to create comment. UserId: {UserId}, BlogId: {BlogId}", request.CreatorId, request.BlogId);
                 return ResponseDto.InternalError("Failed to create comment");
             }
+            
+            // invalidate cache
+            await _cacheService.RemoveByPatternAsync($"ContentService_Comments:Blog{request.BlogId}:*");
 
             _logger.LogInformation("✅ Comment created successfully! CommentId: {CommentId}, UserId: {UserId}, BlogId: {BlogId}", 
                 comment.CommentId, request.CreatorId, request.BlogId);

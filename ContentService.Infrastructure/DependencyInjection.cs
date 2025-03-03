@@ -1,10 +1,11 @@
 ﻿using ContentService.Application.Interfaces;
-using ContentService.Domain.Entities;
 using ContentService.Infrastructure.Contexts;
+using ContentService.Infrastructure.Redis;
 using ContentService.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using StackExchange.Redis;
 
 namespace ContentService.Infrastructure;
 
@@ -20,6 +21,18 @@ public static class DependencyInjection
             )
         );
         
+        var redisConnectionString = configuration.GetConnectionString("Redis");
+        
+        var connectionMultiplexer = ConnectionMultiplexer.Connect(redisConnectionString!);
+        
+        services.AddSingleton<IConnectionMultiplexer>(connectionMultiplexer);
+        
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = redisConnectionString;
+            options.InstanceName = "ContentService_";
+        });
+        
         // repositories
         services.AddScoped<IBlogRepo, BlogRepo>();
         services.AddScoped<ICommentRepo, CommentRepo>();
@@ -29,6 +42,7 @@ public static class DependencyInjection
         services.AddScoped<IBookmarkRepo, BookmarkRepo>();
         services.AddScoped<IFollowerOnlyBlogRepo, FollowerOnlyBlogRepo>();
         services.AddScoped<IBlogCategoryRepo, BlogCategoryRepo>();
+        services.AddScoped<ICacheService, CacheService>();
 
         return services;
     }

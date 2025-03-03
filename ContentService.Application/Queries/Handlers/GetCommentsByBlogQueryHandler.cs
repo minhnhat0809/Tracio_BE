@@ -10,31 +10,29 @@ using Shared.Ultilities;
 
 namespace ContentService.Application.Queries.Handlers;
 
-public class GetCommentsByBlogQueryHandler(IBlogRepo blogRepo, ICommentRepo commentRepo) : IRequestHandler<GetCommentsByBlogQuery, ResponseDto>
+public class GetCommentsByBlogQueryHandler(
+    IBlogRepo blogRepo, 
+    ICommentRepo commentRepo, 
+    ICacheService cacheService) : IRequestHandler<GetCommentsByBlogQuery, ResponseDto>
 {
     private readonly IBlogRepo _blogRepo = blogRepo;
-    
     private readonly ICommentRepo _commentRepo = commentRepo;
-    
+    private readonly ICacheService _cacheService = cacheService;
+
     public async Task<ResponseDto> Handle(GetCommentsByBlogQuery request, CancellationToken cancellationToken)
     {
         try
         {
-            var blog = new BlogWithCommentsDto();
-            
-            // handle the event when user click notification
             var pageNumber = request.PageNumber;
-            if (request.CommentId.HasValue)
-            {
-                var blogIdAndCommentIndex = await _commentRepo.GetCommentIndex(request.CommentId.Value);
+            var cacheKeyBlog = $"Blog:{request.BlogId}";
+            var cacheKeyComments = $"Comments:Blog{request.BlogId}:Page{pageNumber}:Size{request.PageSize}";
 
-                if (!blogIdAndCommentIndex.Equals((-1, -1)))
-                {
-                    pageNumber = (int)Math.Ceiling((double) blogIdAndCommentIndex.CommentIndex / request.PageSize);
-                    
-                    request.BlogId = blogIdAndCommentIndex.BlogId;
-                }
-                
+            var blog =
+                // **Check if blog details are cached**
+                await _cacheService.GetAsync<BlogWithCommentsDto>(cacheKeyBlog);
+            if (blog == null)
+            {
+                // **Fetch blog details from DB**
                 blog = await _blogRepo.GetByIdAsync(b => b.BlogId.Equals(request.BlogId), b => new BlogWithCommentsDto
                 {
                     BlogId = b.BlogId,
@@ -50,38 +48,47 @@ public class GetCommentsByBlogQueryHandler(IBlogRepo blogRepo, ICommentRepo comm
                     CreatorId = b.CreatorId,
                     CreatorName = b.CreatorName
                 });
+
+                if (blog == null) return ResponseDto.NotFound($"Blog not found with this id: {request.BlogId}");
+
+                await _cacheService.SetAsync(cacheKeyBlog, blog, TimeSpan.FromMinutes(10)); // Cache for 10 min
             }
-            else
+
+            // **Check if paginated comments are cached**
+            var cachedComments = await _cacheService.GetAsync<List<CommentDto>>(cacheKeyComments);
+            if (cachedComments != null)
             {
-                if (request.BlogId <= 0) return ResponseDto.BadRequest("Blog Id is required");
-            
-                // check blog in db
-                var isBlogExisted = await _blogRepo.ExistsAsync(b => b.BlogId.Equals(request.BlogId));
-                
-                if (!isBlogExisted) return ResponseDto.NotFound($"Blog not found with this id : {request.BlogId}");
+                var totalComments = blog.CommentsCount;
+                var totalPages1 = (int)Math.Ceiling((double)totalComments / request.PageSize);
+
+                return ResponseDto.GetSuccess(new
+                {
+                    blog,
+                    comments = cachedComments,
+                    pageNumber,
+                    pageSize = request.PageSize,
+                    totalComments,
+                    totalPages = totalPages1,
+                    hasNextPage = pageNumber < totalPages1,
+                    hasPreviousPage = pageNumber > 1
+                }, "Comments of the blog retrieved successfully!");
             }
-            
-            var basePredicate = PredicateBuilder.New<Comment>(true);
-            
-            // build filter expression
-            basePredicate = basePredicate
+
+            // **Fetch comments from DB**
+            var basePredicate = PredicateBuilder.New<Comment>(true)
                 .And(c => c.BlogId.Equals(request.BlogId) && c.IsDeleted != true);
-            
-            // build sort expression
-            var sortExpression = SortHelper.BuildSortExpression<Comment>("CreatedAt");
-            
-            // count comments 
+
             var total = await _commentRepo.CountAsync(basePredicate);
             if (total == 0) return ResponseDto.GetSuccess(new
-                {
-                    comments = new List<CommentDto>(), 
-                    count = total, 
-                    pageNumber, 
-                    pageSize = request.PageSize
-                }, 
-                "Comments retrieved successfully!");
-            
-            // fetch comments
+            {
+                comments = new List<CommentDto>(), 
+                count = total, 
+                pageNumber, 
+                pageSize = request.PageSize
+            }, "Comments retrieved successfully!");
+
+            var sortExpression = SortHelper.BuildSortExpression<Comment>("CreatedAt");
+
             var commentsDto = await _commentRepo.FindAsyncWithPagingAndSorting(
                 basePredicate,
                 c => new CommentDto
@@ -99,22 +106,24 @@ public class GetCommentsByBlogQueryHandler(IBlogRepo blogRepo, ICommentRepo comm
                 },
                 request.PageNumber, request.PageSize,
                 sortExpression, request.IsAscending
-                );
+            );
 
-            var totalPages = (int)Math.Ceiling((double)total / request.PageSize);
-            
+            var totalPages2 = (int)Math.Ceiling((double)total / request.PageSize);
+
+            // **Cache the comments for 5 min**
+            await _cacheService.SetAsync(cacheKeyComments, commentsDto, TimeSpan.FromMinutes(5));
+
             return ResponseDto.GetSuccess(new
-                {
-                    blog, 
-                    comments = commentsDto,
-                    pageNumber, 
-                    pageSize = request.PageSize,
-                    totalComments = total, 
-                    totalPages,
-                    hasNextPage = pageNumber < totalPages,
-                    hasPreviousPage = pageNumber > 1
-                }, 
-                "Comments of the blog retrieved successfully!");
+            {
+                blog,
+                comments = commentsDto,
+                pageNumber,
+                pageSize = request.PageSize,
+                totalComments = total,
+                totalPages = totalPages2,
+                hasNextPage = pageNumber < totalPages2,
+                hasPreviousPage = pageNumber > 1
+            }, "Comments of the blog retrieved successfully!");
         }
         catch (Exception e)
         {

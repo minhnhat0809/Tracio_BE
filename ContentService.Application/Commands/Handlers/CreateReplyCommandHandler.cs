@@ -42,17 +42,36 @@ public class CreateReplyCommandHandler(
         {
             _logger.LogInformation("📌 CreateReplyCommand started. UserId: {UserId}, CommentId: {CommentId}", request.CyclistId, request.CommentId);
 
-            var blogAndCommentAndCyclistId = await _commentRepo.GetByIdAsync(c => c.CommentId == request.CommentId, c => new
+            var reReply = (CommentId: 0, CyclistId: 0, BlogId: 0);
+            
+            (int CommentId, int CyclistId, int BlogId) comment;
+            
+            if (request.ReReplyId.HasValue)
             {
-                c.CommentId,
-                c.CyclistId,
-                c.BlogId
-            });
+                var result1 = await _replyRepo.GetByIdAsync(r => r.ReplyId == request.ReReplyId.Value, 
+                    r => new {r.CommentId, r.CyclistId, r.Comment.BlogId });
+                if(result1 == null) return ResponseDto.NotFound("Reply not found");
+                
+                reReply = (result1.CommentId, result1.CyclistId, result1.BlogId);
+                
+                comment = (reReply.CommentId, reReply.CyclistId, reReply.BlogId);
+            }
+            else
+            {
+                var result2 = await _commentRepo.GetByIdAsync(c => c.CommentId == request.CommentId, c => new
+                {
+                    c.CommentId,
+                    c.CyclistId,
+                    c.BlogId
+                });
 
-            if (blogAndCommentAndCyclistId == null)
-            {
-                _logger.LogWarning("❌ Comment not found. CommentId: {CommentId}", request.CommentId);
-                return ResponseDto.NotFound("Comment not found");
+                if (result2 == null)
+                {
+                    _logger.LogWarning("❌ Comment not found. CommentId: {CommentId}", request.CommentId);
+                    return ResponseDto.NotFound("Comment not found");
+                }
+                
+                comment = (result2.CommentId, result2.CyclistId, result2.BlogId);
             }
 
             var userDto = await _userService.ValidateUser(request.CyclistId);
@@ -86,30 +105,49 @@ public class CreateReplyCommandHandler(
             _logger.LogInformation("✅ Reply created successfully! ReplyId: {ReplyId}, UserId: {UserId}, CommentId: {CommentId}", 
                 reply.ReplyId, request.CyclistId, request.CommentId);
 
+            // count in database
             await _rabbitMqProducer.SendAsync(new ReplyCreateEvent(request.CommentId), "content.reply.created", cancellationToken);
 
-            await _rabbitMqProducer.PublishAsync(new NotificationEvent(
-                blogAndCommentAndCyclistId.CyclistId,
-                request.CyclistId,
-                userDto.Username,
-                userDto.Avatar,
-                $"{userDto.Username} replies to your comment: {request.Content}",
-                reply.ReplyId,
-                "reply",
-                reply.CreatedAt
-            ), cancellationToken);
+            if (request.ReReplyId.HasValue)
+            {
+                await _rabbitMqProducer.PublishAsync(new NotificationEvent(
+                    recipientId: reReply.CyclistId,
+                    senderId: request.CyclistId,
+                    userDto.Username,
+                    userDto.Avatar,
+                    $"{userDto.Username} replies to your reply: {request.Content}",
+                    reply.ReplyId,
+                    "reply",
+                    reply.CreatedAt
+                ), cancellationToken);
+            }
+            else
+            {
+                await _rabbitMqProducer.PublishAsync(new NotificationEvent(
+                    recipientId: comment.CyclistId,
+                    senderId: request.CyclistId,
+                    userDto.Username,
+                    userDto.Avatar,
+                    $"{userDto.Username} replies to your comment: {request.Content}",
+                    reply.ReplyId,
+                    "reply",
+                    reply.CreatedAt
+                ), cancellationToken);
+            }
+           
 
-            await _hubContext.Clients.Group($"Blog-{blogAndCommentAndCyclistId.BlogId}").SendAsync(
+            // real-time count
+            await _hubContext.Clients.Group($"Blog-{comment.BlogId}").SendAsync(
                 "ReceiveNewReply", new
                 {
-                    blogAndCommentAndCyclistId.BlogId,
-                    blogAndCommentAndCyclistId.CommentId
+                    comment.BlogId,
+                    comment.CommentId
                 }, cancellationToken: cancellationToken);
 
-            await _hubContext.Clients.Group($"Comment-{blogAndCommentAndCyclistId.CommentId}").SendAsync(
+            await _hubContext.Clients.Group($"Comment-{comment.CommentId}").SendAsync(
                 "ReceiveNewReply", new
                 {
-                    blogAndCommentAndCyclistId.CommentId
+                    comment.CommentId
                 }, cancellationToken: cancellationToken);
 
             var replyDto = _mapper.Map<ReplyDto>(reply);

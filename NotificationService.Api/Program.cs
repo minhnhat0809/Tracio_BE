@@ -28,14 +28,20 @@ builder.Services.ConfigureSignalR();
 builder.Services.ConfigureMapper();
 builder.Services.ConfigureRabbitMq();
 builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "NotificationService API V1");
+        c.RoutePrefix = "swagger"; 
+    });
 }
 
 app.MapControllers();

@@ -14,6 +14,7 @@ namespace ContentService.Api.Controllers
         private readonly IMediator _mediator = mediator;
         
         [HttpGet("{commentId:int}/replies")]
+        [Authorize]
         public async Task<IActionResult> GetReplies(
             [FromRoute] int commentId,
             [FromQuery] int? replyId,
@@ -25,7 +26,7 @@ namespace ContentService.Api.Controllers
             if (value == null) return StatusCode(StatusCodes.Status401Unauthorized);
             var userBrowsingId = int.Parse(value);
             
-            var result = await _mediator.Send(new GetRepliesByCommentQuery(userBrowsingId, replyId, commentId, pageNumber, pageSize));
+            var result = await _mediator.Send(new GetRepliesByCommentQuery(2, replyId, commentId, pageNumber, pageSize));
             
             return StatusCode(result.StatusCode, result);
         }
@@ -42,13 +43,14 @@ namespace ContentService.Api.Controllers
         }
 
         [HttpPost]
-        [Authorize]
+        //[Authorize]
         public async Task<IActionResult> CreateComment([FromForm] CommentCreateDto commentCreateDto, [FromForm] List<IFormFile> files)
         {
-            var value = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "custom_id")?.Value;
+            /*var value = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "custom_id")?.Value;
             if (value == null) return StatusCode(StatusCodes.Status401Unauthorized);
-            var userBrowsingId = int.Parse(value);
-            var result = await _mediator.Send(new CreateCommentCommand(userBrowsingId, commentCreateDto, files));
+            var userBrowsingId = int.Parse(value);*/
+            
+            var result = await _mediator.Send(new CreateCommentCommand(2, commentCreateDto, files));
             
             return StatusCode(result.StatusCode, result);
         }

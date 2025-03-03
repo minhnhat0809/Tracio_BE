@@ -30,14 +30,37 @@ builder.Services.ConfigureGrpcClients();
 builder.Services.ConfigureAwsServices(builder.Configuration);
 builder.Services.ConfigureMediatr();
 builder.Services.ConfigureMapper();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+var grpcPort = Environment.GetEnvironmentVariable("GRPC_PORT") ?? "6004";
+var restPort = Environment.GetEnvironmentVariable("REST_PORT") ?? "5004";
+
+// config ports
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(int.Parse(grpcPort), listenOptions =>
+    {
+        listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2; // gRPC
+    });
+
+    options.ListenAnyIP(int.Parse(restPort), listenOptions =>
+    {
+        listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1; // REST API
+    });
+});
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "ShopService API V1");
+        c.RoutePrefix = "swagger"; 
+    });
 }
 
 app.UseHttpsRedirection();

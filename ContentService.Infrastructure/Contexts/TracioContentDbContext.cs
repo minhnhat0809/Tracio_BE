@@ -265,6 +265,8 @@ public partial class TracioContentDbContext : DbContext
 
             entity.HasIndex(e => e.CommentId, "fk_reply_comment");
 
+            entity.HasIndex(e => e.ReReplyId, "fk_reply_re_reply");
+
             entity.Property(e => e.ReplyId).HasColumnName("reply_id");
             entity.Property(e => e.CommentId).HasColumnName("comment_id");
             entity.Property(e => e.Content)
@@ -288,11 +290,16 @@ public partial class TracioContentDbContext : DbContext
                 .HasColumnName("deleted_at");
             entity.Property(e => e.IsDeleted).HasColumnName("is_deleted");
             entity.Property(e => e.LikesCount).HasColumnName("likes_count");
+            entity.Property(e => e.ReReplyId).HasColumnName("re_reply_id");
 
             entity.HasOne(d => d.Comment).WithMany(p => p.Replies)
                 .HasForeignKey(d => d.CommentId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_reply_comment");
+
+            entity.HasOne(d => d.ReReply).WithMany(p => p.InverseReReply)
+                .HasForeignKey(d => d.ReReplyId)
+                .HasConstraintName("fk_reply_re_reply");
         });
 
         modelBuilder.Entity<UserBlogFollowerOnly>(entity =>

@@ -2,7 +2,6 @@ using ContentService.Application.DTOs.BlogDtos.Message;
 using ContentService.Application.Interfaces;
 using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
-using RabbitMQ.Client;
 
 namespace ContentService.Infrastructure.MessageBroker.BlogConsumers;
 
