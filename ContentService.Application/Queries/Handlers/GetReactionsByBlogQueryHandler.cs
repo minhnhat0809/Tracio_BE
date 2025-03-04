@@ -28,27 +28,28 @@ public class GetReactionsByBlogQueryHandler(IReactionRepo reactionRepo, IBlogRep
             
             basePredicate = basePredicate.And(r => r.BlogId == request.BlogId);
             
-            // count reactions
-            var total = await _reactionRepo.CountAsync(basePredicate);
+            var totalReactions = await _reactionRepo.CountAsync(basePredicate);
+            
+            var totalPages = (int)Math.Ceiling((double)totalReactions / request.PageSize);
             
             // fetch reactions
-            var reactionsDto = await _reactionRepo.FindAsync(basePredicate,
+            var reactionsDto = await _reactionRepo.FindAsyncWithPagingAndSorting(basePredicate,
                 c => new ReactionDto
                 {
                     CyclistId = c.CyclistId,
                     CyclistName = c.CyclistName,
-                    CyclistAvatar = c.CyclistAvatar,
-                    CreatedAt = c.CreatedAt
-                });
-
-            // sort by created at
-            reactionsDto = reactionsDto.OrderByDescending(c => c.CreatedAt).ToList();
+                    CyclistAvatar = c.CyclistAvatar
+                },
+                request.PageNumber, request.PageSize);
 
             return ResponseDto.GetSuccess(
                 new
                 {
                     reactions = reactionsDto,
-                    total
+                    totalReactions,
+                    totalPages,
+                    hasNextPage = request.PageNumber < totalPages,
+                    hasPreviousPage = request.PageNumber > 1
                 },
                 "Reactions retrieved successfully!");
         }

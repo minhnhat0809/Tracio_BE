@@ -11,8 +11,6 @@ public partial class BlogBookmark
 
     public int BlogId { get; set; }
 
-    public string? CollectionName { get; set; }
-
     public DateTime CreatedAt { get; set; }
 
     public virtual Blog Blog { get; set; } = null!;

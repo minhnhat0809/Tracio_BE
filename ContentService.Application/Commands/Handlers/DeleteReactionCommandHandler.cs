@@ -1,62 +1,57 @@
+using ContentService.Application.DTOs.ReactionDtos.Message;
 using ContentService.Application.Interfaces;
 using MediatR;
 using Shared.Dtos;
+using System.Linq.Expressions;
+using ContentService.Domain.Entities;
 
 namespace ContentService.Application.Commands.Handlers;
 
 public class DeleteReactionCommandHandler(
-    IReactionRepo reactionRepo, 
-    ICommentRepo commentRepo, 
-    IReplyRepo replyRepo, 
-    IBlogRepo blogRepo) : IRequestHandler<DeleteReactionCommand, ResponseDto>
+    IReactionRepo reactionRepo,
+    IRabbitMqProducer rabbitMqProducer) : IRequestHandler<DeleteReactionCommand, ResponseDto>
 {
     private readonly IReactionRepo _reactionRepo = reactionRepo;
-    
-    private readonly ICommentRepo _commentRepo = commentRepo;
-    
-    private readonly IReplyRepo _replyRepo = replyRepo;
-    
-    private readonly IBlogRepo _blogRepo = blogRepo;
-    
+    private readonly IRabbitMqProducer _rabbitMqProducer = rabbitMqProducer;
+
     public async Task<ResponseDto> Handle(DeleteReactionCommand request, CancellationToken cancellationToken)
     {
         try
         {
-            // fetch reaction in db
-            var reaction = await _reactionRepo.GetByIdAsync(c => c.ReactionId == request.ReactionId, r => new
-            {
-                r.ReplyId,
-                r.BlogId,
-                r.CommentId
-            });
-            if (reaction == null) return ResponseDto.NotFound("Reaction not found");
+            var (reactionId, entityId, entityType) = await GetReactionAsync(request);
+            if (reactionId == null) return ResponseDto.NotFound("Reaction not found");
 
-            // delete reaction
-            var isSucceed = await _reactionRepo.DeleteAsync(request.ReactionId);
-            if(!isSucceed) return ResponseDto.InternalError("Failed to delete reaction.");
-            
-            // update reaction count
-            if (reaction.CommentId.HasValue)
-            {
-                await _commentRepo.UpdateFieldsAsync(c => c.CommentId == reaction.CommentId.Value,
-                    c => c.SetProperty(cc => cc.LikesCount, cc => cc.LikesCount - 1));
-            }
-            else if (reaction.BlogId.HasValue)
-            {
-                await _blogRepo.UpdateFieldsAsync(b => b.BlogId == reaction.BlogId.Value,
-                    b => b.SetProperty(bl => bl.ReactionsCount, bl => bl.ReactionsCount - 1));
-            }
-            else if (reaction.ReplyId.HasValue)
-            {
-                await _replyRepo.UpdateFieldsAsync(r => r.ReplyId == reaction.ReplyId.Value,
-                    r => r.SetProperty(rr => rr.LikesCount, rr => rr.LikesCount - 1));
-            }
-            
-            return ResponseDto.DeleteSuccess(null, "Reaction deleted successfully!");
+            // Delete reaction
+            var isSucceed = await _reactionRepo.DeleteAsync(reactionId.Value);
+            if (!isSucceed) return ResponseDto.InternalError("Failed to delete reaction.");
+
+            // Publish event
+            await _rabbitMqProducer.SendAsync(new ReactionDeleteEvent(entityId!.Value, entityType), "content.reaction.deleted", cancellationToken);
+
+            return ResponseDto.DeleteSuccess("Reaction deleted successfully!");
         }
         catch (Exception e)
         {
+            Console.WriteLine($"[DeleteReaction] ERROR: {e.Message}\n{e.StackTrace}");
             return ResponseDto.InternalError(e.Message);
         }
+    }
+
+    private async Task<(int? reactionId, int? entityId, string entityType)> GetReactionAsync(DeleteReactionCommand request)
+    {
+        return request.EntityType.ToLower() switch
+        {
+            "comment" => await GetReactionDetails(r => r.CommentId == request.EntityId && r.CyclistId == request.UserRequestId, "comment"),
+            "blog" => await GetReactionDetails(r => r.BlogId == request.EntityId && r.CyclistId == request.UserRequestId, "blog"),
+            "reply" => await GetReactionDetails(r => r.ReplyId == request.EntityId && r.CyclistId == request.UserRequestId, "reply"),
+            _ => (null, null, request.EntityType)
+        };
+    }
+
+    private async Task<(int? reactionId, int? entityId, string entityType)> GetReactionDetails(
+        Expression<Func<Reaction, bool>> predicate, string entityType)
+    {
+        var reaction = await _reactionRepo.GetByIdAsync(predicate, r => new { r.ReactionId, EntityId = r.CommentId ?? r.BlogId ?? r.ReplyId });
+        return reaction != null ? (reaction.ReactionId, reaction.EntityId, entityType) : (null, null, entityType);
     }
 }

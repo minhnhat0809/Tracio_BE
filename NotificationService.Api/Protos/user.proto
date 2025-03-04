@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package userservice;
+
+service UserService {
+  rpc IsUserValid (IsUserValidRequest) returns (IsUserValidResponse);
+}
+
+message IsUserValidRequest {
+  int32 user_id = 1;
+}
+
+message IsUserValidResponse {
+  bool is_valid = 1;
+}

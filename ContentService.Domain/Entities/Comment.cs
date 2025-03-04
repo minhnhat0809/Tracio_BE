@@ -19,17 +19,13 @@ public partial class Comment
 
     public DateTime CreatedAt { get; set; }
 
-    public DateTime? UpdatedAt { get; set; }
-
     public DateTime? DeletedAt { get; set; }
 
-    public bool? IsEdited { get; set; }
+    public int LikesCount { get; set; }
 
-    public int? LikesCount { get; set; }
+    public int RepliesCount { get; set; }
 
-    public int? RepliesCount { get; set; }
-
-    public bool? IsDeleted { get; set; }
+    public bool IsDeleted { get; set; }
 
     public virtual Blog Blog { get; set; } = null!;
 

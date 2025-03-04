@@ -29,11 +29,7 @@ public partial class TracioContentDbContext : DbContext
     public virtual DbSet<Reply> Replies { get; set; }
 
     public virtual DbSet<UserBlogFollowerOnly> UserBlogFollowerOnlies { get; set; }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseMySql("server=localhost;database=tracio_content;user=root;password=N@hat892003.", Microsoft.EntityFrameworkCore.ServerVersion.Parse("9.2.0-mysql"));
-
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
@@ -44,19 +40,18 @@ public partial class TracioContentDbContext : DbContext
         {
             entity.HasKey(e => e.BlogId).HasName("PRIMARY");
 
-            entity.ToTable("blog");
+            entity
+                .ToTable("blog")
+                .UseCollation("utf8mb4_unicode_ci");
 
             entity.HasIndex(e => e.CategoryId, "fk_blog_category");
 
             entity.Property(e => e.BlogId).HasColumnName("blog_id");
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
-            entity.Property(e => e.CommentsCount)
-                .HasDefaultValueSql("'0'")
-                .HasColumnName("comments_count");
+            entity.Property(e => e.CommentsCount).HasColumnName("comments_count");
             entity.Property(e => e.Content)
                 .HasMaxLength(1000)
-                .HasColumnName("content")
-                .UseCollation("utf8mb4_unicode_ci");
+                .HasColumnName("content");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
@@ -67,12 +62,9 @@ public partial class TracioContentDbContext : DbContext
             entity.Property(e => e.CreatorId).HasColumnName("creator_id");
             entity.Property(e => e.CreatorName)
                 .HasMaxLength(255)
-                .HasColumnName("creator_name")
-                .UseCollation("utf8mb4_unicode_ci");
+                .HasColumnName("creator_name");
             entity.Property(e => e.PrivacySetting).HasColumnName("privacy_setting");
-            entity.Property(e => e.ReactionsCount)
-                .HasDefaultValueSql("'0'")
-                .HasColumnName("reactions_count");
+            entity.Property(e => e.ReactionsCount).HasColumnName("reactions_count");
             entity.Property(e => e.Status).HasColumnName("status");
             entity.Property(e => e.UpdatedAt)
                 .ValueGeneratedOnAddOrUpdate()
@@ -98,9 +90,6 @@ public partial class TracioContentDbContext : DbContext
 
             entity.Property(e => e.BookmarkId).HasColumnName("bookmark_id");
             entity.Property(e => e.BlogId).HasColumnName("blog_id");
-            entity.Property(e => e.CollectionName)
-                .HasMaxLength(255)
-                .HasColumnName("collection_name");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
@@ -143,7 +132,9 @@ public partial class TracioContentDbContext : DbContext
         {
             entity.HasKey(e => e.CommentId).HasName("PRIMARY");
 
-            entity.ToTable("comment");
+            entity
+                .ToTable("comment")
+                .UseCollation("utf8mb4_unicode_ci");
 
             entity.HasIndex(e => e.BlogId, "fk_comment_blog");
 
@@ -151,8 +142,7 @@ public partial class TracioContentDbContext : DbContext
             entity.Property(e => e.BlogId).HasColumnName("blog_id");
             entity.Property(e => e.Content)
                 .HasMaxLength(1000)
-                .HasColumnName("content")
-                .UseCollation("utf8mb4_unicode_ci");
+                .HasColumnName("content");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
@@ -163,30 +153,15 @@ public partial class TracioContentDbContext : DbContext
             entity.Property(e => e.CyclistId).HasColumnName("cyclist_id");
             entity.Property(e => e.CyclistName)
                 .HasMaxLength(255)
-                .HasColumnName("cyclist_name")
-                .UseCollation("utf8mb4_unicode_ci");
+                .HasColumnName("cyclist_name");
             entity.Property(e => e.DeletedAt)
                 .ValueGeneratedOnAddOrUpdate()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("deleted_at");
-            entity.Property(e => e.IsDeleted)
-                .HasDefaultValueSql("'0'")
-                .HasColumnName("is_deleted");
-            entity.Property(e => e.IsEdited)
-                .HasDefaultValueSql("'0'")
-                .HasColumnName("is_edited");
-            entity.Property(e => e.LikesCount)
-                .HasDefaultValueSql("'0'")
-                .HasColumnName("likes_count");
-            entity.Property(e => e.RepliesCount)
-                .HasDefaultValueSql("'0'")
-                .HasColumnName("replies_count");
-            entity.Property(e => e.UpdatedAt)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("datetime")
-                .HasColumnName("updated_at");
+            entity.Property(e => e.IsDeleted).HasColumnName("is_deleted");
+            entity.Property(e => e.LikesCount).HasColumnName("likes_count");
+            entity.Property(e => e.RepliesCount).HasColumnName("replies_count");
 
             entity.HasOne(d => d.Blog).WithMany(p => p.Comments)
                 .HasForeignKey(d => d.BlogId)
@@ -238,7 +213,9 @@ public partial class TracioContentDbContext : DbContext
         {
             entity.HasKey(e => e.ReactionId).HasName("PRIMARY");
 
-            entity.ToTable("reaction");
+            entity
+                .ToTable("reaction")
+                .UseCollation("utf8mb4_unicode_ci");
 
             entity.HasIndex(e => e.BlogId, "fk_reaction_blog");
 
@@ -259,8 +236,7 @@ public partial class TracioContentDbContext : DbContext
             entity.Property(e => e.CyclistId).HasColumnName("cyclist_id");
             entity.Property(e => e.CyclistName)
                 .HasMaxLength(255)
-                .HasColumnName("cyclist_name")
-                .UseCollation("utf8mb4_unicode_ci");
+                .HasColumnName("cyclist_name");
             entity.Property(e => e.ReplyId).HasColumnName("reply_id");
 
             entity.HasOne(d => d.Blog).WithMany(p => p.Reactions)
@@ -283,7 +259,9 @@ public partial class TracioContentDbContext : DbContext
         {
             entity.HasKey(e => e.ReplyId).HasName("PRIMARY");
 
-            entity.ToTable("reply");
+            entity
+                .ToTable("reply")
+                .UseCollation("utf8mb4_unicode_ci");
 
             entity.HasIndex(e => e.CommentId, "fk_reply_comment");
 
@@ -291,8 +269,7 @@ public partial class TracioContentDbContext : DbContext
             entity.Property(e => e.CommentId).HasColumnName("comment_id");
             entity.Property(e => e.Content)
                 .HasMaxLength(1000)
-                .HasColumnName("content")
-                .UseCollation("utf8mb4_unicode_ci");
+                .HasColumnName("content");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
@@ -303,27 +280,14 @@ public partial class TracioContentDbContext : DbContext
             entity.Property(e => e.CyclistId).HasColumnName("cyclist_id");
             entity.Property(e => e.CyclistName)
                 .HasMaxLength(255)
-                .HasColumnName("cyclist_name")
-                .UseCollation("utf8mb4_unicode_ci");
+                .HasColumnName("cyclist_name");
             entity.Property(e => e.DeletedAt)
                 .ValueGeneratedOnAddOrUpdate()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("deleted_at");
-            entity.Property(e => e.IsDeleted)
-                .HasDefaultValueSql("'0'")
-                .HasColumnName("is_deleted");
-            entity.Property(e => e.IsEdited)
-                .HasDefaultValueSql("'0'")
-                .HasColumnName("is_edited");
-            entity.Property(e => e.LikesCount)
-                .HasDefaultValueSql("'0'")
-                .HasColumnName("likes_count");
-            entity.Property(e => e.UpdatedAt)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("datetime")
-                .HasColumnName("updated_at");
+            entity.Property(e => e.IsDeleted).HasColumnName("is_deleted");
+            entity.Property(e => e.LikesCount).HasColumnName("likes_count");
 
             entity.HasOne(d => d.Comment).WithMany(p => p.Replies)
                 .HasForeignKey(d => d.CommentId)

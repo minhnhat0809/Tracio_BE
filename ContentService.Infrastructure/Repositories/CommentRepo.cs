@@ -1,28 +1,46 @@
-﻿using ContentService.Application.Interfaces;
-using ContentService.Domain;
+﻿using System.Data;
+using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
 using ContentService.Infrastructure.Contexts;
-using Microsoft.EntityFrameworkCore;
+using Dapper;
+using Microsoft.Extensions.Configuration;
+using MySqlConnector;
 
 namespace ContentService.Infrastructure.Repositories;
 
-public class CommentRepo(TracioContentDbContext context) : RepositoryBase<Comment>(context),ICommentRepo
+public class CommentRepo(TracioContentDbContext context, IConfiguration configuration) : RepositoryBase<Comment>(context),ICommentRepo
 {
-    private readonly TracioContentDbContext _context = context;
-
-    public async Task<bool> DeleteComment(int commentId)
+    public async Task<(int BlogId, int CommentIndex)> GetCommentIndex(int commentId)
     {
-        try
-        {
-            var updatedRows = await _context.Comments
-                .Where(c => c.CommentId == commentId)
-                .ExecuteUpdateAsync(b => b.SetProperty(x => x.IsDeleted, true));
+        var connectionString = configuration.GetConnectionString("tracio_content_db");
 
-            return updatedRows > 0;
-        }
-        catch (Exception e)
+        await using var connection = new MySqlConnection(connectionString);
+
+        if (connection.State == ConnectionState.Closed)
         {
-            throw new Exception(e.Message);
+            await connection.OpenAsync();
         }
+
+        const string sql = """
+                             WITH OrderedComments AS (
+                                 SELECT 
+                                     comment_id, 
+                                     blog_id,
+                                     ROW_NUMBER() OVER (ORDER BY created_at) AS RowNum
+                                 FROM comment 
+                                 WHERE blog_id = (SELECT blog_id FROM comment WHERE comment_id = @CommentId)
+                             )
+                             SELECT blog_id AS BlogId, RowNum - 1 AS CommentIndex 
+                             FROM OrderedComments 
+                             WHERE comment_id = @CommentId;
+                           """;
+
+        var parameters = new { CommentId = commentId };
+
+        var result = await connection.QueryFirstOrDefaultAsync<(int BlogId, int CommentIndex)>(sql, parameters);
+
+        return result == default ? (-1, -1) : result; // Return (-1, -1) if not found
     }
+
+
 }

@@ -1,11 +1,14 @@
 ﻿using AutoMapper;
+using ContentService.Application.DTOs.ReactionDtos.Message;
 using ContentService.Application.DTOs.ReactionDtos.ViewDtos;
 using ContentService.Application.DTOs.UserDtos.View;
+using ContentService.Application.Hubs;
 using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
-using ContentService.Domain.Events;
 using MediatR;
+using Microsoft.AspNetCore.SignalR;
 using Shared.Dtos;
+using Shared.Dtos.Messages;
 
 namespace ContentService.Application.Commands.Handlers;
 
@@ -16,7 +19,8 @@ public class CreateReactionCommandHandler(
     IReplyRepo replyRepo,
     IRabbitMqProducer rabbitMqProducer,
     IUserService userService,
-    IMapper mapper) 
+    IMapper mapper,
+    IHubContext<ContentHub> hubContext) 
     : IRequestHandler<CreateReactionCommand, ResponseDto>
 {
     private readonly IBlogRepo _blogRepo = blogRepo;
@@ -29,6 +33,10 @@ public class CreateReactionCommandHandler(
     
     private readonly IMapper _mapper = mapper;
     
+    private readonly IHubContext<ContentHub> _hubContext = hubContext;
+
+    private readonly IRabbitMqProducer _rabbitMqProducer = rabbitMqProducer;
+    
     public async Task<ResponseDto> Handle(CreateReactionCommand request, CancellationToken cancellationToken)
     {
         try
@@ -39,9 +47,9 @@ public class CreateReactionCommandHandler(
             
             return request.EntityType.ToLower() switch
             {
-                "reply" => await HandleReplyReaction(request, userDto),
-                "blog" => await HandleBlogReaction(request, userDto),
-                "comment" => await HandleCommentReaction(request, userDto),
+                "reply" => await HandleReplyReaction(request, userDto, cancellationToken),
+                "blog" => await HandleBlogReaction(request, userDto, cancellationToken),
+                "comment" => await HandleCommentReaction(request, userDto, cancellationToken),
                 _ => ResponseDto.BadRequest("Invalid entity type. Allowed values: reply, blog, comment.")
             };
         }
@@ -51,10 +59,16 @@ public class CreateReactionCommandHandler(
         }
     }
 
-    private async Task<ResponseDto> HandleReplyReaction(CreateReactionCommand request, UserDto userDto)
+    private async Task<ResponseDto> HandleReplyReaction(CreateReactionCommand request, UserDto userDto, CancellationToken cancellationToken)
     {
-        var isReplyExisted = await _replyRepo.ExistsAsync(r => r.ReplyId == request.EntityId);
-        if (!isReplyExisted) return ResponseDto.NotFound("Reply not found");
+        var blogAndCommentAndCyclistId = await _replyRepo.GetByIdAsync(r => r.ReplyId == request.EntityId, r => 
+            new
+            {
+                r.CommentId,
+                r.CyclistId,
+                r.Comment.BlogId
+            });
+        if (blogAndCommentAndCyclistId == null) return ResponseDto.NotFound("Reply not found");
 
         var reaction = new Reaction
         {
@@ -67,22 +81,47 @@ public class CreateReactionCommandHandler(
 
         var isSucceed = await reactionRepo.CreateAsync(reaction);
         if (!isSucceed) return ResponseDto.InternalError("Failed to create reaction.");
-
-        await _replyRepo.UpdateFieldsAsync(r =>  r.ReplyId == request.EntityId,
-            r => r.SetProperty(rr => rr.LikesCount, rr => rr.LikesCount + 1));
         
         var reactionDto = _mapper.Map<ReactionDto>(reaction);
+        
+        // publish new reaction to reply into signalR
+        await _hubContext.Clients.Group($"Blog-{blogAndCommentAndCyclistId.BlogId}")
+            .SendAsync("ReceiveNewReplyReaction", new
+            {
+                blogAndCommentAndCyclistId.BlogId,
+                blogAndCommentAndCyclistId.CommentId,
+                ReplyId = request.EntityId
+            }, cancellationToken);
 
-        // publish for notification
-        //await rabbitMqProducer.PublishAsync(new ReactionToReplyEvent(request.EntityId), "notification_queue");
+        await _hubContext.Clients.Group($"Comment-{blogAndCommentAndCyclistId.CommentId}")
+            .SendAsync("ReceiveNewReplyReaction", new
+            {
+                blogAndCommentAndCyclistId.CommentId,
+                ReplyId = request.EntityId
+            }, cancellationToken);
+        
+        // publish reaction create event
+        await _rabbitMqProducer.SendAsync(new ReactionCreateEvent(request.EntityId, request.EntityType), "content.reaction.created", cancellationToken);
+        
+        // publish notification event
+        await _rabbitMqProducer.PublishAsync(new NotificationEvent(
+            recipientId: blogAndCommentAndCyclistId.CyclistId,
+            senderId: request.CyclistId,
+            userDto.Username,
+            userDto.Avatar,
+            $"{userDto.Username} likes your reply",
+            request.EntityId,
+            "Reply",
+            reaction.CreatedAt
+        ), cancellationToken: cancellationToken);
 
         return ResponseDto.CreateSuccess(reactionDto, "Reaction created successfully!");
     }
 
-    private async Task<ResponseDto> HandleBlogReaction(CreateReactionCommand request, UserDto userDto)
+    private async Task<ResponseDto> HandleBlogReaction(CreateReactionCommand request, UserDto userDto, CancellationToken cancellationToken)
     {
-        var isBlogExisted = await _blogRepo.ExistsAsync(b => b.BlogId == request.EntityId);
-        if (!isBlogExisted) return ResponseDto.NotFound("Blog not found");
+        var blogAndCyclist = await _blogRepo.GetByIdAsync(b => b.BlogId == request.EntityId, b => new{b.BlogId, CyclistId = b.BlogId});
+        if (blogAndCyclist  == null) return ResponseDto.NotFound("Blog not found");
 
         var reaction = new Reaction
         {
@@ -95,42 +134,81 @@ public class CreateReactionCommandHandler(
 
         var isSucceed = await reactionRepo.CreateAsync(reaction);
         if (!isSucceed) return ResponseDto.InternalError("Failed to create reaction.");
-
-        await _blogRepo.UpdateFieldsAsync(b => b.BlogId == request.EntityId,
-            b => b.SetProperty(bb => bb.ReactionsCount, bb => bb.ReactionsCount + 1));
         
         var reactionDto = _mapper.Map<ReactionDto>(reaction);
         
-        // publish for notification
-        //await rabbitMqProducer.PublishAsync(new ReactionToBlogEvent(request.EntityId), "notification_queue");
+        // publish new reaction to blog into signalR
+        await _hubContext.Clients.Groups($"Blog-{request.EntityId}", "BlogUpdates")
+            .SendAsync("ReceiveNewBlogReaction", new
+            {
+                BlogId = request.EntityId
+            }, cancellationToken: cancellationToken);
+        
+        // publish reaction create event
+        await _rabbitMqProducer.SendAsync(new ReactionCreateEvent(request.EntityId, request.EntityType), "content.reaction.created", cancellationToken);
+        
+        // publish notification
+        await _rabbitMqProducer.PublishAsync(new NotificationEvent(
+            recipientId: blogAndCyclist.CyclistId,
+            senderId: request.CyclistId,
+            userDto.Username,
+            userDto.Avatar,
+            $"{userDto.Username} likes your blog",
+            request.EntityId,
+            "Blog",
+            reaction.CreatedAt
+        ), cancellationToken: cancellationToken);
 
         return ResponseDto.CreateSuccess(reactionDto, "Reaction created successfully!");
     }
 
-    private async Task<ResponseDto> HandleCommentReaction(CreateReactionCommand request, UserDto userDto)
+    private async Task<ResponseDto> HandleCommentReaction(CreateReactionCommand request, UserDto userDto, CancellationToken cancellationToken)
     {
-        var isCommentExisted= await _commentRepo.ExistsAsync(c => c.CommentId == request.EntityId);
-        if (!isCommentExisted) return ResponseDto.NotFound("Comment not found");
+        var blogAndCyclist= await _commentRepo.GetByIdAsync(c => c.CommentId == request.EntityId, c => new{c.BlogId, c.CyclistId});
+        if (blogAndCyclist == null) return ResponseDto.NotFound("Comment not found");
 
         var reaction = new Reaction
         {
             CyclistId = request.CyclistId,
             CyclistName = userDto.Username,
             CyclistAvatar = userDto.Avatar,
-            ReplyId = request.EntityId,
+            CommentId = request.EntityId,
             CreatedAt = DateTime.UtcNow
         };
 
         var isSucceed = await reactionRepo.CreateAsync(reaction);
         if (!isSucceed) return ResponseDto.InternalError("Failed to create reaction.");
-
-        await _commentRepo.UpdateFieldsAsync(c => c.CommentId == request.EntityId,
-            c => c.SetProperty(cc => cc.LikesCount, cc => cc.LikesCount + 1));
         
         var reactionDto = _mapper.Map<ReactionDto>(reaction);
         
-        // publish for notification
-        //await rabbitMqProducer.PublishAsync(new ReactionToCommentEvent(request.EntityId), "notification_queue");
+        // publish new reaction to comment into signalR
+        await _hubContext.Clients.Group($"Blog-{blogAndCyclist.CyclistId}")
+            .SendAsync("ReceiveNewCommentReaction", new
+            {
+                blogAndCyclist.BlogId,
+                CommentId = request.EntityId
+            }, cancellationToken: cancellationToken);
+        
+        await _hubContext.Clients.Group($"Comment-{request.EntityId}")
+            .SendAsync("ReceiveNewCommentReaction", new
+            {
+                CommentId = request.EntityId
+            }, cancellationToken: cancellationToken);
+        
+        // publish reaction create event
+        await _rabbitMqProducer.SendAsync(new ReactionCreateEvent(request.EntityId, request.EntityType), "content.reaction.created", cancellationToken);
+        
+        // publish notification
+        await _rabbitMqProducer.PublishAsync(new NotificationEvent(
+            recipientId: blogAndCyclist.CyclistId,
+            senderId: request.CyclistId,
+            userDto.Username,
+            userDto.Avatar,
+            $"{userDto.Username} likes your comment",
+            request.EntityId,
+            "Comment",
+            reaction.CreatedAt
+        ), cancellationToken: cancellationToken);
 
         return ResponseDto.CreateSuccess(reactionDto, "Reaction created successfully!");
     }

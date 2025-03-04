@@ -1,44 +1,37 @@
-﻿using ContentService.Application.Interfaces;
+﻿using ContentService.Application.DTOs.ReplyDtos.Message;
+using ContentService.Application.Interfaces;
 using MediatR;
 using Shared.Dtos;
 
 namespace ContentService.Application.Commands.Handlers;
 
-public class DeleteReplyCommandHandler(IReplyRepo replyRepo, ICommentRepo commentRepo, IUnitOfWork unitOfWork) : IRequestHandler<DeleteReplyCommand, ResponseDto>
+public class DeleteReplyCommandHandler(IReplyRepo replyRepo, IRabbitMqProducer rabbitMqProducer) : IRequestHandler<DeleteReplyCommand, ResponseDto>
 {
     private readonly IReplyRepo _replyRepo = replyRepo;
     
-    private readonly ICommentRepo _commentRepo = commentRepo;
-    
-    private readonly IUnitOfWork _unitOfWork = unitOfWork;
+    private readonly IRabbitMqProducer _rabbitMqProducer = rabbitMqProducer;
     
     public async Task<ResponseDto> Handle(DeleteReplyCommand request, CancellationToken cancellationToken)
     {
         try
         {
-            await _unitOfWork.BeginTransactionAsync();
-            
             // fetch comment in db
             var commentIdOfReply = await _replyRepo.GetByIdAsync(r => r.ReplyId == request.ReplyId, r => r.CommentId);
             if (commentIdOfReply <= 0) return ResponseDto.NotFound("Reply not found");
 
-            // delete comment
-            var isSucceed = await _replyRepo.DeleteReply(request.ReplyId);
+            // delete reply
+            var isSucceed = await _replyRepo.UpdateFieldsAsync(r => r.ReplyId == request.ReplyId,
+                r => r.SetProperty(rr => rr.IsDeleted, true));
 
             if (!isSucceed) ResponseDto.InternalError("Failed to delete reply");
             
             // decrease the replies of comment
-            await _commentRepo.UpdateFieldsAsync(c => c.CommentId == commentIdOfReply,
-                c => c.SetProperty(cc => cc.RepliesCount, cc => cc.RepliesCount - 1));
-
-            await _unitOfWork.CommitTransactionAsync();
+            await _rabbitMqProducer.SendAsync(new ReplyDeleteEvent(commentIdOfReply), "content.reply.deleted", cancellationToken);
             
-            return ResponseDto.DeleteSuccess(null, "Reply deleted successfully!");
+            return ResponseDto.DeleteSuccess("Reply deleted successfully!");
         }
         catch (Exception e)
         {
-            await _unitOfWork.RollbackTransactionAsync();
-            
             return ResponseDto.InternalError(e.Message);
         }
     }

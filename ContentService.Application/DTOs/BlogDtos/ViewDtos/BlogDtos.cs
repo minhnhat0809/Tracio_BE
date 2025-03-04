@@ -15,7 +15,7 @@ public class BlogDtos
 
     public bool IsReacted { get; set; }
     
-    public int ReactionId { get; set; }
+    public bool IsBookmarked { get; set; }
 
     public string Content { get; set; } = null!;
     

@@ -18,7 +18,8 @@ namespace ContentService.Api.Controllers
         [Authorize]
         public async Task<IActionResult> GetBlogs(
             [FromQuery] int? userId,
-            [FromQuery] string? sortBy = "CreatedAt",
+            [FromQuery] int? categoryId,
+            [FromQuery] string sortBy = "CreatedAt",
             [FromQuery] bool ascending = true,
             [FromQuery] int pageSize = 5,
             [FromQuery] int pageNumber = 1)
@@ -28,14 +29,7 @@ namespace ContentService.Api.Controllers
             var userBrowsingId = int.Parse(value);
             
             var query = new GetBlogsQuery
-            {
-                UserRequestId = userBrowsingId,
-                UserId = userId,
-                SortBy = sortBy,
-                Ascending = ascending,
-                PageSize = pageSize,
-                PageNumber = pageNumber
-            };
+            (userBrowsingId, userId, categoryId, sortBy, ascending, pageSize, pageNumber);
 
             var result = await _mediator.Send(query);
             return StatusCode(result.StatusCode, result);
@@ -50,21 +44,36 @@ namespace ContentService.Api.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
+        [HttpGet("/bookmarks")]
+        [Authorize]
+        public async Task<IActionResult> GetBookmarks(
+            [FromQuery] int pageSize = 5,
+            [FromQuery] int pageNumber = 1
+            )
+        {
+            var value = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "custom_id")?.Value;
+            if (value == null) return StatusCode(StatusCodes.Status401Unauthorized);
+            var userBrowsingId = int.Parse(value);
+            
+            var result = await _mediator.Send(new GetBookmarksQuery(userBrowsingId, pageSize, pageNumber));
+            
+            return StatusCode(result.StatusCode, result);
+        }
+
         [HttpGet("{blogId:int}/comments")]
         public async Task<IActionResult> GetCommentsByBlogId(
             [FromRoute] int blogId,
-            [FromQuery] int pageSize = 5,
+            [FromQuery] int? commentId,
+            [FromQuery] int pageSize = 10,
             [FromQuery] int pageNumber = 1,
-            [FromQuery] bool ascending = true
+            [FromQuery] bool ascending = false
             )
         {
-            var query = new GetCommentsByBlogQuery
-            {
-                BlogId = blogId,
-                PageSize = pageSize,
-                PageNumber = pageNumber,
-                IsAscending = ascending
-            };
+            var value = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "custom_id")?.Value;
+            if (value == null) return StatusCode(StatusCodes.Status401Unauthorized);
+            var userBrowsingId = int.Parse(value);
+            
+            var query = new GetCommentsByBlogQuery(userBrowsingId, blogId, commentId, pageNumber, pageSize, ascending);
             
             var result = await _mediator.Send(query);
             
@@ -73,13 +82,12 @@ namespace ContentService.Api.Controllers
         
         [HttpGet("{blogId:int}/reactions")]
         public async Task<IActionResult> GetReactionsByBlogId(
-            [FromRoute] int blogId
+            [FromRoute] int blogId,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 20
         )
         {
-            var query = new GetReactionsByBlogQuery()
-            {
-                BlogId = blogId
-            };
+            var query = new GetReactionsByBlogQuery(blogId, pageNumber, pageSize);
             
             var result = await _mediator.Send(query);
             
@@ -102,12 +110,12 @@ namespace ContentService.Api.Controllers
         [HttpPut("{blogId:int}")]
         public async Task<IActionResult> UpdateBlog(
             [FromRoute] int blogId,
-            [FromBody] UpdateBlogCommand updateCommand
+            [FromBody] BlogUpdateDto blogUpdateDto
         )
         {
-            var result = await _mediator.Send(updateCommand);
+            var result = await _mediator.Send(new UpdateBlogCommand(blogId, blogUpdateDto));
 
-        return StatusCode(result.StatusCode, result);
+            return StatusCode(result.StatusCode, result);
         }
         
         [HttpDelete("{blogId:int}")]
@@ -117,7 +125,7 @@ namespace ContentService.Api.Controllers
         {
             var result = await _mediator.Send(new DeleteBlogCommand(blogId));
 
-            return StatusCode(result.StatusCode, result);
+            return StatusCode(result.StatusCode);
         }
 
         [HttpPost("bookmarks")]
@@ -129,6 +137,19 @@ namespace ContentService.Api.Controllers
             var userBrowsingId = int.Parse(value);
             
             var result = await _mediator.Send(new CreateBookmarkCommand(userBrowsingId, bookmarkCreateDto));
+            
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpDelete("bookmarks/{blogId:int}")]
+        [Authorize]
+        public async Task<IActionResult> UnBookmarkBlog([FromRoute] int blogId)
+        {
+            var value = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "custom_id")?.Value;
+            if (value == null) return StatusCode(StatusCodes.Status401Unauthorized);
+            var userBrowsingId = int.Parse(value);
+            
+            var result = await _mediator.Send(new DeleteBookmarkCommand(blogId, userBrowsingId));
             
             return StatusCode(result.StatusCode, result);
         }

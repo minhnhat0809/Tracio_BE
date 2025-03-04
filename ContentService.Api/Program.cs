@@ -1,15 +1,16 @@
 using ContentService.Api.Extensions;
+using ContentService.Application.Hubs;
 using ContentService.Application.Services;
 using ContentService.Infrastructure;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
+using MassTransit;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Load Firebase Admin SDK Credentials
 var secret = new GetSecrets();
 var firebaseCredentials = await secret.GetFireBaseCredentials();
-
-Console.WriteLine(firebaseCredentials);
 
 FirebaseApp.Create(new AppOptions { Credential = GoogleCredential.FromJson(firebaseCredentials) });
 
@@ -28,6 +29,7 @@ builder.Services.ConfigureAwsServices(builder.Configuration);
 builder.Services.ConfigureMediatr();
 builder.Services.ConfigureMapper();
 builder.Services.ConfigureAzure(builder.Configuration);
+builder.Services.ConfigureHub();
 
 var app = builder.Build();
 
@@ -38,10 +40,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+var busControl = app.Services.GetRequiredService<IBusControl>();
+await busControl.StartAsync();
+
+app.UseWebSockets();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseCors("CORSPolicy");
+app.MapHub<ContentHub>("content-hub");
 app.MapControllers();
 app.Run();
 

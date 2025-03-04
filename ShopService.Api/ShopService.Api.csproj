@@ -8,9 +8,24 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.301" />
+        <PackageReference Include="FirebaseAdmin" Version="3.1.0" />
+        <PackageReference Include="Grpc.AspNetCore" Version="2.67.0" />
+        <PackageReference Include="Grpc.Net.Client" Version="2.67.0" />
+        <PackageReference Include="Grpc.Tools" Version="2.69.0">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="MassTransit.RabbitMQ" Version="8.3.6" />
         <PackageReference Include="MediatR" Version="12.4.1" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.10"/>
+        <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Protobuf Include="Protos/user.proto" GrpcServices="Client" />
     </ItemGroup>
 
     <ItemGroup>
@@ -21,6 +36,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\ShopService.Application\ShopService.Application.csproj" />
+      <ProjectReference Include="..\ShopService.Infrastructure\ShopService.Infrastructure.csproj" />
     </ItemGroup>
 
 </Project>

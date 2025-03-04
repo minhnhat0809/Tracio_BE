@@ -21,9 +21,9 @@ public partial class Blog
 
     public DateTime? UpdatedAt { get; set; }
 
-    public int? ReactionsCount { get; set; }
+    public int ReactionsCount { get; set; }
 
-    public int? CommentsCount { get; set; }
+    public int CommentsCount { get; set; }
 
     public sbyte PrivacySetting { get; set; }
 

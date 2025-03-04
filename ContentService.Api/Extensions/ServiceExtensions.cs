@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
-using RabbitMQ.Client;
 using Amazon.S3;
 using ContentService.Application.DTOs;
+using ContentService.Application.DTOs.BlogDtos.Message;
+using ContentService.Application.DTOs.CommentDtos.Message;
+using ContentService.Application.DTOs.ReactionDtos.Message;
+using ContentService.Application.DTOs.ReplyDtos.Message;
 using Microsoft.AspNetCore.Http.Features;
 using ContentService.Application.Interfaces;
 using ContentService.Application.Mappings;
@@ -11,6 +14,12 @@ using ContentService.Application.Services;
 using ContentService.Infrastructure;
 using ContentService.Infrastructure.MessageBroker;
 using ContentService.Infrastructure.MessageBroker.BlogConsumers;
+using ContentService.Infrastructure.MessageBroker.CommentConsumers;
+using ContentService.Infrastructure.MessageBroker.ReactionConsumers;
+using ContentService.Infrastructure.MessageBroker.ReplyConsumers;
+using MassTransit;
+using RabbitMQ.Client;
+using Shared.Dtos.Messages;
 using Userservice;
 
 namespace ContentService.Api.Extensions;
@@ -127,25 +136,123 @@ public static class ServiceExtensions
     // 🔹 RabbitMQ Configuration
     public static IServiceCollection ConfigureRabbitMq(this IServiceCollection services)
     {
-        services.AddSingleton<IConnectionFactory>(_ => new ConnectionFactory
+        services.AddScoped<IRabbitMqProducer, RabbitMqProducer>();
+
+        services.AddMassTransit(x =>
         {
-            HostName = "localhost",
-            UserName = "guest",
-            Password = "guest"
+            // ✅ Auto-register all consumers in the assembly
+            x.AddConsumers(typeof(BlogPrivacyUpdatedConsumer).Assembly);
+
+            x.UsingRabbitMq((context, cfg) =>
+            {
+                cfg.Host("rabbitmq://localhost"); // Change to your RabbitMQ settings
+
+                // ✅ Define Fanout Exchanges for Blog Events
+                cfg.Message<BlogPrivacyUpdateEvent>(xx => xx.SetEntityName("blog_privacy_updated_queue"));
+                cfg.Publish<BlogPrivacyUpdateEvent>(xx => xx.ExchangeType = ExchangeType.Fanout);
+
+                cfg.Message<MarkBlogsAsReadEvent>(xx => xx.SetEntityName("mark_blogs_as_read_queue"));
+                cfg.Publish<MarkBlogsAsReadEvent>(xx =>  xx.ExchangeType = ExchangeType.Fanout);
+
+                // ✅ Define Direct Exchange for Content Created Events
+                cfg.Message<CommentCreateEvent>(xx => xx.SetEntityName("content_created_exchange"));
+                cfg.Publish<CommentCreateEvent>(xx => xx.ExchangeType = ExchangeType.Direct);
+            
+                cfg.Message<ReplyCreateEvent>(xx => xx.SetEntityName("content_created_exchange"));
+                cfg.Publish<ReplyCreateEvent>(xx => xx.ExchangeType = ExchangeType.Direct);
+            
+                cfg.Message<ReactionCreateEvent>(xx => xx.SetEntityName("content_created_exchange"));
+                cfg.Publish<ReactionCreateEvent>(xx => xx.ExchangeType = ExchangeType.Direct);
+
+                // ✅ Define Direct Exchange for Content Deleted Events
+                cfg.Message<CommentDeleteEvent>(xx => xx.SetEntityName("content_deleted_exchange"));
+                cfg.Publish<CommentDeleteEvent>(xx => xx.ExchangeType = ExchangeType.Direct);
+            
+                cfg.Message<ReplyDeleteEvent>(xx => xx.SetEntityName("content_deleted_exchange"));
+                cfg.Publish<ReplyDeleteEvent>(xx => xx.ExchangeType = ExchangeType.Direct);
+            
+                cfg.Message<ReactionDeleteEvent>(xx => xx.SetEntityName("content_deleted_exchange"));
+                cfg.Publish<ReactionDeleteEvent>(xx => xx.ExchangeType = ExchangeType.Direct);
+            
+                // ✅ Define Fanout Exchange for Notification Events
+                cfg.Message<NotificationEvent>(xx => xx.SetEntityName("notification_content_exchange"));
+                cfg.Publish<NotificationEvent>(xx => xx.ExchangeType = ExchangeType.Fanout);
+
+                // ✅ Blog Consumers - Bind to Fanout Exchange
+                cfg.ReceiveEndpoint("blog_privacy_updated_queue", e =>
+                {
+                    e.ConfigureConsumer<BlogPrivacyUpdatedConsumer>(context);
+                });
+
+                cfg.ReceiveEndpoint("mark_blogs_as_read_queue", e =>
+                {
+                    e.ConfigureConsumer<MarkBlogsAsReadConsumer>(context);
+                });
+
+                // ✅ One Queue for all Content Created Events
+                cfg.ReceiveEndpoint("content_created_queue", e =>
+                {
+                    e.ConfigureConsumer<CommentCreatedConsumer>(context);
+                    e.ConfigureConsumer<ReactionCreatedConsumer>(context);
+                    e.ConfigureConsumer<ReplyCreatedConsumer>(context);
+                    e.Bind("content_created_exchange", xx =>
+                    {
+                        xx.ExchangeType = ExchangeType.Direct;
+                        xx.RoutingKey = "content.comment.created";
+                    });
+                    e.Bind("content_created_exchange", xx =>
+                    {
+                        xx.ExchangeType = ExchangeType.Direct;
+                        xx.RoutingKey = "content.reaction.created";
+                    });
+                    e.Bind("content_created_exchange", xx =>
+                    {
+                        xx.ExchangeType = ExchangeType.Direct;
+                        xx.RoutingKey = "content.reply.created";
+                    });
+                });
+
+                // ✅ One Queue for all Content Deleted Events
+                cfg.ReceiveEndpoint("content_deleted_queue", e =>
+                {
+                    e.ConfigureConsumer<CommentDeletedConsumer>(context);
+                    e.ConfigureConsumer<ReactionDeletedConsumer>(context);
+                    e.ConfigureConsumer<ReplyDeletedConsumer>(context);
+                    e.Bind("content_deleted_exchange", xx =>
+                    {
+                        xx.ExchangeType = ExchangeType.Direct;
+                        xx.RoutingKey = "content.comment.deleted";
+                    });
+                    e.Bind("content_deleted_exchange", xx =>
+                    {
+                        xx.ExchangeType = ExchangeType.Direct;
+                        xx.RoutingKey = "content.reaction.deleted";
+                    });
+                    e.Bind("content_deleted_exchange", xx =>
+                    {
+                        xx.ExchangeType = ExchangeType.Direct;
+                        xx.RoutingKey = "content.reply.deleted";
+                    });
+                });
+
+                // ✅ Add Retry Policy (Exponential Backoff)
+                cfg.UseMessageRetry(r => r.Exponential(3, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(30)));
+
+                // ✅ Enable Dead-Letter Queue (DLQ)
+                cfg.UseDelayedRedelivery(r => r.Intervals(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(1)));
         });
+    });
 
-        services.AddSingleton<IRabbitMqProducer, RabbitMqProducer>();
-        services.AddHostedService<MarkBlogsAsReadConsumer>();
+    return services;
+}
 
-        return services;
-    }
 
     // 🔹 gRPC Clients
     public static IServiceCollection ConfigureGrpcClients(this IServiceCollection services)
     {
         services.AddGrpcClient<UserService.UserServiceClient>(o =>
         {
-            o.Address = new Uri("http://localhost:5001"); // Replace with UserService URL
+            o.Address = new Uri("http://localhost:5000"); // Replace with UserService URL
         }).ConfigurePrimaryHttpMessageHandler(() =>
         {
             var handler = new HttpClientHandler();
@@ -185,6 +292,13 @@ public static class ServiceExtensions
             options.MultipartBodyLengthLimit = 104857600; // Example: Set max upload size
         });
 
+        return services;
+    }
+    
+    // 🔹 SignalR hub
+    public static IServiceCollection ConfigureHub(this IServiceCollection services)
+    {
+        services.AddSignalR();
         return services;
     }
 }

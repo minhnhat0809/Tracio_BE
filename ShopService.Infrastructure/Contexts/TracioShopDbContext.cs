@@ -14,357 +14,355 @@ public partial class TracioShopDbContext : DbContext
     {
     }
 
-    public virtual DbSet<Discount> Discounts { get; set; }
+    public virtual DbSet<Booking> Bookings { get; set; }
 
-    public virtual DbSet<Order> Orders { get; set; }
+    public virtual DbSet<BookingDetail> BookingDetails { get; set; }
 
-    public virtual DbSet<OrderDetail> OrderDetails { get; set; }
+    public virtual DbSet<BookingMediaFile> BookingMediaFiles { get; set; }
 
-    public virtual DbSet<Payment> Payments { get; set; }
+    public virtual DbSet<MediaFile> MediaFiles { get; set; }
 
-    public virtual DbSet<Product> Products { get; set; }
+    public virtual DbSet<Reply> Replies { get; set; }
 
-    public virtual DbSet<ProductCategory> ProductCategories { get; set; }
+    public virtual DbSet<Review> Reviews { get; set; }
 
-    public virtual DbSet<ProductDiscount> ProductDiscounts { get; set; }
+    public virtual DbSet<Service> Services { get; set; }
 
-    public virtual DbSet<ProductMedium> ProductMedia { get; set; }
-
-    public virtual DbSet<ProductReview> ProductReviews { get; set; }
-
-    public virtual DbSet<ReviewMediaFile> ReviewMediaFiles { get; set; }
+    public virtual DbSet<ServiceCategory> ServiceCategories { get; set; }
 
     public virtual DbSet<Shop> Shops { get; set; }
-    
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseMySql("server=localhost;database=tracio_shop;user=root;password=N@hat892003.", Microsoft.EntityFrameworkCore.ServerVersion.Parse("9.2.0-mysql"), x => x.UseNetTopologySuite());
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
             .UseCollation("utf8mb4_0900_ai_ci")
             .HasCharSet("utf8mb4");
 
-        modelBuilder.Entity<Discount>(entity =>
+        modelBuilder.Entity<Booking>(entity =>
         {
-            entity.HasKey(e => e.DiscountId).HasName("PRIMARY");
+            entity.HasKey(e => e.BookingId).HasName("PRIMARY");
 
-            entity.ToTable("discount");
+            entity.ToTable("booking");
 
-            entity.HasIndex(e => e.ShopId, "fk_discount_shop");
-
-            entity.Property(e => e.DiscountId).HasColumnName("discount_id");
-            entity.Property(e => e.Amount).HasColumnName("amount");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("datetime")
-                .HasColumnName("created_at");
-            entity.Property(e => e.Description)
-                .HasMaxLength(255)
-                .HasColumnName("description")
-                .UseCollation("utf8mb4_unicode_ci");
-            entity.Property(e => e.DiscountCondition).HasColumnName("discount_condition");
-            entity.Property(e => e.Percentage).HasColumnName("percentage");
-            entity.Property(e => e.ShopId).HasColumnName("shop_id");
-            entity.Property(e => e.Status).HasColumnName("status");
-            entity.Property(e => e.TimeEnd)
-                .HasColumnType("datetime")
-                .HasColumnName("time_end");
-            entity.Property(e => e.TimeStart)
-                .HasColumnType("datetime")
-                .HasColumnName("time_start");
-            entity.Property(e => e.UpdatedAt)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("datetime")
-                .HasColumnName("updated_at");
-
-            entity.HasOne(d => d.Shop).WithMany(p => p.Discounts)
-                .HasForeignKey(d => d.ShopId)
-                .HasConstraintName("fk_discount_shop");
-        });
-
-        modelBuilder.Entity<Order>(entity =>
-        {
-            entity.HasKey(e => e.OrderId).HasName("PRIMARY");
-
-            entity.ToTable("order");
-
-            entity.HasIndex(e => e.DiscountId, "fk_order_discount");
-
-            entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.BookingId).HasColumnName("booking_id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
             entity.Property(e => e.CyclistId).HasColumnName("cyclist_id");
-            entity.Property(e => e.DiscountId).HasColumnName("discount_id");
-            entity.Property(e => e.Status).HasColumnName("status");
-            entity.Property(e => e.TotalPrice)
-                .HasPrecision(10, 2)
-                .HasColumnName("total_price");
-
-            entity.HasOne(d => d.Discount).WithMany(p => p.Orders)
-                .HasForeignKey(d => d.DiscountId)
-                .OnDelete(DeleteBehavior.SetNull)
-                .HasConstraintName("fk_order_discount");
         });
 
-        modelBuilder.Entity<OrderDetail>(entity =>
+        modelBuilder.Entity<BookingDetail>(entity =>
         {
-            entity.HasKey(e => e.OrderDetailId).HasName("PRIMARY");
+            entity.HasKey(e => e.BookingDetailId).HasName("PRIMARY");
 
-            entity.ToTable("order_detail");
+            entity
+                .ToTable("booking_detail")
+                .UseCollation("utf8mb4_unicode_ci");
 
-            entity.HasIndex(e => e.OrderId, "fk_order_detail_order");
+            entity.HasIndex(e => e.BookingId, "fk_booking_detail_booking");
 
-            entity.HasIndex(e => e.ProductId, "fk_order_detail_product");
+            entity.HasIndex(e => e.ServiceId, "fk_booking_detail_service");
 
-            entity.HasIndex(e => e.ShopId, "fk_order_detail_shop");
-
-            entity.Property(e => e.OrderDetailId).HasColumnName("order_detail_id");
-            entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.BookingDetailId).HasColumnName("booking_detail_id");
+            entity.Property(e => e.BookedDate)
+                .HasColumnType("datetime")
+                .HasColumnName("booked_date");
+            entity.Property(e => e.BookingId).HasColumnName("booking_id");
+            entity.Property(e => e.Note)
+                .HasMaxLength(500)
+                .HasColumnName("note");
             entity.Property(e => e.Price)
                 .HasPrecision(10, 2)
                 .HasColumnName("price");
-            entity.Property(e => e.ProductId).HasColumnName("product_id");
-            entity.Property(e => e.Quantity).HasColumnName("quantity");
-            entity.Property(e => e.ShopId).HasColumnName("shop_id");
-
-            entity.HasOne(d => d.Order).WithMany(p => p.OrderDetails)
-                .HasForeignKey(d => d.OrderId)
-                .HasConstraintName("fk_order_detail_order");
-
-            entity.HasOne(d => d.Product).WithMany(p => p.OrderDetails)
-                .HasForeignKey(d => d.ProductId)
-                .HasConstraintName("fk_order_detail_product");
-
-            entity.HasOne(d => d.Shop).WithMany(p => p.OrderDetails)
-                .HasForeignKey(d => d.ShopId)
-                .HasConstraintName("fk_order_detail_shop");
-        });
-
-        modelBuilder.Entity<Payment>(entity =>
-        {
-            entity.HasKey(e => e.PaymentId).HasName("PRIMARY");
-
-            entity.ToTable("payment");
-
-            entity.HasIndex(e => e.OrderId, "fk_payment_order");
-
-            entity.Property(e => e.PaymentId).HasColumnName("payment_id");
-            entity.Property(e => e.Amount)
-                .HasPrecision(10, 2)
-                .HasColumnName("amount");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("datetime")
-                .HasColumnName("created_at");
-            entity.Property(e => e.OrderId).HasColumnName("order_id");
-            entity.Property(e => e.PaymentMethod)
-                .HasColumnType("enum('Cash','Online')")
-                .HasColumnName("payment_method");
-            entity.Property(e => e.Status).HasColumnName("status");
-
-            entity.HasOne(d => d.Order).WithMany(p => p.Payments)
-                .HasForeignKey(d => d.OrderId)
-                .HasConstraintName("fk_payment_order");
-        });
-
-        modelBuilder.Entity<Product>(entity =>
-        {
-            entity.HasKey(e => e.ProductId).HasName("PRIMARY");
-
-            entity.ToTable("product");
-
-            entity.HasIndex(e => e.CategoryId, "fk_product_category");
-
-            entity.HasIndex(e => e.ShopId, "fk_product_shop");
-
-            entity.Property(e => e.ProductId).HasColumnName("product_id");
-            entity.Property(e => e.CategoryId).HasColumnName("category_id");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("datetime")
-                .HasColumnName("created_at");
-            entity.Property(e => e.Description)
-                .HasMaxLength(1000)
-                .HasColumnName("description")
-                .UseCollation("utf8mb4_unicode_ci");
-            entity.Property(e => e.Name)
+            entity.Property(e => e.Reason)
                 .HasMaxLength(255)
-                .HasColumnName("name")
-                .UseCollation("utf8mb4_unicode_ci");
-            entity.Property(e => e.Price)
-                .HasPrecision(10, 2)
-                .HasColumnName("price");
-            entity.Property(e => e.ShopId).HasColumnName("shop_id");
+                .HasColumnName("reason");
+            entity.Property(e => e.ReceivedAt)
+                .HasColumnType("datetime")
+                .HasColumnName("received_at");
+            entity.Property(e => e.ServiceId).HasColumnName("service_id");
             entity.Property(e => e.Status).HasColumnName("status");
-            entity.Property(e => e.StockQuantity).HasColumnName("stock_quantity");
+
+            entity.HasOne(d => d.Booking).WithMany(p => p.BookingDetails)
+                .HasForeignKey(d => d.BookingId)
+                .HasConstraintName("fk_booking_detail_booking");
+
+            entity.HasOne(d => d.Service).WithMany(p => p.BookingDetails)
+                .HasForeignKey(d => d.ServiceId)
+                .HasConstraintName("fk_booking_detail_service");
+        });
+
+        modelBuilder.Entity<BookingMediaFile>(entity =>
+        {
+            entity.HasKey(e => e.BookingMediaId).HasName("PRIMARY");
+
+            entity.ToTable("booking_media_files");
+
+            entity.HasIndex(e => e.BookingDetailId, "fk_booking_media_files_detail");
+
+            entity.Property(e => e.BookingMediaId).HasColumnName("booking_media_id");
+            entity.Property(e => e.BookingDetailId).HasColumnName("booking_detail_id");
+            entity.Property(e => e.MediaType).HasColumnName("media_type");
+            entity.Property(e => e.MediaUrl)
+                .HasMaxLength(500)
+                .HasColumnName("media_url");
             entity.Property(e => e.UpdatedAt)
                 .ValueGeneratedOnAddOrUpdate()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("updated_at");
 
-            entity.HasOne(d => d.Category).WithMany(p => p.Products)
-                .HasForeignKey(d => d.CategoryId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fk_product_category");
-
-            entity.HasOne(d => d.Shop).WithMany(p => p.Products)
-                .HasForeignKey(d => d.ShopId)
-                .HasConstraintName("fk_product_shop");
+            entity.HasOne(d => d.BookingDetail).WithMany(p => p.BookingMediaFiles)
+                .HasForeignKey(d => d.BookingDetailId)
+                .HasConstraintName("fk_booking_media_files_detail");
         });
 
-        modelBuilder.Entity<ProductCategory>(entity =>
+        modelBuilder.Entity<MediaFile>(entity =>
+        {
+            entity.HasKey(e => e.MediaFileId).HasName("PRIMARY");
+
+            entity.ToTable("media_files");
+
+            entity.HasIndex(e => e.ReplyId, "fk_media_reply");
+
+            entity.HasIndex(e => e.ReviewId, "fk_media_review");
+
+            entity.HasIndex(e => e.ServiceId, "fk_media_service");
+
+            entity.HasIndex(e => e.ShopId, "fk_media_shop");
+
+            entity.Property(e => e.MediaFileId).HasColumnName("media_file_id");
+            entity.Property(e => e.EntityType).HasColumnName("entity_type");
+            entity.Property(e => e.MediaUrl)
+                .HasMaxLength(500)
+                .HasColumnName("media_url");
+            entity.Property(e => e.ReplyId).HasColumnName("reply_id");
+            entity.Property(e => e.ReviewId).HasColumnName("review_id");
+            entity.Property(e => e.ServiceId).HasColumnName("service_id");
+            entity.Property(e => e.ShopId).HasColumnName("shop_id");
+            entity.Property(e => e.UploadedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("datetime")
+                .HasColumnName("uploaded_at");
+
+            entity.HasOne(d => d.Reply).WithMany(p => p.MediaFiles)
+                .HasForeignKey(d => d.ReplyId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_media_reply");
+
+            entity.HasOne(d => d.Review).WithMany(p => p.MediaFiles)
+                .HasForeignKey(d => d.ReviewId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_media_review");
+
+            entity.HasOne(d => d.Service).WithMany(p => p.MediaFiles)
+                .HasForeignKey(d => d.ServiceId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_media_service");
+
+            entity.HasOne(d => d.Shop).WithMany(p => p.MediaFiles)
+                .HasForeignKey(d => d.ShopId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_media_shop");
+        });
+
+        modelBuilder.Entity<Reply>(entity =>
+        {
+            entity.HasKey(e => e.ReplyId).HasName("PRIMARY");
+
+            entity
+                .ToTable("reply")
+                .UseCollation("utf8mb4_unicode_ci");
+
+            entity.HasIndex(e => e.ReviewId, "fk_reply_review");
+
+            entity.HasIndex(e => e.ShopId, "fk_reply_shop");
+
+            entity.Property(e => e.ReplyId).HasColumnName("reply_id");
+            entity.Property(e => e.Content)
+                .HasMaxLength(1000)
+                .HasColumnName("content");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.CyclistAvatar)
+                .HasMaxLength(500)
+                .HasColumnName("cyclist_avatar");
+            entity.Property(e => e.CyclistId).HasColumnName("cyclist_id");
+            entity.Property(e => e.CyclistName)
+                .HasMaxLength(255)
+                .HasColumnName("cyclist_name");
+            entity.Property(e => e.IsDeleted).HasColumnName("is_deleted");
+            entity.Property(e => e.ReviewId).HasColumnName("review_id");
+            entity.Property(e => e.ShopId).HasColumnName("shop_id");
+
+            entity.HasOne(d => d.Review).WithMany(p => p.Replies)
+                .HasForeignKey(d => d.ReviewId)
+                .HasConstraintName("fk_reply_review");
+
+            entity.HasOne(d => d.Shop).WithMany(p => p.Replies)
+                .HasForeignKey(d => d.ShopId)
+                .HasConstraintName("fk_reply_shop");
+        });
+
+        modelBuilder.Entity<Review>(entity =>
+        {
+            entity.HasKey(e => e.ReviewId).HasName("PRIMARY");
+
+            entity
+                .ToTable("review")
+                .UseCollation("utf8mb4_unicode_ci");
+
+            entity.HasIndex(e => e.ServiceId, "fk_review_service");
+
+            entity.Property(e => e.ReviewId).HasColumnName("review_id");
+            entity.Property(e => e.Content)
+                .HasMaxLength(1000)
+                .HasColumnName("content");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.CyclistAvatar)
+                .HasMaxLength(500)
+                .HasColumnName("cyclist_avatar");
+            entity.Property(e => e.CyclistId).HasColumnName("cyclist_id");
+            entity.Property(e => e.CyclistName)
+                .HasMaxLength(255)
+                .HasColumnName("cyclist_name");
+            entity.Property(e => e.Rating)
+                .HasPrecision(3, 2)
+                .HasColumnName("rating");
+            entity.Property(e => e.ServiceId).HasColumnName("service_id");
+            entity.Property(e => e.UpdatedAt)
+                .ValueGeneratedOnAddOrUpdate()
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
+
+            entity.HasOne(d => d.Service).WithMany(p => p.Reviews)
+                .HasForeignKey(d => d.ServiceId)
+                .HasConstraintName("fk_review_service");
+        });
+
+        modelBuilder.Entity<Service>(entity =>
+        {
+            entity.HasKey(e => e.ServiceId).HasName("PRIMARY");
+
+            entity
+                .ToTable("service")
+                .UseCollation("utf8mb4_unicode_ci");
+
+            entity.HasIndex(e => e.CategoryId, "fk_service_category");
+
+            entity.HasIndex(e => e.ShopId, "fk_service_shop");
+
+            entity.Property(e => e.ServiceId).HasColumnName("service_id");
+            entity.Property(e => e.CategoryId).HasColumnName("category_id");
+            entity.Property(e => e.ClosedTime)
+                .HasColumnType("time")
+                .HasColumnName("closed_time");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Description)
+                .HasMaxLength(500)
+                .HasColumnName("description");
+            entity.Property(e => e.Duration)
+                .HasColumnType("time")
+                .HasColumnName("duration");
+            entity.Property(e => e.IsDeleted).HasColumnName("is_deleted");
+            entity.Property(e => e.Name)
+                .HasMaxLength(255)
+                .HasColumnName("name");
+            entity.Property(e => e.OpenTime)
+                .HasColumnType("time")
+                .HasColumnName("open_time");
+            entity.Property(e => e.Price)
+                .HasPrecision(10, 2)
+                .HasColumnName("price");
+            entity.Property(e => e.ShopId).HasColumnName("shop_id");
+            entity.Property(e => e.Status).HasColumnName("status");
+            entity.Property(e => e.UpdatedAt)
+                .ValueGeneratedOnAddOrUpdate()
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
+
+            entity.HasOne(d => d.Category).WithMany(p => p.Services)
+                .HasForeignKey(d => d.CategoryId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("fk_service_category");
+
+            entity.HasOne(d => d.Shop).WithMany(p => p.Services)
+                .HasForeignKey(d => d.ShopId)
+                .HasConstraintName("fk_service_shop");
+        });
+
+        modelBuilder.Entity<ServiceCategory>(entity =>
         {
             entity.HasKey(e => e.CategoryId).HasName("PRIMARY");
 
-            entity.ToTable("product_category");
+            entity
+                .ToTable("service_category")
+                .UseCollation("utf8mb4_unicode_ci");
 
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
             entity.Property(e => e.CategoryName)
                 .HasMaxLength(255)
-                .HasColumnName("category_name")
-                .UseCollation("utf8mb4_unicode_ci");
+                .HasColumnName("category_name");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
             entity.Property(e => e.IsDeleted).HasColumnName("is_deleted");
             entity.Property(e => e.UpdatedAt)
+                .ValueGeneratedOnAddOrUpdate()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("updated_at");
-        });
-
-        modelBuilder.Entity<ProductDiscount>(entity =>
-        {
-            entity.HasKey(e => new { e.ProductId, e.DiscountId })
-                .HasName("PRIMARY")
-                .HasAnnotation("MySql:IndexPrefixLength", new[] { 0, 0 });
-
-            entity.ToTable("product_discount");
-
-            entity.HasIndex(e => e.DiscountId, "fk_product_discount_discount");
-
-            entity.Property(e => e.ProductId).HasColumnName("product_id");
-            entity.Property(e => e.DiscountId).HasColumnName("discount_id");
-            entity.Property(e => e.Date)
-                .HasColumnType("datetime")
-                .HasColumnName("date");
-            entity.Property(e => e.IsActive)
-                .HasDefaultValueSql("'1'")
-                .HasColumnName("is_active");
-
-            entity.HasOne(d => d.Discount).WithMany(p => p.ProductDiscounts)
-                .HasForeignKey(d => d.DiscountId)
-                .HasConstraintName("fk_product_discount_discount");
-
-            entity.HasOne(d => d.Product).WithMany(p => p.ProductDiscounts)
-                .HasForeignKey(d => d.ProductId)
-                .HasConstraintName("fk_product_discount_product");
-        });
-
-        modelBuilder.Entity<ProductMedium>(entity =>
-        {
-            entity.HasKey(e => e.MediaId).HasName("PRIMARY");
-
-            entity.ToTable("product_media");
-
-            entity.HasIndex(e => e.ProductId, "fk_media_product");
-
-            entity.Property(e => e.MediaId).HasColumnName("media_id");
-            entity.Property(e => e.MediaUrl)
-                .HasMaxLength(2083)
-                .HasColumnName("media_url");
-            entity.Property(e => e.ProductId).HasColumnName("product_id");
-            entity.Property(e => e.UploadedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("datetime")
-                .HasColumnName("uploaded_at");
-
-            entity.HasOne(d => d.Product).WithMany(p => p.ProductMedia)
-                .HasForeignKey(d => d.ProductId)
-                .HasConstraintName("fk_media_product");
-        });
-
-        modelBuilder.Entity<ProductReview>(entity =>
-        {
-            entity.HasKey(e => e.ReviewId).HasName("PRIMARY");
-
-            entity
-                .ToTable("product_review")
-                .UseCollation("utf8mb4_unicode_ci");
-
-            entity.HasIndex(e => e.ProductId, "fk_product_review_product");
-
-            entity.Property(e => e.ReviewId).HasColumnName("review_id");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("datetime")
-                .HasColumnName("created_at");
-            entity.Property(e => e.CyclistId).HasColumnName("cyclist_id");
-            entity.Property(e => e.CyclistName)
-                .HasMaxLength(255)
-                .HasColumnName("cyclist_name");
-            entity.Property(e => e.ProductId).HasColumnName("product_id");
-            entity.Property(e => e.Rating).HasColumnName("rating");
-            entity.Property(e => e.ReviewContent)
-                .HasMaxLength(1000)
-                .HasColumnName("review_content");
-
-            entity.HasOne(d => d.Product).WithMany(p => p.ProductReviews)
-                .HasForeignKey(d => d.ProductId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fk_product_review_product");
-        });
-
-        modelBuilder.Entity<ReviewMediaFile>(entity =>
-        {
-            entity.HasKey(e => e.ReviewMediaId).HasName("PRIMARY");
-
-            entity.ToTable("review_media_file");
-
-            entity.HasIndex(e => e.ReviewId, "fk_review_media_review");
-
-            entity.Property(e => e.ReviewMediaId).HasColumnName("review_media_id");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("datetime")
-                .HasColumnName("created_at");
-            entity.Property(e => e.MediaUrl)
-                .HasMaxLength(1000)
-                .HasColumnName("media_url");
-            entity.Property(e => e.ReviewId).HasColumnName("review_id");
-
-            entity.HasOne(d => d.Review).WithMany(p => p.ReviewMediaFiles)
-                .HasForeignKey(d => d.ReviewId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fk_review_media_review");
         });
 
         modelBuilder.Entity<Shop>(entity =>
         {
             entity.HasKey(e => e.ShopId).HasName("PRIMARY");
 
-            entity.ToTable("shop");
+            entity
+                .ToTable("shop")
+                .UseCollation("utf8mb4_unicode_ci");
 
             entity.Property(e => e.ShopId).HasColumnName("shop_id");
             entity.Property(e => e.Address)
-                .HasMaxLength(350)
-                .HasColumnName("address")
-                .UseCollation("utf8mb4_unicode_ci");
+                .HasMaxLength(500)
+                .HasColumnName("address");
+            entity.Property(e => e.ClosedTime)
+                .HasColumnType("time")
+                .HasColumnName("closed_time");
             entity.Property(e => e.ContactNumber)
-                .HasMaxLength(10)
+                .HasMaxLength(20)
                 .HasColumnName("contact_number");
+            entity.Property(e => e.Coordinate).HasColumnName("coordinate");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.OpenTime)
+                .HasColumnType("time")
+                .HasColumnName("open_time");
             entity.Property(e => e.OwnerId).HasColumnName("owner_id");
             entity.Property(e => e.ShopName)
                 .HasMaxLength(255)
-                .HasColumnName("shop_name")
-                .UseCollation("utf8mb4_unicode_ci");
+                .HasColumnName("shop_name");
+            entity.Property(e => e.TaxCode)
+                .HasMaxLength(50)
+                .HasColumnName("tax_code");
             entity.Property(e => e.UpdatedAt)
                 .ValueGeneratedOnAddOrUpdate()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")

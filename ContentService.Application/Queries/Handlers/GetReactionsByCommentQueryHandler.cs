@@ -15,25 +15,31 @@ public class GetReactionsByCommentQueryHandler(IReactionRepo reactionRepo, IComm
     {
         try
         {
+            if (request.CommentId <= 0) return ResponseDto.BadRequest("Comment Id is required");
+            
             // check comment in db
-            var isCommentExisted = await _commentRepo.GetByIdAsync(c => c.CommentId == request.CommentId, c => c.RepliesCount);
-            if(!isCommentExisted.HasValue) return ResponseDto.NotFound("Comment not found");
-
-            var total = isCommentExisted.Value;
+            var isCommentExisted = await _commentRepo.ExistsAsync(c => c.CommentId == request.CommentId);
+            if(!isCommentExisted) return ResponseDto.NotFound("Comment not found");
+            
+            var totalReactions = await _reactionRepo.CountAsync(c => c.CommentId == request.CommentId);
+            
+            var totalPages = (int)Math.Ceiling((double)totalReactions / request.PageSize);
             
             var reactionDtos = await _reactionRepo.FindAsync(r => r.CommentId == request.CommentId, 
                 r => new ReactionDto
                 {
                     CyclistId = r.CyclistId,
                     CyclistName = r.CyclistName,
-                    CyclistAvatar = r.CyclistAvatar,
-                    CreatedAt = r.CreatedAt
+                    CyclistAvatar = r.CyclistAvatar
                 });
             
             return ResponseDto.GetSuccess(
             new {
                 reations = reactionDtos,
-                total
+                totalReactions,
+                totalPages,
+                hasNextPage = request.PageNumber < totalPages,
+                hasPreviousPage = request.PageNumber > 1
             }, "Reactions retrieved successfully!");
         }
         catch (Exception e)

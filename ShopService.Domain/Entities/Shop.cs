@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using NetTopologySuite.Geometries;
 
 namespace ShopService.Domain.Entities;
 
@@ -9,19 +10,27 @@ public partial class Shop
 
     public int OwnerId { get; set; }
 
+    public string TaxCode { get; set; } = null!;
+
     public string ShopName { get; set; } = null!;
 
     public string Address { get; set; } = null!;
 
-    public string? ContactNumber { get; set; }
+    public Point Coordinate { get; set; } = null!;
+
+    public string ContactNumber { get; set; } = null!;
+
+    public TimeOnly OpenTime { get; set; }
+
+    public TimeOnly ClosedTime { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
 
-    public virtual ICollection<Discount> Discounts { get; set; } = new List<Discount>();
+    public virtual ICollection<MediaFile> MediaFiles { get; set; } = new List<MediaFile>();
 
-    public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
+    public virtual ICollection<Reply> Replies { get; set; } = new List<Reply>();
 
-    public virtual ICollection<Product> Products { get; set; } = new List<Product>();
+    public virtual ICollection<Service> Services { get; set; } = new List<Service>();
 }
