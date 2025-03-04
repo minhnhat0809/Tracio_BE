@@ -42,11 +42,14 @@ public class ReactService : IReactService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    
+    private readonly IUserRepository _userRepository;
 
-    public ReactService(IUnitOfWork unitOfWork, IMapper mapper)
+    public ReactService(IUnitOfWork unitOfWork, IMapper mapper, IUserRepository userRepository)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _userRepository = userRepository;
     }
 
 
@@ -128,6 +131,13 @@ public class ReactService : IReactService
     {
         try
         {
+            // check if user exist
+            var user = await _userRepository.ValidateUserAsync(cyclistId);
+            if (!user)
+            {
+                return new ResponseModel(null, $"The user specified {cyclistId} does not exist.", false, 404);
+            }
+
             // Check if the target entity exists (optional but recommended)
             var exists = await _unitOfWork.RouteRepository.ExistsAsync(routeId);
             if (!exists)

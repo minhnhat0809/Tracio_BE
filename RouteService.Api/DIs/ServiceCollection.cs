@@ -1,10 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using RouteService.Api.grpcClient;
 using RouteService.Application.Interfaces;
 using RouteService.Application.Interfaces.Services;
 using RouteService.Application.Mappings;
 using RouteService.Infrastructure.Contexts;
 using RouteService.Infrastructure.Repositories;
 using RouteService.Infrastructure.UnitOfWork;
+using userservice;
+
 
 namespace RouteService.Api.DIs;
 
@@ -12,6 +15,19 @@ public static class ServiceCollection
 {
     public static IServiceCollection AddService(this IServiceCollection services, IConfiguration configuration)
     {
+        // gRPC
+        services.AddGrpcClient<UserService.UserServiceClient>(o =>
+        {
+            o.Address = new Uri(configuration["GrpcSettings:UserServiceUrl"] ?? throw new InvalidOperationException("UserService URL is not set"));
+        }).ConfigurePrimaryHttpMessageHandler(() =>
+        {
+            var handler = new HttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback =
+                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            handler.SslProtocols = System.Security.Authentication.SslProtocols.Tls12;
+            return handler;
+        });
+
         // db
         services.AddDbContext<TracioRouteDbContext>(options =>
             options.UseMySql(configuration.GetConnectionString("tracio_route_db"),
@@ -25,7 +41,9 @@ public static class ServiceCollection
         services.AddScoped<IRouteCommentRepository, RouteCommentRepository>();
         services.AddScoped<IRouteMediaFileRepository, RouteMediaFileRepository>();
         services.AddScoped<IRouteBookmarkRepository, RouteBookmarkRepository>();
-        services.AddScoped<IUnitOfWork, UnitOfWork>();  
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+        services.AddScoped<IUserRepository, UserGrpcClient>();
         
         // services
         services.AddScoped<IReactService, ReactService>();

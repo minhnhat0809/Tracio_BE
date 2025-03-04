@@ -8,9 +8,16 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Google.Protobuf" Version="3.29.3" />
+        <PackageReference Include="Grpc.AspNetCore" Version="2.67.0" />
+        <PackageReference Include="Grpc.Net.Client" Version="2.67.0" />
+        <PackageReference Include="Grpc.Tools" Version="2.70.0">
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+          <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
         <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.2" />
         <PackageReference Include="RestSharp" Version="112.1.1-alpha.0.4" />
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0"/>
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
     </ItemGroup>
 
     <ItemGroup>
@@ -22,6 +29,14 @@
     <ItemGroup>
       <ProjectReference Include="..\RouteService.Application\RouteService.Application.csproj" />
       <ProjectReference Include="..\RouteService.Infrastructure\RouteService.Infrastructure.csproj" />
+      <ProjectReference Include="..\Shared\Shared.csproj" />
     </ItemGroup>
+
+    <ItemGroup>
+      <Protobuf Include="Protos/user.proto" GrpcServices="Client" />
+    </ItemGroup>
+
+
+
 
 </Project>
