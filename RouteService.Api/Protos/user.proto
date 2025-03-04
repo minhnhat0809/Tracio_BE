@@ -1,12 +1,9 @@
 syntax = "proto3";
 
-option csharp_namespace = "userservice";
+package userservice;
 
 service UserService {
   rpc ValidateUser (UserRequest) returns (UserResponse);
-  rpc CheckIsFollow (CheckIsFollowRequest) returns (CheckIsFollowResponse);
-  rpc CheckFollowingBatch(FollowBatchRequest) returns (FollowBatchResponse);
-  rpc GetUserById (UserRequest) returns (UserResponse);
 
 }
 message UserRequest {
@@ -17,22 +14,4 @@ message UserResponse {
   bool is_valid = 1;
   string user_name = 2;
   string avatar = 3;
-}
-
-message CheckIsFollowRequest {
-  int32 user_id_1 = 1;
-  int32 user_id_2 = 2;
-}
-
-message CheckIsFollowResponse {
-  bool is_follower = 1;
-}
-
-message FollowBatchRequest {
-  int32 follower_id = 1;
-  repeated int32 author_ids = 2;
-}
-
-message FollowBatchResponse {
-  repeated int32 following_authors = 1;
 }

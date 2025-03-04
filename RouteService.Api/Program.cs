@@ -2,7 +2,6 @@
 using System.Text.Json;
 using RouteService.Api.DIs;
 using RouteService.Api.grpcClient;
-using userservice;
 
 
 var builder = WebApplication.CreateBuilder(args);

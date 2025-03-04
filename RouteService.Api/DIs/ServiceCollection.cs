@@ -6,7 +6,7 @@ using RouteService.Application.Mappings;
 using RouteService.Infrastructure.Contexts;
 using RouteService.Infrastructure.Repositories;
 using RouteService.Infrastructure.UnitOfWork;
-using userservice;
+using Userservice;
 
 
 namespace RouteService.Api.DIs;
@@ -15,15 +15,13 @@ public static class ServiceCollection
 {
     public static IServiceCollection AddService(this IServiceCollection services, IConfiguration configuration)
     {
-        // gRPC
         services.AddGrpcClient<UserService.UserServiceClient>(o =>
         {
-            o.Address = new Uri(configuration["GrpcSettings:UserServiceUrl"] ?? throw new InvalidOperationException("UserService URL is not set"));
+            o.Address = new Uri("https://localhost:6003"); // Replace with UserService URL
         }).ConfigurePrimaryHttpMessageHandler(() =>
         {
             var handler = new HttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback =
-                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
             handler.SslProtocols = System.Security.Authentication.SslProtocols.Tls12;
             return handler;
         });

@@ -1,8 +1,7 @@
 ﻿using Grpc.Net.Client;
-using userservice;
 using RouteService.Application.Interfaces;
 using Grpc.Core;
-using UserResponse = RouteService.Application.DTOs.Users.UserResponse;
+using Userservice;
 
 namespace RouteService.Api.grpcClient;
 
@@ -21,25 +20,6 @@ public class UserGrpcClient : IUserRepository
 
         _client = new UserService.UserServiceClient(channel);
     }
-
-    /*public async Task<UserResponse> GetUserByIdAsync(int userId)
-    {
-        try
-        {
-            var request = new UserRequest { UserId = userId }; // ✅ FIXED field name
-            var exist = await _client.GetUserByIdAsync(request);
-            return new UserResponse()
-            {
-                Avatar = exist.Avatar,
-                Username = exist.UserName,
-                IsUserValid = exist.IsValid,
-            };
-        }
-        catch (RpcException ex)
-        {
-            throw new Exception($"gRPC error: {ex.Status.StatusCode} - {ex.Status.Detail}");
-        }
-    }*/
 
     public async Task<bool> ValidateUserAsync(int userId)
     {
