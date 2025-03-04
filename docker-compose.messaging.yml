@@ -1,0 +1,67 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - messaging_network
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - messaging_network
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.5.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD=elasticpassword
+    ports:
+      - "9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    networks:
+      - logging_network
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.5.0
+    container_name: logstash
+    depends_on:
+      - elasticsearch
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+    ports:
+      - "5044:5044"
+    networks:
+      - logging_network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.5.0
+    container_name: kibana
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    networks:
+      - logging_network
+
+volumes:
+  esdata:
+    driver: local
+
+networks:
+  messaging_network:
+    driver: bridge
+  logging_network:
+    driver: bridge

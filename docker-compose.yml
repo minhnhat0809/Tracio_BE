@@ -52,3 +52,9 @@
     build:
       context: .
       dockerfile: NotificationService.Api/Dockerfile
+
+  chatservice.api:
+    image: chatservice.api
+    build:
+      context: .
+      dockerfile: ChatService.Api/Dockerfile

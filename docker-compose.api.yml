@@ -1,0 +1,58 @@
+services:
+  apigateway:
+    image: apigateway
+    build:
+      context: .
+      dockerfile: APIGateway/Dockerfile
+    container_name: apigateway
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - USER_SERVICE_HOST=userservice
+      - CONTENT_SERVICE_HOST=contentservice
+      - SHOP_SERVICE_HOST=shopservice
+      - ROUTE_SERVICE_HOST=routeservice
+      - CHAT_SERVICE_HOST=chatservice
+      - NOTIFICATION_SERVICE_HOST=notificationservice
+      - REST_PORT=8080
+    ports:
+      - "8080:8080"
+    networks:
+      - api_network
+
+  chatservice.api:
+    image: chatservice.api
+    build:
+      context: .
+      dockerfile: ChatService.Api/Dockerfile
+    container_name: chatservice
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - RABBITMQ_HOST = local
+      - REDIS_HOST = local
+      - ELASTICSEARCH_HOST =http://localhost:9200
+      - REST_PORT=5005
+    ports:
+      - "5005:5005"
+    networks:
+      - api_network
+
+  notificationservice.api:
+    image: notificationservice.api
+    build:
+      context: .
+      dockerfile: NotificationService.Api/Dockerfile
+    container_name: notificationservice
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - RABBITMQ_HOST=local
+      - REDIS_HOST=local
+      - ELASTICSEARCH_HOST=http://localhost:9200
+      - REST_PORT=5006
+    ports:
+      - "5006:5006"
+    networks:
+      - api_network
+
+networks:
+  api_network:
+    driver: bridge
