@@ -15,21 +15,21 @@ namespace ContentService.Api.Controllers
         private readonly IMediator _mediator = mediator;
         
         [HttpGet]
-        //[Authorize]
         public async Task<IActionResult> GetBlogs(
             [FromQuery] int? userId,
             [FromQuery] int? categoryId,
+            [FromQuery] sbyte? blogStatus,
             [FromQuery] string sortBy = "CreatedAt",
             [FromQuery] bool ascending = true,
             [FromQuery] int pageSize = 5,
             [FromQuery] int pageNumber = 1)
         {
-            /*var value = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "custom_id")?.Value;
+            var value = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "custom_id")?.Value;
             if (value == null) return StatusCode(StatusCodes.Status401Unauthorized);
-            var userBrowsingId = int.Parse(value);*/
+            var userBrowsingId = int.Parse(value);
             
             var query = new GetBlogsQuery
-            (2, userId, categoryId, sortBy, ascending, pageSize, pageNumber);
+            (userBrowsingId, userId, categoryId, blogStatus, sortBy, ascending, pageSize, pageNumber);
 
             var result = await _mediator.Send(query);
             return StatusCode(result.StatusCode, result);
@@ -69,11 +69,11 @@ namespace ContentService.Api.Controllers
             [FromQuery] bool ascending = false
             )
         {
-            /*var value = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "custom_id")?.Value;
+            var value = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "custom_id")?.Value;
             if (value == null) return StatusCode(StatusCodes.Status401Unauthorized);
-            var userBrowsingId = int.Parse(value);*/
+            var userBrowsingId = int.Parse(value);
             
-            var query = new GetCommentsByBlogQuery(1, blogId, commentId, pageNumber, pageSize, ascending);
+            var query = new GetCommentsByBlogQuery(userBrowsingId, blogId, commentId, pageNumber, pageSize, ascending);
             
             var result = await _mediator.Send(query);
             
@@ -107,7 +107,8 @@ namespace ContentService.Api.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        [HttpPut("{blogId:int}")]
+        [HttpPut
+            ("{blogId:int}")]
         public async Task<IActionResult> UpdateBlog(
             [FromRoute] int blogId,
             [FromBody] BlogUpdateDto blogUpdateDto

@@ -13,7 +13,8 @@ public class CreateBookmarkCommandHandler(
     IBookmarkRepo bookmarkRepo, 
     IMapper mapper, 
     IUserService userService,
-    ILogger<CreateBookmarkCommandHandler> logger
+    ILogger<CreateBookmarkCommandHandler> logger,
+    ICacheService cacheService
 ) : IRequestHandler<CreateBookmarkCommand, ResponseDto>
 {
     private readonly IBookmarkRepo _bookmarkRepo = bookmarkRepo;
@@ -21,11 +22,15 @@ public class CreateBookmarkCommandHandler(
     private readonly IMapper _mapper = mapper;
     private readonly IUserService _userService = userService;
     private readonly ILogger<CreateBookmarkCommandHandler> _logger = logger; 
+    private readonly ICacheService _cacheService = cacheService;
     public async Task<ResponseDto> Handle(CreateBookmarkCommand request, CancellationToken cancellationToken)
     {
         try
         {
             _logger.LogInformation("📌 CreateBookmarkCommand started. UserId: {UserId}, BlogId: {BlogId}", request.OwnerId, request.BlogId);
+            
+            // **Cache key includes user and pagination**
+            var cacheKey = $"ContentService_Bookmarks:{request.OwnerId}:*";
 
             // ✅ 1. Check if blog exists
             var isBlogExisted = await _blogRepo.ExistsAsync(b => b.BlogId == request.BlogId && b.Status != (sbyte) BlogStatus.Archived);
@@ -60,6 +65,9 @@ public class CreateBookmarkCommandHandler(
                 _logger.LogError("❌ Failed to create bookmark. UserId: {UserId}, BlogId: {BlogId}", request.OwnerId, request.BlogId);
                 return ResponseDto.InternalError("Bookmark blog creation failed");
             }
+            
+            // clear cache
+            await _cacheService.RemoveByPatternAsync(cacheKey);
 
             _logger.LogInformation("✅ Blog bookmarked successfully! UserId: {UserId}, BlogId: {BlogId}", request.OwnerId, request.BlogId);
             return ResponseDto.CreateSuccess(null, "Bookmark blog successfully!");

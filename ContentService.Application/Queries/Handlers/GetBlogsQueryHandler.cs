@@ -153,6 +153,21 @@ public class GetBlogsQueryHandler(
                 ? basePredicate.And(b => b.Status != (sbyte)PrivacySetting.Private)
                 : basePredicate.And(b => b.PrivacySetting == (sbyte)PrivacySetting.Public);
         }
+        else
+        {
+            // user view their own profile, check status of blog user want to view
+            if (request.Status.HasValue)
+            {
+                if (IsValidBlogStatus(request.Status.Value))
+                {
+                    basePredicate = basePredicate.And(b => b.Status == request.Status.Value);
+                }
+            }
+            else
+            {
+                basePredicate = basePredicate.And(b => b.Status == (sbyte)BlogStatus.Published);
+            }
+        }
 
         request.SortBy = GetSortByField(request.SortBy);
         var sortExpression = SortHelper.BuildSortExpression<Blog>(request.SortBy);
@@ -245,4 +260,6 @@ public class GetBlogsQueryHandler(
             IsBookmarked = b.Blog.BlogBookmarks.Any(bm => bm.OwnerId == userRequestId)
         };
     }
+    
+    private static bool IsValidBlogStatus(sbyte status) => Enum.IsDefined(typeof(BlogStatus), status);
 }

@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using ContentService.Application.DTOs.BlogDtos.Message;
 using ContentService.Application.DTOs.BlogDtos.ViewDtos;
 using ContentService.Application.Interfaces;
 using ContentService.Domain.Entities;
@@ -16,7 +17,9 @@ public class CreateBlogCommandHandler(
     IImageService imageService,
     IUserService userService,
     IModerationService moderationService,
-    ILogger<CreateBlogCommandHandler> logger
+    ILogger<CreateBlogCommandHandler> logger,
+    ICacheService cacheService,
+    IRabbitMqProducer rabbitMqProducer
 ) : IRequestHandler<CreateBlogCommand, ResponseDto>
 {
     private readonly IBlogRepo _blogRepo = blogRepo;
@@ -26,6 +29,8 @@ public class CreateBlogCommandHandler(
     private readonly IUserService _userService = userService;
     private readonly IModerationService _moderationService = moderationService;
     private readonly ILogger<CreateBlogCommandHandler> _logger = logger; 
+    private readonly ICacheService _cacheService = cacheService;
+    private readonly IRabbitMqProducer _rabbitMqProducer = rabbitMqProducer;
 
     private const string BucketName = "blogtracio";
 
@@ -34,6 +39,10 @@ public class CreateBlogCommandHandler(
         try
         {
             _logger.LogInformation("📌 CreateBlogCommand started for UserId: {UserId}", request.CreatorId);
+            
+            // **Cache key**
+            const string publicBlogCacheKey = $"PublicBlogs:*";
+            var followerBlogCacheKey = $"FollowerBlogs:{request.CreatorId}:*";
 
             // ✅ 1. Validate user
             var userDto = await _userService.ValidateUser(request.CreatorId);
@@ -74,7 +83,7 @@ public class CreateBlogCommandHandler(
 
             // ✅ 5. Upload media files (Only log if there are media files)
             var mediaFileUrl = new List<string>();
-            if (request.MediaFiles != null && request.MediaFiles.Any())
+            if (request.MediaFiles != null && request.MediaFiles.Count != 0)
             {
                 _logger.LogInformation("📂 Uploading {Count} media files for UserId: {UserId}", request.MediaFiles.Count, request.CreatorId);
                 mediaFileUrl = await _imageService.UploadFiles(request.MediaFiles, BucketName, null);
@@ -91,6 +100,20 @@ public class CreateBlogCommandHandler(
             {
                 _logger.LogError("❌ Failed to create blog. UserId: {UserId}", request.CreatorId);
                 return ResponseDto.InternalError("Failed to create blog!");
+            }
+
+            switch (blog.PrivacySetting)
+            {
+                case (sbyte) PrivacySetting.Public:
+                    await _cacheService.RemoveByPatternAsync(publicBlogCacheKey);
+                    break;
+                case (sbyte) PrivacySetting.FollowerOnly:
+                    
+                    _logger.LogInformation("📢 Publishing BlogPrivacyUpdateEvent to ADD blog in UserFollowerOnlyBlog. BlogId: {BlogId}", blog.BlogId);
+                    await _rabbitMqProducer.PublishAsync(new BlogPrivacyUpdateEvent(request.CreatorId, blog.BlogId, "add"), cancellationToken: cancellationToken);
+                    
+                    await _cacheService.RemoveByPatternAsync(followerBlogCacheKey);
+                    break;
             }
 
             _logger.LogInformation("✅ Blog created successfully! BlogId: {BlogId}, UserId: {UserId}", blog.BlogId, request.CreatorId);

@@ -22,7 +22,8 @@ public class CreateReactionCommandHandler(
     IUserService userService,
     IMapper mapper,
     IHubContext<ContentHub> hubContext,
-    ILogger<CreateReactionCommandHandler> logger) 
+    ILogger<CreateReactionCommandHandler> logger,
+    ICacheService cacheService) 
     : IRequestHandler<CreateReactionCommand, ResponseDto>
 {
     private readonly IBlogRepo _blogRepo = blogRepo;
@@ -41,6 +42,8 @@ public class CreateReactionCommandHandler(
     
     private readonly ILogger<CreateReactionCommandHandler> _logger = logger;
     
+    private readonly ICacheService _cacheService = cacheService;
+    
     public async Task<ResponseDto> Handle(CreateReactionCommand request, CancellationToken cancellationToken)
     {
         try
@@ -50,19 +53,17 @@ public class CreateReactionCommandHandler(
             
             // check userId and get user's name, avatar
             var userDto = await _userService.ValidateUser(request.CyclistId);
-            if (!userDto.IsUserValid)
-            {
-                _logger.LogWarning("❌ User validation failed. UserId: {UserId}", request.CyclistId);
-                return ResponseDto.NotFound("User does not exist");
-            }
-            
-            return request.EntityType.ToLower() switch
-            {
-                "reply" => await HandleReplyReaction(request, userDto, cancellationToken),
-                "blog" => await HandleBlogReaction(request, userDto, cancellationToken),
-                "comment" => await HandleCommentReaction(request, userDto, cancellationToken),
-                _ => ResponseDto.BadRequest("Invalid entity type. Allowed values: reply, blog, comment.")
-            };
+            if (userDto.IsUserValid)
+                return request.EntityType.ToLower() switch
+                {
+                    "reply" => await HandleReplyReaction(request, userDto, cancellationToken),
+                    "blog" => await HandleBlogReaction(request, userDto, cancellationToken),
+                    "comment" => await HandleCommentReaction(request, userDto, cancellationToken),
+                    _ => ResponseDto.BadRequest("Invalid entity type. Allowed values: reply, blog, comment.")
+                };
+            _logger.LogWarning("❌ User validation failed. UserId: {UserId}", request.CyclistId);
+            return ResponseDto.NotFound("User does not exist");
+
         }
         catch (Exception e)
         {
@@ -75,6 +76,9 @@ public class CreateReactionCommandHandler(
     private async Task<ResponseDto> HandleReplyReaction(CreateReactionCommand request, UserDto userDto, CancellationToken cancellationToken)
     {
         _logger.LogInformation("🔄 Processing reply reaction. UserId: {UserId}, ReplyId: {ReplyId}", request.CyclistId, request.EntityId);
+        
+        // **Cache keys**
+        var reactionsCacheKey = $"ContentService_Reactions:Reply{request.EntityId}:*";
         
         var blogAndCommentAndCyclistId = await _replyRepo.GetByIdAsync(r => r.ReplyId == request.EntityId, r => 
             new
@@ -137,6 +141,9 @@ public class CreateReactionCommandHandler(
             "Reply",
             reaction.CreatedAt
         ), cancellationToken: cancellationToken);
+        
+        // clear cache
+        await _cacheService.RemoveByPatternAsync(reactionsCacheKey);
 
         _logger.LogInformation("✅ Reply reaction created successfully! ReplyId: {ReplyId}, UserId: {UserId}", request.EntityId, request.CyclistId);
         return ResponseDto.CreateSuccess(reactionDto, "Reaction created successfully!");
@@ -145,6 +152,9 @@ public class CreateReactionCommandHandler(
     private async Task<ResponseDto> HandleBlogReaction(CreateReactionCommand request, UserDto userDto, CancellationToken cancellationToken)
     {
         _logger.LogInformation("🔄 Processing blog reaction. UserId: {UserId}, BlogId: {BlogId}", request.CyclistId, request.EntityId);
+        
+        // **Cache keys**
+        var reactionsCacheKey = $"ContentService_Reactions:Blog{request.EntityId}:*";
         
         var blogAndCyclist = await _blogRepo.GetByIdAsync(b => b.BlogId == request.EntityId, b => new{b.BlogId, CyclistId = b.BlogId});
         if (blogAndCyclist == null)
@@ -193,6 +203,9 @@ public class CreateReactionCommandHandler(
             reaction.CreatedAt
         ), cancellationToken: cancellationToken);
         
+        // clear cache
+        await _cacheService.RemoveByPatternAsync(reactionsCacheKey);
+        
         _logger.LogInformation("✅ Blog reaction created successfully! BlogId: {BlogId}, UserId: {UserId}", request.EntityId, request.CyclistId);
         return ResponseDto.CreateSuccess(reactionDto, "Reaction created successfully!");
     }
@@ -200,6 +213,9 @@ public class CreateReactionCommandHandler(
     private async Task<ResponseDto> HandleCommentReaction(CreateReactionCommand request, UserDto userDto, CancellationToken cancellationToken)
     {
         _logger.LogInformation("🔄 Processing comment reaction. UserId: {UserId}, CommentId: {CommentId}", request.CyclistId, request.EntityId);
+        
+        // **Cache keys**
+        var reactionsCacheKey = $"ContentService_Reactions:Comment{request.EntityId}:*";
 
         var blogAndCyclist = await _commentRepo.GetByIdAsync(c => c.CommentId == request.EntityId, c => new { c.BlogId, c.CyclistId });
         if (blogAndCyclist == null)
@@ -254,6 +270,9 @@ public class CreateReactionCommandHandler(
             "Comment",
             reaction.CreatedAt
         ), cancellationToken: cancellationToken);
+        
+        // clear cache
+        await _cacheService.RemoveByPatternAsync(reactionsCacheKey);
 
         _logger.LogInformation("✅ Comment reaction created successfully! CommentId: {CommentId}, UserId: {UserId}", request.EntityId, request.CyclistId);
         return ResponseDto.CreateSuccess(reactionDto, "Reaction created successfully!");

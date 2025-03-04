@@ -21,7 +21,8 @@ public class CreateReplyCommandHandler(
     IModerationService moderationService,
     IRabbitMqProducer rabbitMqProducer,
     IHubContext<ContentHub> hubContext,
-    ILogger<CreateReplyCommandHandler> logger
+    ILogger<CreateReplyCommandHandler> logger,
+    ICacheService cacheService
 ) : IRequestHandler<CreateReplyCommand, ResponseDto>
 {
     private readonly ICommentRepo _commentRepo = commentRepo;
@@ -33,6 +34,7 @@ public class CreateReplyCommandHandler(
     private readonly IRabbitMqProducer _rabbitMqProducer = rabbitMqProducer;
     private readonly IHubContext<ContentHub> _hubContext = hubContext;
     private readonly ILogger<CreateReplyCommandHandler> _logger = logger;
+    private readonly ICacheService _cacheService = cacheService;
     
     private const string BucketName = "blogtracio";
 
@@ -41,6 +43,9 @@ public class CreateReplyCommandHandler(
         try
         {
             _logger.LogInformation("📌 CreateReplyCommand started. UserId: {UserId}, CommentId: {CommentId}", request.CyclistId, request.CommentId);
+            
+            // Cache key
+            var repliesCacheKey = $"ContentService_Replies:Comment{request.CommentId}:*";
 
             var reReply = (CommentId: 0, CyclistId: 0, BlogId: 0);
             
@@ -95,6 +100,7 @@ public class CreateReplyCommandHandler(
             reply.CyclistName = userDto.Username;
             reply.CyclistAvatar = userDto.Avatar;
 
+            // insert into db
             var replyCreateResult = await _replyRepo.CreateAsync(reply);
             if (!replyCreateResult)
             {
@@ -104,6 +110,9 @@ public class CreateReplyCommandHandler(
 
             _logger.LogInformation("✅ Reply created successfully! ReplyId: {ReplyId}, UserId: {UserId}, CommentId: {CommentId}", 
                 reply.ReplyId, request.CyclistId, request.CommentId);
+            
+            // clear cache
+            await _cacheService.RemoveByPatternAsync(repliesCacheKey);
 
             // count in database
             await _rabbitMqProducer.SendAsync(new ReplyCreateEvent(request.CommentId), "content.reply.created", cancellationToken);
