@@ -19,6 +19,8 @@ using ContentService.Infrastructure.MessageBroker.ReactionConsumers;
 using ContentService.Infrastructure.MessageBroker.ReplyConsumers;
 using MassTransit;
 using RabbitMQ.Client;
+using Serilog;
+using Serilog.Sinks.Elasticsearch;
 using Shared.Dtos.Messages;
 using Userservice;
 
@@ -143,9 +145,16 @@ public static class ServiceExtensions
             // ✅ Auto-register all consumers in the assembly
             x.AddConsumers(typeof(BlogPrivacyUpdatedConsumer).Assembly);
 
+            var rabbitMqHost = Environment.GetEnvironmentVariable("RABBITMQ_HOST") ?? "localhost";
+            
             x.UsingRabbitMq((context, cfg) =>
             {
-                cfg.Host("rabbitmq://localhost"); // Change to your RabbitMQ settings
+                cfg.Host($"rabbitmq://{rabbitMqHost}", h =>  
+                {
+                    h.Username("guest");
+                    h.Password("guest");
+                });
+
 
                 // ✅ Define Fanout Exchanges for Blog Events
                 cfg.Message<BlogPrivacyUpdateEvent>(xx => xx.SetEntityName("blog_privacy_updated_queue"));
@@ -252,7 +261,7 @@ public static class ServiceExtensions
     {
         services.AddGrpcClient<UserService.UserServiceClient>(o =>
         {
-            o.Address = new Uri("http://localhost:5000"); // Replace with UserService URL
+            o.Address = new Uri("http://localhost:6003"); // Replace with UserService URL
         }).ConfigurePrimaryHttpMessageHandler(() =>
         {
             var handler = new HttpClientHandler();
@@ -301,4 +310,25 @@ public static class ServiceExtensions
         services.AddSignalR();
         return services;
     }
+    
+    // 🔹 Configure Logging
+    public static IServiceCollection ConfigureLog(this IServiceCollection services)
+    {
+        Log.Logger = new LoggerConfiguration()
+            .Enrich.FromLogContext()
+            .Enrich.WithMachineName()
+            .Enrich.WithThreadId()
+            .WriteTo.Console()
+            .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri("http://localhost:9200"))
+            {
+                AutoRegisterTemplate = true,
+                IndexFormat = $"dotnet-logs-{DateTime.UtcNow:yyyy.MM.dd}"
+            })
+            .CreateLogger();
+        
+        services.AddSingleton(Log.Logger);
+            
+        return services;
+    }
+    
 }

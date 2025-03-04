@@ -15,10 +15,10 @@ namespace ContentService.Api.Controllers
         private readonly IMediator _mediator = mediator;
         
         [HttpGet]
-        [Authorize]
         public async Task<IActionResult> GetBlogs(
             [FromQuery] int? userId,
             [FromQuery] int? categoryId,
+            [FromQuery] sbyte? blogStatus,
             [FromQuery] string sortBy = "CreatedAt",
             [FromQuery] bool ascending = true,
             [FromQuery] int pageSize = 5,
@@ -29,7 +29,7 @@ namespace ContentService.Api.Controllers
             var userBrowsingId = int.Parse(value);
             
             var query = new GetBlogsQuery
-            (userBrowsingId, userId, categoryId, sortBy, ascending, pageSize, pageNumber);
+            (userBrowsingId, userId, categoryId, blogStatus, sortBy, ascending, pageSize, pageNumber);
 
             var result = await _mediator.Send(query);
             return StatusCode(result.StatusCode, result);
@@ -107,7 +107,8 @@ namespace ContentService.Api.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        [HttpPut("{blogId:int}")]
+        [HttpPut
+            ("{blogId:int}")]
         public async Task<IActionResult> UpdateBlog(
             [FromRoute] int blogId,
             [FromBody] BlogUpdateDto blogUpdateDto

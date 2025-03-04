@@ -14,7 +14,7 @@ public class ReplyRepo(TracioContentDbContext context, IConfiguration configurat
 {
     private readonly TracioContentDbContext _context = context;
 
-    public async Task<(int CommentId, int ReplyIndex)> GetReplyIndex(int replyId)
+    public async Task<(int CommentId, int ReplyIndex, int ReReplyId)> GetReplyIndex(int replyId)
     {
         var connectionString = configuration.GetConnectionString("tracio_content_db");
 
@@ -30,19 +30,20 @@ public class ReplyRepo(TracioContentDbContext context, IConfiguration configurat
                                  SELECT 
                                      reply_id, 
                                      comment_id,
+                                     re_reply_id,
                                      ROW_NUMBER() OVER (ORDER BY created_at) AS RowNum
                                  FROM reply 
                                  WHERE comment_id = (SELECT comment_id FROM reply WHERE reply_id = @ReplyId)
                              )
-                             SELECT comment_id AS CommentId, RowNum - 1 AS ReplyIndex 
+                             SELECT comment_id AS CommentId, RowNum - 1 AS ReplyIndex, re_reply_id AS ReReplyId
                              FROM OrderedReplies 
                              WHERE reply_id = @ReplyId;
                            """;
 
         var parameters = new { ReplyId = replyId };
 
-        var result = await connection.QueryFirstOrDefaultAsync<(int CommentId, int ReplyIndex)>(sql, parameters);
+        var result = await connection.QueryFirstOrDefaultAsync<(int CommentId, int ReplyIndex, int ReReplyId)>(sql, parameters);
 
-        return result == default ? (-1, -1) : result; // Return (-1, -1) if not found
+        return result == default ? (-1, -1, -1) : result; // Return (-1, -1) if not found
     }
 }
