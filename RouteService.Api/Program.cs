@@ -12,6 +12,25 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+var grpcPort = Environment.GetEnvironmentVariable("GRPC_PORT") ?? "6009";
+var restPort = Environment.GetEnvironmentVariable("REST_PORT") ?? "5009";
+
+// config ports
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(int.Parse(grpcPort), listenOptions =>
+    {
+        listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2; // gRPC
+        listenOptions.UseHttps();
+    });
+
+    options.ListenAnyIP(int.Parse(restPort), listenOptions =>
+    {
+        listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1; // REST API
+        listenOptions.UseHttps();
+    });
+});
+
 // grpc
 builder.Services.AddGrpc(options =>
 {
