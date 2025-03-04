@@ -10,8 +10,8 @@ public interface IFirebaseAuthenticationRepository
     Task<UserRecord> GetFirebaseUserByUidAsync(string uid, CancellationToken cancellationToken);
     Task<UserRecord> GetFirebaseUserByEmailAsync(string email, CancellationToken cancellationToken);
     Task SetCustomClaimsAsync(string firebaseId, Dictionary<string, object> claims, CancellationToken cancellationToken);
-    Task<string> SendPasswordResetEmailAsync(string email, string apiKey, CancellationToken cancellationToken);
-    Task<string> SendEmailVerificationAsync(string email, string tempPassword, string apiKey, CancellationToken cancellationToken);
+    Task<string> SendEmailResetPasswordAsync(string email, string apiKey, CancellationToken cancellationToken);
+    Task<string> SendEmailVerifyAccountAsync(string email, string tempPassword, string apiKey, CancellationToken cancellationToken);
     Task<FirebaseSendOtpResponse?> SendPhoneOtpAsync(string phoneNumber, string recaptchaToken, string apiKey, CancellationToken cancellationToken);
     Task<FirebaseAuthResponse?> VerifyPhoneOtpAsync(string verificationId, string otpCode, string apiKey, CancellationToken cancellationToken);
     Task<ResponseModel?> RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken);

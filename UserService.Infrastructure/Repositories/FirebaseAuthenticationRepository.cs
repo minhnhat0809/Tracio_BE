@@ -49,7 +49,7 @@ public class FirebaseAuthenticationRepository : IFirebaseAuthenticationRepositor
         await FirebaseAuth.DefaultInstance.RevokeRefreshTokensAsync(firebaseId, cancellationToken);
     }
 
-    public async Task<string> SendPasswordResetEmailAsync(string email, string apiKey, CancellationToken cancellationToken)
+    public async Task<string> SendEmailResetPasswordAsync(string email, string apiKey, CancellationToken cancellationToken)
     {
         var resetUrl = $"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={apiKey}";
         var payload = JsonSerializer.Serialize(new { requestType = "PASSWORD_RESET", email });
@@ -59,7 +59,7 @@ public class FirebaseAuthenticationRepository : IFirebaseAuthenticationRepositor
         return await response.Content.ReadAsStringAsync(cancellationToken);
     }
 
-    public async Task<string> SendEmailVerificationAsync(string email, string tempPassword, string apiKey, CancellationToken cancellationToken)
+    public async Task<string> SendEmailVerifyAccountAsync(string email, string tempPassword, string apiKey, CancellationToken cancellationToken)
     {
         var authProvider = new FirebaseAuthClient(new FirebaseAuthConfig
         {

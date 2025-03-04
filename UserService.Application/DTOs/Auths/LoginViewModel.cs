@@ -16,6 +16,6 @@ public class LoginViewModel
 
     public string? ProfilePicture { get; set; }
 
-// Session data
+    // Session data
     public SessionViewModel Session { get; set; } = null!;
 }

@@ -47,7 +47,7 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
 
         try
         {
-            await _firebaseAuthenticationRepository.SendPasswordResetEmailAsync(request.Email, firebaseApiKey, cancellationToken);
+            await _firebaseAuthenticationRepository.SendEmailResetPasswordAsync(request.Email, firebaseApiKey, cancellationToken);
             return new ResponseModel("success", 200, "Password reset email sent successfully.", null);
         }
         catch (Exception ex)

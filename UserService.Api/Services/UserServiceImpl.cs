@@ -65,4 +65,23 @@ public class UserServiceImpl(IUserRepository userRepo) : Userservice.UserService
             throw new RpcException(new Status(StatusCode.Internal, $"Internal Error: {ex.Message}"));
         }
     }
+    
+    /*public override async Task<UserResponse> GetUserById(UserRequest request, ServerCallContext context)
+    {
+        var user = await userRepo.GetByIdAsync(request.UserId);
+        if (user != null)
+            return new UserResponse
+            {
+                IsValid = true,
+                UserName = user.UserName,
+                Avatar = user.ProfilePicture
+            };
+
+        return new UserResponse
+        {
+            IsValid = false,
+            UserName = "",
+            Avatar = ""
+        };
+    }*/
 }

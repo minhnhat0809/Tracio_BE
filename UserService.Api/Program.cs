@@ -23,7 +23,8 @@ builder.Services.AddSwaggerGen();
 
 
 builder.Services.AddServices();
-
+// background service
+builder.Services.AddHostedService<UserBackgroundService>();
 
 // config http2 for grpc
 builder.WebHost.ConfigureKestrel(options =>
@@ -51,7 +52,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidAudience = "tracio-cbd26",
             ValidateLifetime = true,
-            ValidateIssuerSigningKey = true, // Ensure signature validation
+            ValidateIssuerSigningKey = true
         };
         options.Events = new JwtBearerEvents
         {
@@ -63,19 +64,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     context.Fail("Invalid token.");
                     return Task.CompletedTask;
                 }
-                
 
-                // 🔹 Extract "role" claim from Firebase token
-                var roleClaim = context.Principal?.FindFirst("role");
+                // 🔹 Claim Role
+                var roleClaim = context.Principal?.FindFirst(ClaimTypes.Role);
                 if (roleClaim != null)
                 {
-                    claimsIdentity.AddClaim(new Claim(ClaimTypes.Role, roleClaim.Value));
+                    claimsIdentity.AddClaim(new Claim("role", roleClaim.Value)); // Map back
+                    Console.WriteLine($"✅ Role claim remapped: {roleClaim.Value}");
                 }
 
                 return Task.CompletedTask;
             }
-            
         };
+
     });
 
 builder.Services.AddAuthorizationBuilder()
@@ -84,9 +85,10 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy("RequireCyclist", policy =>
         policy.RequireClaim("role", "cyclist"))
     .AddPolicy("RequireAdmin", policy =>
-        policy.RequireClaim("role", "admin"));
+        policy.RequireClaim("role", "admin"));  
 
 builder.Services.AddAuthorization();
+
 // background service
 builder.Services.AddHostedService<UserBackgroundService>();
 
@@ -141,7 +143,7 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
-
+builder.Services.AddScoped<UserServiceImpl>();
 var app = builder.Build();
 
 app.MapGrpcService<UserServiceImpl>();

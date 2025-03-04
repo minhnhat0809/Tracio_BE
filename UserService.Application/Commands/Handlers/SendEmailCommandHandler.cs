@@ -93,7 +93,7 @@ public class SendEmailVerifyCommandHandler : IRequestHandler<SendEmailVerifyComm
     try
     {
         // Delegate sending the email verification to the FirebaseAuthenticationRepository.
-        var verificationResponse = await _firebaseAuthenticationRepository.SendEmailVerificationAsync(
+        var verificationResponse = await _firebaseAuthenticationRepository.SendEmailVerifyAccountAsync(
             request.Email, "TempPassword123!", firebaseApiKey, cancellationToken);
 
         if (string.IsNullOrEmpty(verificationResponse))
