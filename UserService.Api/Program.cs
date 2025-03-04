@@ -1,19 +1,7 @@
-//using UserService.Api.Services;
-
-using System.IdentityModel.Tokens.Jwt;
-using System.Reflection;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
 using UserService.Api.DependencyInjection;
-using UserService.Api.Exceptions;
 using UserService.Api.Extensions;
 using UserService.Api.Helper;
 using UserService.Api.Services;
-using UserService.Application.Interfaces.Services;
-using UserService.Infrastructure.Contexts;
 
 var builder = WebApplication.CreateBuilder(args);
 FirebaseConfig.InitializeFirebase();
@@ -40,11 +28,13 @@ builder.WebHost.ConfigureKestrel(options =>
     options.ListenAnyIP(int.Parse(grpcPort), listenOptions =>
     {
         listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2; // gRPC
+        listenOptions.UseHttps();
     });
 
     options.ListenAnyIP(int.Parse(restPort), listenOptions =>
     {
         listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1; // REST API
+        listenOptions.UseHttps();
     });
 });
 

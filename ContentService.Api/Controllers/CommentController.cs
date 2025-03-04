@@ -26,7 +26,7 @@ namespace ContentService.Api.Controllers
             if (value == null) return StatusCode(StatusCodes.Status401Unauthorized);
             var userBrowsingId = int.Parse(value);
             
-            var result = await _mediator.Send(new GetRepliesByCommentQuery(2, replyId, commentId, pageNumber, pageSize));
+            var result = await _mediator.Send(new GetRepliesByCommentQuery(userBrowsingId, replyId, commentId, pageNumber, pageSize));
             
             return StatusCode(result.StatusCode, result);
         }

@@ -261,12 +261,12 @@ public static class ServiceExtensions
     {
         services.AddGrpcClient<UserService.UserServiceClient>(o =>
         {
-            o.Address = new Uri("http://localhost:6003"); // Replace with UserService URL
+            o.Address = new Uri("https://localhost:6003"); // Replace with UserService URL
         }).ConfigurePrimaryHttpMessageHandler(() =>
         {
             var handler = new HttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-            handler.SslProtocols = System.Security.Authentication.SslProtocols.Tls12;
+            handler.SslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13;
             return handler;
         });
 

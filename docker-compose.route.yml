@@ -1,0 +1,23 @@
+services:
+  routeservice.api:
+    image: routeservice.api
+    build:
+      context: .
+      dockerfile: RouteService.Api/Dockerfile
+    container_name: routeservice
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - RABBITMQ_HOST=local
+      - REDIS_HOST=local
+      - ELASTICSEARCH_HOST=http://localhost:9200
+      - GRPC_PORT=5001
+      - REST_PORT=6001
+    ports:
+      - "5001:5001"
+      - "6001:6001"
+    networks:
+      - route_network
+
+networks:
+  route_network:
+    driver: bridge

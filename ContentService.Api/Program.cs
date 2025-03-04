@@ -45,11 +45,13 @@ builder.WebHost.ConfigureKestrel(options =>
     options.ListenAnyIP(int.Parse(grpcPort), listenOptions =>
     {
         listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2; // gRPC
+        listenOptions.UseHttps();
     });
 
     options.ListenAnyIP(int.Parse(restPort), listenOptions =>
     {
         listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1; // REST API
+        listenOptions.UseHttps();
     });
 });
 

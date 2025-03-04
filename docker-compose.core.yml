@@ -1,0 +1,62 @@
+services:
+  contentservice.api:
+    image: contentservice.api
+    build:
+      context: .
+      dockerfile: ContentService.Api/Dockerfile
+    container_name: contentservice
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - RABBITMQ_HOST=host.docker.internal
+      - REDIS_HOST=localhost
+      - ELASTICSEARCH_HOST=http://localhost:9200
+      - GRPC_PORT=6002
+      - REST_PORT=5002
+    ports:
+      - "5002:5002"
+      - "6002:6002"
+    networks:
+      - core_network
+
+  userservice.api:
+    image: userservice.api
+    build:
+      context: .
+      dockerfile: UserService.Api/Dockerfile
+    container_name: userservice
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5002
+      - RABBITMQ_HOST=host.docker.internal
+      - REDIS_HOST=localhost
+      - ELASTICSEARCH_HOST=http://localhost:9200
+      - GRPC_PORT=6003
+      - REST_PORT=5003
+    ports:
+      - "5003:5003"
+      - "6003:6003"
+    networks:
+      - core_network
+
+  shopservice.api:
+    image: shopservice.api
+    build:
+      context: .
+      dockerfile: ShopService.Api/Dockerfile
+    container_name: shopservice
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - RABBITMQ_HOST=host.docker.internal
+      - REDIS_HOST=localhost
+      - ELASTICSEARCH_HOST=http://localhost:9200
+      - GRPC_PORT=6004
+      - REST_PORT=5004
+    ports:
+      - "5004:5004"
+      - "6004:6004"
+    networks:
+      - core_network
+
+networks:
+  core_network:
+    driver: bridge
