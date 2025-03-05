@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using RouteService.Application.DTOs;
 using RouteService.Application.DTOs.RouteComment;
@@ -67,7 +68,11 @@ namespace RouteService.Api.Controllers
                 return BadRequest(new ResponseModel(null, "Invalid request data", false, 400));
             }
             
-            var response = await _service.CreateCommentAsync(routeId, request);
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if(string.IsNullOrEmpty(userId)) return Unauthorized(new ResponseModel(null, "User not authenticated", false, 401));
+            var parsedUserId = int.Parse(userId);
+            
+            var response = await _service.CreateCommentAsync(parsedUserId, routeId, request);
             return StatusCode(response.StatusCode, response);
         }
 
@@ -78,7 +83,11 @@ namespace RouteService.Api.Controllers
         public async Task<IActionResult> DeleteCommentInRoute(
             [FromRoute] int commentId)
         {
-            var response = await _service.DeleteCommentAsync(commentId);
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if(string.IsNullOrEmpty(userId)) return Unauthorized(new ResponseModel(null, "User not authenticated", false, 401));
+            var parsedUserId = int.Parse(userId);
+            
+            var response = await _service.DeleteCommentAsync(parsedUserId, commentId);
             return StatusCode(response.StatusCode, response);
         }
 
@@ -95,7 +104,11 @@ namespace RouteService.Api.Controllers
                 return BadRequest(new ResponseModel(null, "Invalid request data", false, 400));
             }
             
-            var response = await _service.UpdateCommentAsync(commentId, request);
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if(string.IsNullOrEmpty(userId)) return Unauthorized(new ResponseModel(null, "User not authenticated", false, 401));
+            var parsedUserId = int.Parse(userId);
+            
+            var response = await _service.UpdateCommentAsync(parsedUserId, commentId, request);
             return StatusCode(response.StatusCode, response);
         }
         
@@ -114,7 +127,11 @@ namespace RouteService.Api.Controllers
                 return BadRequest(new ResponseModel(null, "Invalid request data", false, 400));
             }
             
-            var response = await _service.CreateReplyAsync(commentId,request);
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if(string.IsNullOrEmpty(userId)) return Unauthorized(new ResponseModel(null, "User not authenticated", false, 401));
+            var parsedUserId = int.Parse(userId);
+            
+            var response = await _service.CreateReplyAsync(parsedUserId, commentId, request);
             return StatusCode(response.StatusCode, response);
         }
         
@@ -131,8 +148,12 @@ namespace RouteService.Api.Controllers
             {
                 return BadRequest(new ResponseModel(null, "Invalid request data", false, 400));
             }
+            
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if(string.IsNullOrEmpty(userId)) return Unauthorized(new ResponseModel(null, "User not authenticated", false, 401));
+            var parsedUserId = int.Parse(userId);
     
-            var response = await _service.UpdateReplyAsync(commentId, replyId, request);
+            var response = await _service.UpdateReplyAsync(parsedUserId, commentId, replyId, request);
             return StatusCode(response.StatusCode, response);
         }
 
@@ -144,7 +165,11 @@ namespace RouteService.Api.Controllers
             [FromRoute] int commentId,
             [FromRoute] int replyId)
         {
-            var response = await _service.DeleteReplyAsync(commentId, replyId);
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if(string.IsNullOrEmpty(userId)) return Unauthorized(new ResponseModel(null, "User not authenticated", false, 401));
+            var parsedUserId = int.Parse(userId);
+            
+            var response = await _service.DeleteReplyAsync(parsedUserId, commentId, replyId);
             return StatusCode(response.StatusCode, response);
         }
 

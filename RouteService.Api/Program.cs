@@ -68,11 +68,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.MapGet("/RouteService", () => "RouteService is running with Redis!");
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseRouting();
 app.UseCors("CORSPolicy");
 app.MapControllers();
+
 app.Run();
 
 /*

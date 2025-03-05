@@ -1,4 +1,7 @@
+version: '3.8'
+
 services:
+  # RouteService
   routeservice.api:
     image: routeservice.api
     build:
@@ -6,18 +9,68 @@ services:
       dockerfile: RouteService.Api/Dockerfile
     container_name: routeservice
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - RABBITMQ_HOST=local
-      - REDIS_HOST=local
-      - ELASTICSEARCH_HOST=http://localhost:9200
+      - RABBITMQ_HOST=rabbitmq
+      - REDIS_HOST=redis
       - GRPC_PORT=5001
       - REST_PORT=6001
     ports:
       - "5001:5001"
       - "6001:6001"
+    depends_on:
+      - rabbitmq
+      - redis
     networks:
-      - route_network
+      - app_network
+
+  # UserService
+  userservice.api:
+    image: userservice.api
+    build:
+      context: .
+      dockerfile: UserService.Api/Dockerfile
+    container_name: userservice
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - REDIS_HOST=redis
+      - GRPC_PORT=5003
+      - REST_PORT=6003
+    ports:
+      - "5003:5003"
+      - "6003:6003"
+    depends_on:
+      - rabbitmq
+      - redis
+    networks:
+      - app_network
+
+  # Redis
+  redis:
+    image: redis:alpine
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_PASSWORD=mystrongpassword
+    command: redis-server --requirepass mystrongpassword
+    networks:
+      - app_network
+  
+  
+  # RabbitMQ
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: "guest"
+      RABBITMQ_DEFAULT_PASS: "guest"
+      RABBITMQ_DEFAULT_VHOST: "rabbitmq"
+    networks:
+      - app_network
 
 networks:
-  route_network:
+  app_network:
     driver: bridge

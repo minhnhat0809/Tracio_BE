@@ -44,11 +44,12 @@ public static class ServiceExtension
                             return Task.CompletedTask;
                         }
 
-                        // 🔹 Extract "role" claim from Firebase token
-                        var roleClaim = context.Principal?.FindFirst("role");
+                        // Claim Role
+                        var roleClaim = context.Principal?.FindFirst(ClaimTypes.Role);
                         if (roleClaim != null)
                         {
-                            claimsIdentity.AddClaim(new Claim(ClaimTypes.Role, roleClaim.Value));
+                            claimsIdentity.AddClaim(new Claim("role", roleClaim.Value)); // Map back
+                            Console.WriteLine($"✅ Role claim remapped: {roleClaim.Value}");
                         }
 
                         return Task.CompletedTask;
