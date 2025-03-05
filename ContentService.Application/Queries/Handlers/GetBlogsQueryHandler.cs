@@ -150,7 +150,7 @@ public class GetBlogsQueryHandler(
         {
             basePredicate = basePredicate.And(b => b.Status == (sbyte)BlogStatus.Published);
             basePredicate = result.IsFollower
-                ? basePredicate.And(b => b.Status != (sbyte)PrivacySetting.Private)
+                ? basePredicate.And(b => b.PrivacySetting != (sbyte)PrivacySetting.Private)
                 : basePredicate.And(b => b.PrivacySetting == (sbyte)PrivacySetting.Public);
         }
         else
