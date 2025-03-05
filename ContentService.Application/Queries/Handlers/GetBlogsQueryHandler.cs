@@ -48,8 +48,8 @@ public class GetBlogsQueryHandler(
     {
         try
         {
-            var publicBlogCacheKey = $"PublicBlogs:Page{request.PageNumber}:Size{request.PageSize}";
-            var followerBlogCacheKey = $"FollowerBlogs:{request.UserRequestId}:Page{request.PageNumber}:Size{request.PageSize}";
+            var publicBlogCacheKey = $"PublicBlogs:Category{request.CategoryId}:Page{request.PageNumber}:Size{request.PageSize}";
+            var followerBlogCacheKey = $"FollowerBlogs:{request.UserRequestId}:Category{request.CategoryId}:Page{request.PageNumber}:Size{request.PageSize}";
 
             var cachedPublicBlogs = await _cacheService.GetAsync<List<BlogDtos>>(publicBlogCacheKey);
             var cachedFollowerBlogs = await _cacheService.GetAsync<List<BlogDtos>>(followerBlogCacheKey);
@@ -127,9 +127,17 @@ public class GetBlogsQueryHandler(
     private async Task<List<BlogDtos>> FetchFollowerOnlyBlogs(GetBlogsQuery request)
     {
         var sortExpression = SortHelper.BuildSortExpression<UserBlogFollowerOnly>("CreatedAt");
+        
+        var basePredicate = PredicateBuilder.New<UserBlogFollowerOnly>(true)
+            .And(f => f.UserId == request.UserRequestId && !f.IsRead);
 
+        if (request.CategoryId.HasValue)
+        {
+            basePredicate = basePredicate.And(f => f.Blog.CategoryId == request.CategoryId.Value);
+        }
+        
         return await _followerOnlyBlogRepo.FindAsyncWithPagingAndSorting(
-            b => b.UserId == request.UserRequestId && !b.IsRead,
+            basePredicate,
             SelectFollowerOnlyBlogDtos(request.UserRequestId),
             request.PageNumber, request.PageSize,
             sortExpression, false,

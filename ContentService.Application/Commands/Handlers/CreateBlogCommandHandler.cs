@@ -41,8 +41,8 @@ public class CreateBlogCommandHandler(
             _logger.LogInformation("📌 CreateBlogCommand started for UserId: {UserId}", request.CreatorId);
             
             // **Cache key**
-            const string publicBlogCacheKey = $"PublicBlogs:*";
-            var followerBlogCacheKey = $"FollowerBlogs:{request.CreatorId}:*";
+            var publicBlogCacheKey = $"PublicBlogs:Category{request.CategoryId}:*";
+            var followerBlogCacheKey = $"FollowerBlogs:{request.CreatorId}:Category{request.CategoryId}:*";
 
             // ✅ 1. Validate user
             var userDto = await _userService.ValidateUser(request.CreatorId);
