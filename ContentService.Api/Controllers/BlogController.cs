@@ -24,12 +24,12 @@ namespace ContentService.Api.Controllers
             [FromQuery] int pageSize = 5,
             [FromQuery] int pageNumber = 1)
         {
-            /*var value = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "custom_id")?.Value;
+            var value = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "custom_id")?.Value;
             if (value == null) return StatusCode(StatusCodes.Status401Unauthorized);
-            var userBrowsingId = int.Parse(value);*/
+            var userBrowsingId = int.Parse(value);
             
             var query = new GetBlogsQuery
-            (1, userId, categoryId, blogStatus, sortBy, ascending, pageSize, pageNumber);
+            (userBrowsingId, userId, categoryId, blogStatus, sortBy, ascending, pageSize, pageNumber);
 
             var result = await _mediator.Send(query);
             return StatusCode(result.StatusCode, result);
